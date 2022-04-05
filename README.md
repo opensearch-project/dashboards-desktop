@@ -1,11 +1,11 @@
 <img src="https://opensearch.org/assets/brand/SVG/Logo/opensearch_dashboards_logo_darkmode.svg" height="64px"/>
 
-- [Welcome!](#Dashboards Desktop)
-- [Security!](#Security)
-- [License!](#License)
+- [Welcome!](#welcome)
+- [Security!](#security)
+- [License!](#license)
 - [Copyright](#copyright)
 
-## Dashboards Desktop
+## Welcome
 
 Dashboards Desktop offers desktop experiene to OpenSearch Dashboards Users. OpenSearch Dashboards is an open source search and analytics visualization application. 
 
