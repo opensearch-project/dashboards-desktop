@@ -14,10 +14,6 @@ function createWindow() {
       win.webContents.openDevTools();
 }
 
-
-
-
-
 async function viewOSD() {
     app.whenReady().then(() => {
         createWindow();
@@ -26,8 +22,7 @@ async function viewOSD() {
             if (BrowserWindow.getAllWindows().length === 0) createWindow()
         })
     })
-    
-    
+
     app.on('window-all-closed', () => {
         if (process.platform !== 'darwin') app.quit()
     })
