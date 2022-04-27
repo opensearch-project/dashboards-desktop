@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/johnnyon-amzn/dashboards-desktop-poc.git"
+    "url": "git+https://github.com/opensearch-project/dashboards-desktop.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/johnnyon-amzn/dashboards-desktop-poc/issues"
+    "url": "https://github.com/opensearch-project/dashboards-desktop/issues"
   },
-  "homepage": "https://github.com/johnnyon-amzn/dashboards-desktop-poc#readme",
+  "homepage": "https://github.com/opensearch-project/dashboards-desktop#readme",
   "devDependencies": {
     "electron": "^18.1.0"
   }
