@@ -2,7 +2,7 @@ function getMapping() {
     return [{id: "awsAccessKeyId", key: "AWS_ACCESS_KEY_ID"},
             {id: "awsSecretAccessKey", key: "AWS_SECRET_ACCESS_KEY"},
             {id: "endpoint", key: "ENDPOINT"},
-            {id: "osdPath", key: "osdPath"}
+            {id: "osdPath", key: "OSD_PATH"}
     ]
 }
 function init() {
