@@ -1,6 +1,6 @@
 const { contextBridge } = require('electron');
 const { ipcRenderer } = require("electron");
-const dashboards = require('dashboards');
+const dashboards = require('./dashboards');
 
 contextBridge.exposeInMainWorld(
     'electron',
