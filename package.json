@@ -1,0 +1,22 @@
+{
+  "name": "dashboards-desktop",
+  "version": "1.0.0",
+  "description": "<img src=\"https://opensearch.org/assets/brand/SVG/Logo/opensearch_dashboards_logo_darkmode.svg\" height=\"64px\"/>",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opensearch-project/dashboards-desktop.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/opensearch-project/dashboards-desktop/issues"
+  },
+  "homepage": "https://github.com/opensearch-project/dashboards-desktop#readme",
+  "devDependencies": {
+    "electron": "^18.1.0"
+  }
+}

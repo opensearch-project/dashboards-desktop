@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>OpenSearch Dashboards | Configuration</title>
+  <link rel="stylesheet" href="../css/bootstrap.min.css"/>
+  <style>
+    label {
+      font-weight: bold
+    }
+    input[type="radio"] {
+      margin-left: 12px;
+      margin-right: 6px;
+      font-weight: 800;
+    }
+
+    .hidden {
+      display: none;
+      visibility: hidden
+    }
+    label {
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="jumbotron" style="text-align: center;padding: 30px">
+  <h1>OpenSearch Dashboards Electron</h1>
+</div>
+
+<div style="width:80%; margin-left:10%; margin-top: 30px; margin-bottom: 0">
+  <div style="margin-bottom: 0" id="info" class="alert alert-info" role="alert">
+    <strong>Welcome!</strong> Let's get you connected to OpenSearch Dashboards.
+  </div>
+  <div id="error" class="alert alert-danger hidden">
+    <strong>Error!</strong> <span id="error-message"/>
+  </div>
+  <div id="warn"  class="alert alert-warning hidden" role="alert">
+    <strong>Warning!</strong> <span id="warn-message"/>
+  </div>
+  <div style="margin:0">
+    <form  style="margin:0">
+      <div class="form-group">
+        <label for="accessKey">AWS ACCESS KEY ID</label>
+        <input type="text" id="awsAccessKeyId" class="form-control">
+        </input>
+
+        <label for="secretAccessKey">AWS SECRET ACCESS KEY</label>
+        <input type="text" id="awsSecretAccessKey" class="form-control">
+      </input>
+        <label for="endpoint">ENDPOINT</label>
+        <input type="text" id="endpoint" class="form-control">
+      </input>
+        <label for="osdPath">Path to OpenSearch Dashboards</label>
+        <input type="text" id="osdPath" class="form-control">
+      </input>
+      </div>
+    </form>
+  </div>
+
+  <div style="width:80%; margin-left:10%; margin-top: 30px">
+    <div>
+      <div style="text-align: center">
+        <a id="submit" class="btn btn-primary btn-lg" href="#">Launch</a>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="./renderer.js"></script>
+</body>
+
+
+</html>

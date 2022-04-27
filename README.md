@@ -9,11 +9,11 @@
 
 Dashboards Desktop offers desktop experiene to OpenSearch Dashboards Users. OpenSearch Dashboards is an open source search and analytics visualization application. 
 
-Dashboards Desktop provides end user *flexibility* and *extensibility* to install any Dashboards pluings they want. Dashboards Desktop could store data into local storage or cloud drive. User has full control of the data they have.
+Dashboards Desktop provides end user *flexibility* and *extensibility* to install any Dashboards plugins they want. Dashboards Desktop could store data into local storage or cloud drive. User has full control of the data they have.
 
 Dashboards Desktop could be downloaded from internet. Not only deliver stable version to customer in monthly/quarterly release cadence. It will deliver experimental versions.
 
-Deskboards has build-in data source selector which allow user to connect to any OpenSearch endpoint they want with pre-configured credential or access key.
+Dashboards has build-in data source selector which allow user to connect to any OpenSearch endpoint they want with pre-configured credential or access key.
 
 ## Security
 
