@@ -18,5 +18,11 @@
   "homepage": "https://github.com/opensearch-project/dashboards-desktop#readme",
   "devDependencies": {
     "electron": "^18.1.0"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "http": "0.0.1-security",
+    "node-fetch": "^3.2.4",
+    "superagent": "^7.1.3"
   }
 }
