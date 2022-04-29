@@ -40,7 +40,20 @@ function addListeners() {
         event.preventDefault();
         console.log(event);
         await window.electron.startProxy();
+        await window.electron.startOSD();
+        waitForServer();
     })
+}
+
+
+async function waitForServer() {
+    let osdStatus = await window.electron.getOSDStatus();
+    console.log(osdStatus);
+    if (osdStatus["os"] == "green" && osdStatus["osd"] == "green") {
+        window.electron.ipcRenderer.invoke("swapURL", "http://localhost:5601");
+    } else {
+        setTimeout(waitForServer, 1000 * 5);
+    }
 }
 
 

@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld(
         ipcRenderer: ipcRenderer,
         getConfig: () => dashboards.getConfig(),
         setConfig: (key, value, callback) => dashboards.setConfig(key, value, callback),
+        getOSDStatus: () => dashboards.getOSDStatus(),
+        startOSD: () => dashboards.startOSD(),
         startProxy: () => dashboards.startProxy()
+        
     }
 )

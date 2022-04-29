@@ -29,6 +29,10 @@ async function viewOSD() {
 
 }
 
+ipcMain.handle('swapURL', async (event, arg) => {
+    let win = BrowserWindow.getFocusedWindow();
+    win.loadURL(arg);
+})
 
 
 viewOSD();
