@@ -13,16 +13,16 @@ const superagent = require('superagent');
 const CONFIG_PATH = path.join(__dirname, "config.json");
 
 
-function getConfig(CONFIG_PATH=CONFIG_PATH) {
-    let config = fs.readFileSync(CONFIG_PATH);
+function getConfig(config_path=CONFIG_PATH) {
+    let config = fs.readFileSync(config_path);
     config = JSON.parse(config.toString());
     return config;
 }
 
-function setConfig(key, value, callback, CONFIG_PATH=CONFIG_PATH) {
-    let config = getConfig(CONFIG_PATH);
+function setConfig(key, value, callback, config_path=CONFIG_PATH) {
+    let config = getConfig(config_path);
     config[key] = value;
-    fs.writeFile(CONFIG_PATH, JSON.stringify(config), callback);
+    fs.writeFile(config_path, JSON.stringify(config), callback);
 }
 
 async function getOSDStatus() {
