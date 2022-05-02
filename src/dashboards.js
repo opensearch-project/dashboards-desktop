@@ -10,18 +10,17 @@ const http = require('http');
 const superagent = require('superagent');
 
 
-const CONFIG_PATH = path.join(__dirname,"config.json");
+const CONFIG_PATH = path.join(__dirname, "config.json");
 
 
-function getConfig() {
+function getConfig(CONFIG_PATH=CONFIG_PATH) {
     let config = fs.readFileSync(CONFIG_PATH);
     config = JSON.parse(config.toString());
     return config;
 }
 
-function setConfig(key, value, callback) {
-    console.log('setting Config a', key, value)
-    let config = getConfig();
+function setConfig(key, value, callback, CONFIG_PATH=CONFIG_PATH) {
+    let config = getConfig(CONFIG_PATH);
     config[key] = value;
     fs.writeFile(CONFIG_PATH, JSON.stringify(config), callback);
 }
