@@ -15,7 +15,6 @@ describe('Config Test', () => {
 
   it('Setting config', () => {
     let mapping = ["AWS_ACCESS_KEY_ID"];
-    
     mapping.forEach(async function(map) {
         //insert random integer 0-999
         let value = Math.floor(Math.random() * 1000);
@@ -26,4 +25,5 @@ describe('Config Test', () => {
     })
     
   });
+
 });
