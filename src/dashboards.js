@@ -10,20 +10,19 @@ const http = require('http');
 const superagent = require('superagent');
 
 
-const CONFIG_PATH = path.join(__dirname,"config.json");
+const CONFIG_PATH = path.join(__dirname, "config.json");
 
 
-function getConfig() {
-    let config = fs.readFileSync(CONFIG_PATH);
+function getConfig(configPath=CONFIG_PATH) {
+    let config = fs.readFileSync(configPath);
     config = JSON.parse(config.toString());
     return config;
 }
 
-function setConfig(key, value, callback) {
-    console.log('setting Config a', key, value)
-    let config = getConfig();
+function setConfig(key, value, callback, configPath=CONFIG_PATH) {
+    let config = getConfig(configPath);
     config[key] = value;
-    fs.writeFile(CONFIG_PATH, JSON.stringify(config), callback);
+    fs.writeFile(configPath, JSON.stringify(config), callback);
 }
 
 async function getOSDStatus() {

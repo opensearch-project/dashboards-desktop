@@ -4,7 +4,8 @@
   "description": "<img src=\"https://opensearch.org/assets/brand/SVG/Logo/opensearch_dashboards_logo_darkmode.svg\" height=\"64px\"/>",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "test": "jest --config ./jest.config.json"
   },
   "repository": {
     "type": "git",
@@ -17,7 +18,8 @@
   },
   "homepage": "https://github.com/opensearch-project/dashboards-desktop#readme",
   "devDependencies": {
-    "electron": "^18.1.0"
+    "electron": "^18.1.0",
+    "jest": "^28.0.3"
   },
   "dependencies": {
     "axios": "^0.27.2",
