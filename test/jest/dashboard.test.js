@@ -1,5 +1,5 @@
 const path = require('path');
-const dashboards = require('../src/dashboards');
+const dashboards = require('../../src/dashboards');
 const CONFIG_TEST_PATH = path.join(__dirname, "config.test.json");
 
 describe('Config Test', () => {
