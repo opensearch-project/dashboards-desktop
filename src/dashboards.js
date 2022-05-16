@@ -9,22 +9,6 @@ const http = require('http');
 
 const superagent = require('superagent');
 
-
-const CONFIG_PATH = path.join(__dirname, "config.json");
-
-
-function getConfig(configPath=CONFIG_PATH) {
-    let config = fs.readFileSync(configPath);
-    config = JSON.parse(config.toString());
-    return config;
-}
-
-function setConfig(key, value, callback, configPath=CONFIG_PATH) {
-    let config = getConfig(configPath);
-    config[key] = value;
-    fs.writeFile(configPath, JSON.stringify(config), callback);
-}
-
 async function getOSDStatus() {
     let statuses = {};
     try {
@@ -54,9 +38,8 @@ async function getOSDStatus() {
     return body;
   }
 
-async function startProxy() {
-  //get variables
-  let config = getConfig();
+async function startProxy(config) {
+  console.log('config Proxy', config);
   //export variables in command line
   for (let variable in config) {
       process.env[variable] = config[variable];
@@ -80,11 +63,8 @@ async function startProxy() {
   return;
 }
 
-async function startOSD() {
-    //get variables
-    let config = getConfig();
-    console.log('config', config)
-  
+async function startOSD(config) {
+    console.log('config', config);
     //start osd
     var osd = spawn(config.OSD_PATH + '/bin/opensearch-dashboards');
   
@@ -105,7 +85,6 @@ async function startOSD() {
 }
 
 exports.startProxy = startProxy;
-exports.getConfig = getConfig;
-exports.setConfig = setConfig;
+
 exports.startOSD = startOSD;
 exports.getOSDStatus = getOSDStatus;

@@ -1,3 +1,4 @@
+let config = {};
 function getMapping() {
     return [{id: "awsAccessKeyId", key: "AWS_ACCESS_KEY_ID"},
             {id: "awsSecretAccessKey", key: "AWS_SECRET_ACCESS_KEY"},
@@ -6,41 +7,54 @@ function getMapping() {
     ]
 }
 function init() {
-    window.config = {};
-    window.config = window.electron.getConfig();
     addListeners();
     populateFields();
 }
 
 async function populateFields() {
-    let config = window.config;
-    let mapping = getMapping();
-    for (map of mapping) {
-        let input = document.getElementById(map.id);
-        input.setAttribute("value", config[map.key])
-    }
+    config = window.electron.getConfig();
+    let profile = document.getElementById("profile");
+    profile.innerHTML = "";
+
+    let options = Object.keys(config).map(function(name) {
+        return `<option value="${name}">${name}</option>`
+    });
+    profile.innerHTML += options.join('');
+
+}
+
+function getActiveConfig() {
+    let profile = document.getElementById("profile");
+    var name = profile.options[profile.selectedIndex].value;
+    console.log('name', name);
+    return config[name] || null;
 }
 
 function addListeners() {
-    let listeners = getMapping();
-    listeners.forEach(function(listener) {
-        let input = document.getElementById(listener.id);
-        input.addEventListener('blur', (event) => {
-            
-            if (window.config[listener.key] != input.value) {
-                window.config[listener.key] = input.value
-                //add in success for save file config
-                window.electron.setConfig(listener.key, input.value, ()=>{});
-            }
-        })
+    let addConfig = document.getElementById("addConfig");
+    addConfig.addEventListener("click", async (event) => {
+        event.preventDefault();
+        window.electron.ipcRenderer.invoke("openConfig");
+
     })
-    
+    let editConfig = document.getElementById("editConfig");
+    editConfig.addEventListener("click", async (event) => {
+        event.preventDefault();
+        var name = profile.options[profile.selectedIndex].value;
+        window.electron.ipcRenderer.invoke("openConfig", name);
+    })
+
     let submit = document.getElementById("submit");
+    
     submit.addEventListener("click", async (event) => {
         event.preventDefault();
-        console.log(event);
-        await window.electron.startProxy();
-        await window.electron.startOSD();
+
+        //get active profile config
+        let activeConfig = getActiveConfig();
+        console.log(activeConfig);
+
+        await window.electron.startProxy(activeConfig);
+        await window.electron.startOSD(activeConfig);
         waitForServer();
     })
 }
@@ -55,6 +69,10 @@ async function waitForServer() {
         setTimeout(waitForServer, 1000 * 5);
     }
 }
+
+window.electron.onRefresh(function (event, args) {
+    populateFields();
+});
 
 
 init();
