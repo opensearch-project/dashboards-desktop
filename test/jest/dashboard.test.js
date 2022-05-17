@@ -20,7 +20,6 @@ describe('Config Test', () => {
         let value = Math.floor(Math.random() * 1000);
         await dashboards.setConfig(map, value, ()=>{}, CONFIG_TEST_PATH);
         let config = await dashboards.getConfig(CONFIG_TEST_PATH);
-        console.log('config', config);
         expect(config[map]).toEqual(value);
     })
     

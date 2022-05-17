@@ -5,7 +5,6 @@ const CONFIG_PATH = path.join(__dirname, "config.json");
 function getConfig(name, configPath=CONFIG_PATH) {
     let config = fs.readFileSync(configPath);
     config = JSON.parse(config.toString());
-    console.log('config', config);
     if (name) {
         return config[name] || {};
     } else {
@@ -14,7 +13,6 @@ function getConfig(name, configPath=CONFIG_PATH) {
 }
 
 function setConfig(config, callback, configPath=CONFIG_PATH) {
-    console.log('config', config)
     let oldConfig = fs.readFileSync(configPath);
     oldConfig = JSON.parse(oldConfig.toString());
     oldConfig[config.NAME] = config;

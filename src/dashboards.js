@@ -14,8 +14,6 @@ async function getOSDStatus() {
     try {
         const osStatus = await apiRequest('localhost:9200');
         const osdStatus = await apiRequest('localhost:5601/api/status');
-        console.log('osStatus', osStatus)
-        console.log('osdStatus', osdStatus);
         if (osStatus.name) {
             statuses["os"] = "green"
         }
@@ -24,7 +22,6 @@ async function getOSDStatus() {
             statuses["osd"] = osdStatus.status.overall.state;
         }
     } catch (e) {
-        console.log('e', e);
     }
 
     return statuses;
@@ -39,7 +36,6 @@ async function getOSDStatus() {
   }
 
 async function startProxy(config) {
-  console.log('config Proxy', config);
   //export variables in command line
   for (let variable in config) {
       process.env[variable] = config[variable];
@@ -50,37 +46,28 @@ async function startProxy(config) {
 
   proxy.stdout.on('data', function(data) {
       data = JSON.parse(data.toString());
-      //console.log('stdout: ' + JSON.stringify(data));
   })
 
   proxy.stderr.on('data', function(data) {   
-      //console.log('stderr: ' + data.toString());
   })
 
   proxy.on('exit', function(code) {
-      console.log('child process exited with code ' + code.toString());  
   })
   return;
 }
 
 async function startOSD(config) {
-    console.log('config', config);
     //start osd
     var osd = spawn(config.OSD_PATH + '/bin/opensearch-dashboards');
   
     osd.stdout.on('data', function(data) {
         data = JSON.parse(data.toString());
-        console.log('stdout: ' + JSON.stringify(data));
     })
   
     osd.stderr.on('data', function(data) {
-        
-        console.log('stderr: ' + data.toString());
     })
   
     osd.on('exit', function(code) {
-        console.log('child process exited with code ' + code.toString());
-        
     })
 }
 

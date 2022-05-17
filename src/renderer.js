@@ -26,7 +26,6 @@ async function populateFields() {
 function getActiveConfig() {
     let profile = document.getElementById("profile");
     var name = profile.options[profile.selectedIndex].value;
-    console.log('name', name);
     return config[name] || null;
 }
 
@@ -51,8 +50,6 @@ function addListeners() {
 
         //get active profile config
         let activeConfig = getActiveConfig();
-        console.log(activeConfig);
-
         await window.electron.startProxy(activeConfig);
         await window.electron.startOSD(activeConfig);
         waitForServer();
@@ -62,7 +59,6 @@ function addListeners() {
 
 async function waitForServer() {
     let osdStatus = await window.electron.getOSDStatus();
-    console.log(osdStatus);
     if (osdStatus["os"] == "green" && osdStatus["osd"] == "green") {
         window.electron.ipcRenderer.invoke("swapURL", "http://localhost:5601");
     } else {

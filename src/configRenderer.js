@@ -38,9 +38,7 @@ function addListeners() {
     let submit = document.getElementById("submit");
     submit.addEventListener("click", async (event) => {
         event.preventDefault();
-        console.log('click');
         let newConfig = getNewConfig();
-        console.log('newConfig', newConfig);
         window.electron.setConfig(newConfig, closeWindow);
     })
 }
