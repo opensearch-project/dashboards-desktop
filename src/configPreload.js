@@ -11,6 +11,5 @@ contextBridge.exposeInMainWorld(
         },
         getConfig: (name) => configLibrary.getConfig(name),
         setConfig: (config, callback) => configLibrary.setConfig(config, callback),
-        
     }
 )
