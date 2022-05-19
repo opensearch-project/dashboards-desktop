@@ -16,23 +16,27 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.    
 */
-const { contextBridge } = require('electron');
-const { ipcRenderer } = require("electron");
-const dashboards = require('./dashboards');
-const configLibrary = require('./config');
+const path = require('path');
+const fs = require("fs");
+const CONFIG_PATH = path.join(__dirname, "config.json");
 
-contextBridge.exposeInMainWorld(
-    'electron',
-    {   
-        ipcRenderer: ipcRenderer,
-        getConfig: (name) => configLibrary.getConfig(name),
-        setConfig: (config, callback) => configLibrary.setConfig(config, callback),
-        getOSDStatus: () => dashboards.getOSDStatus(),
-        startOSD: (config) => dashboards.startOSD(config),
-        startProxy: (config) => dashboards.startProxy(config),
-        onRefresh: (fn) => {
-            ipcRenderer.on("refresh", (event, ...args) => fn(...args));
-        },
-        
+function getConfig(name, configPath=CONFIG_PATH) {
+    let config = fs.readFileSync(configPath);
+    config = JSON.parse(config.toString());
+    if (name) {
+        return config[name] || {};
+    } else {
+        return config;
     }
-)
+}
+
+function setConfig(config, callback, configPath=CONFIG_PATH) {
+    let oldConfig = fs.readFileSync(configPath);
+    oldConfig = JSON.parse(oldConfig.toString());
+    oldConfig[config.NAME] = config;
+    fs.writeFile(configPath, JSON.stringify(oldConfig), callback);
+}
+
+
+exports.getConfig = getConfig;
+exports.setConfig = setConfig;

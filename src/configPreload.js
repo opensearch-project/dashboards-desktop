@@ -16,23 +16,19 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.    
 */
+
 const { contextBridge } = require('electron');
 const { ipcRenderer } = require("electron");
-const dashboards = require('./dashboards');
 const configLibrary = require('./config');
 
 contextBridge.exposeInMainWorld(
     'electron',
     {   
         ipcRenderer: ipcRenderer,
+        onName: (fn) => {
+            ipcRenderer.on("name", (event, ...args) => fn(...args));
+        },
         getConfig: (name) => configLibrary.getConfig(name),
         setConfig: (config, callback) => configLibrary.setConfig(config, callback),
-        getOSDStatus: () => dashboards.getOSDStatus(),
-        startOSD: (config) => dashboards.startOSD(config),
-        startProxy: (config) => dashboards.startProxy(config),
-        onRefresh: (fn) => {
-            ipcRenderer.on("refresh", (event, ...args) => fn(...args));
-        },
-        
     }
 )
