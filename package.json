@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/johnnyon-amzn/dashboards-desktop-poc#readme",
   "devDependencies": {
-    "electron": "^18.1.0"
+    "electron": "^18.3.7"
   }
 }
