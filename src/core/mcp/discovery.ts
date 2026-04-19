@@ -97,7 +97,7 @@ export class McpDiscovery {
     return this.mcpTools.get(serverName) ?? [];
   }
 
-  /** Send a JSON-RPC request over the server's stdin/stdout */
+  /** Send a JSON-RPC request over the server's stdin/stdout with chunked response buffering */
   private sendRequest(
     state: ServerState,
     method: string,
@@ -106,6 +106,7 @@ export class McpDiscovery {
     return new Promise((resolve, reject) => {
       const id = ++this.requestId;
       const request: JsonRpcRequest = { jsonrpc: '2.0', id, method, params };
+      let buffer = '';
 
       const timeout = setTimeout(() => {
         cleanup();
@@ -113,8 +114,12 @@ export class McpDiscovery {
       }, REQUEST_TIMEOUT_MS);
 
       const onData = (chunk: Buffer) => {
-        const lines = chunk.toString().split('\n').filter(Boolean);
-        for (const line of lines) {
+        buffer += chunk.toString();
+        // Process complete lines (newline-delimited JSON)
+        const parts = buffer.split('\n');
+        buffer = parts.pop() ?? ''; // keep incomplete trailing chunk
+        for (const line of parts) {
+          if (!line.trim()) continue;
           try {
             const msg = JSON.parse(line) as JsonRpcResponse;
             if (msg.id === id) {
@@ -126,7 +131,7 @@ export class McpDiscovery {
               }
               return;
             }
-          } catch { /* not our message */ }
+          } catch { /* incomplete or not our message */ }
         }
       };
 
