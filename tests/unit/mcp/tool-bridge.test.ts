@@ -75,7 +75,7 @@ describe('McpToolBridge', () => {
       io.stdout.write(JSON.stringify(response) + '\n');
     });
 
-    const ctx: ToolContext = { workspaceId: 'test', activeConnection: null };
+    const ctx: ToolContext = { workspaceId: 'test', activeConnection: null, signal: new AbortController().signal };
     const result = await registry.execute('srv/echo', { message: 'hello' }, ctx);
     expect(result.isError).toBe(false);
     expect(result.content).toBe('hello back');
@@ -92,7 +92,7 @@ describe('McpToolBridge', () => {
     const bridge = new McpToolBridge(registry, discovery, supervisor);
     await bridge.sync();
 
-    const ctx: ToolContext = { workspaceId: 'test', activeConnection: null };
+    const ctx: ToolContext = { workspaceId: 'test', activeConnection: null, signal: new AbortController().signal };
     const result = await registry.execute('srv/echo', { message: 'fail' }, ctx);
     expect(result.isError).toBe(true);
     expect(result.content).toMatch(/not running/);
@@ -113,7 +113,7 @@ describe('McpToolBridge', () => {
       io.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: req.id, error: { code: -1, message: 'tool failed' } }) + '\n');
     });
 
-    const ctx: ToolContext = { workspaceId: 'test', activeConnection: null };
+    const ctx: ToolContext = { workspaceId: 'test', activeConnection: null, signal: new AbortController().signal };
     const result = await registry.execute('srv/bad', {}, ctx);
     expect(result.isError).toBe(true);
     expect(result.content).toBe('tool failed');
