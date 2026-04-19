@@ -55,9 +55,9 @@ jobs:
       - run: npm ci
       - run: npm run build:ts
 
-      # macOS code signing
+      # macOS code signing (skipped if secrets not configured)
       - name: Import Apple certificates
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
