@@ -28,8 +28,7 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 import { McpSupervisor } from '../../../src/core/mcp/supervisor';
-import { spawn as _spawn } from 'child_process';
-const spawn = vi.mocked(_spawn);
+import * as cp from 'child_process';
 
 let supervisor: McpSupervisor;
 
@@ -49,7 +48,7 @@ describe('McpSupervisor: lifecycle', () => {
     await supervisor.start('echo', testConfig);
     const state = supervisor.get('echo');
     expect(state?.status).toBe('running');
-    expect(spawn).toHaveBeenCalledWith('node', ['echo-server.js'], expect.any(Object));
+    expect(cp.spawn).toHaveBeenCalledWith('node', ['echo-server.js'], expect.any(Object));
   });
 
   it('stops a server gracefully', async () => {
