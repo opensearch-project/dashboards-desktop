@@ -186,12 +186,21 @@ button { cursor: pointer; font: inherit; border: none; background: none; color: 
 .suggestion-btn:hover { border-color: var(--accent); }
 
 /* === Responsive === */
+@media (max-width: 900px) {
+  .chat-panel:not(.chat-panel-fullscreen) { position: fixed; inset: 0; width: 100% !important; border-left: none; z-index: 100; }
+  .chat-resize-handle { display: none; }
+  .sidebar { width: 56px; }
+  .sidebar-label, .sidebar-title, .sidebar-connection { display: none; }
+}
 @media (max-width: 768px) {
   .app-main { padding: 16px; }
   .card-grid { flex-direction: column; }
   .form-row { flex-direction: column; }
-  .chat-sidebar { width: 180px; }
+  .conv-sidebar { width: 180px; }
   .dialog { width: 95vw; padding: 16px; }
+}
+@media (max-width: 600px) {
+  .conv-sidebar { display: none; }
 }
 
 /* === Skip Link === */
@@ -201,6 +210,14 @@ button { cursor: pointer; font: inherit; border: none; background: none; color: 
 /* === Reduced Motion === */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* === High Contrast === */
+@media (prefers-contrast: more) {
+  :root { --border: #000; --text-muted: #444; --bg-secondary: #f0f0f0; --bg-tertiary: #e0e0e0; }
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root { --border: #ccc; --text-muted: #bbb; --bg-secondary: #2a2a4a; --bg-tertiary: #3a3a5a; }
 }
 
 /* === ChatMessage === */
