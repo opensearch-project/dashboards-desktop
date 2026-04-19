@@ -7,11 +7,14 @@ import type { ChatMessage, StreamChunk, StreamEvent, ToolCall, ToolContext } fro
 import type { ModelRouter } from './model-router';
 import type { ToolRegistry } from './tool-registry';
 import type { ConversationManager } from './conversation';
+import { selectModel, type AutoRouterConfig, DEFAULT_CONFIG as DEFAULT_AUTOROUTER } from './auto-router';
 
 const MAX_TOOL_ROUNDS = 10;
 
 export class AgentRuntime {
   private abortController: AbortController | null = null;
+  private manualModelOverride: string | undefined;
+  autoRouterConfig: AutoRouterConfig = { ...DEFAULT_AUTOROUTER };
 
   constructor(
     private router: ModelRouter,
@@ -25,6 +28,11 @@ export class AgentRuntime {
   setModel(specifier: string): void {
     this.router.resolve(specifier); // validate
     this.activeModel = specifier;
+    this.manualModelOverride = specifier;
+  }
+
+  clearModelOverride(): void {
+    this.manualModelOverride = undefined;
   }
 
   getModel(): string {
@@ -71,6 +79,17 @@ export class AgentRuntime {
       const messages = this.conversations.buildContext(
         conversationId, modelInfo, this.tools.listForModel(), this.workspaceId
       );
+
+      // Auto-route on first round only (use same model for tool follow-ups)
+      const effectiveModel = round === 0
+        ? selectModel(
+            messages.find((m) => m.role === 'user')?.content ?? '',
+            messages,
+            this.tools.listForModel(),
+            this.autoRouterConfig,
+            this.manualModelOverride,
+          )
+        : this.activeModel;
 
       // Collect the full response
       let textContent = '';
