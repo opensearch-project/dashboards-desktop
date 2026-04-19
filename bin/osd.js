@@ -7,6 +7,9 @@ const command = args[0];
 if (command === 'chat') {
   const { runChatCLI, parseChatArgs } = require('../src/cli/chat.js');
   runChatCLI(parseChatArgs(args.slice(1)));
+} else if (command === 'mcp') {
+  const { handleMcpCommand } = require('../src/cli/mcp.js');
+  handleMcpCommand(args.slice(1));
 } else if (command === 'skill') {
   const { handleSkillCommand } = require('../src/cli/skills.js');
   handleSkillCommand(args.slice(1));
