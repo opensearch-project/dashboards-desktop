@@ -4,24 +4,8 @@
   "turns": [
     {
       "request": {
-        "model": "llama3",
-        "messages": [
-          { "role": "user", "content": "Show me error counts in logs-*" }
-        ],
-        "tools": [
-          {
-            "name": "opensearch-query",
-            "description": "Run queries against connected OpenSearch clusters",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "index": { "type": "string" },
-                "body": { "type": "object" }
-              },
-              "required": ["index", "body"]
-            }
-          }
-        ]
+        "messages": [{ "role": "user", "content": "Show me error counts in logs-*" }],
+        "tools": ["opensearch-query", "cluster-health"]
       },
       "response": {
         "chunks": [
@@ -29,20 +13,16 @@
           { "type": "tool_call_delta", "content": "{\"index\":\"logs-*\",\"body\":{\"size\":0,\"aggs\":{\"errors\":{\"terms\":{\"field\":\"error_code\"}}}}}" },
           { "type": "tool_call_end", "toolCall": { "id": "tc_1" } }
         ]
-      }
+      },
+      "toolResults": [
+        { "id": "tc_1", "content": "{\"aggregations\":{\"errors\":{\"buckets\":[{\"key\":502,\"doc_count\":1247}]}}}", "isError": false }
+      ]
     },
     {
-      "request": {
-        "model": "llama3",
-        "messages": [
-          { "role": "user", "content": "Show me error counts in logs-*" },
-          { "role": "assistant", "content": null, "toolCalls": [{ "id": "tc_1", "name": "opensearch-query", "input": { "index": "logs-*", "body": { "size": 0, "aggs": { "errors": { "terms": { "field": "error_code" } } } } } }] },
-          { "role": "tool", "content": "{\"aggregations\":{\"errors\":{\"buckets\":[{\"key\":502,\"doc_count\":1247},{\"key\":500,\"doc_count\":891}]}}}", "toolCallId": "tc_1" }
-        ]
-      },
+      "request": "auto",
       "response": {
         "chunks": [
-          { "type": "text", "content": "The most common errors in `logs-*`:\n\n| Code | Count |\n|------|-------|\n| 502  | 1,247 |\n| 500  | 891   |" },
+          { "type": "text", "content": "The most common error is **502** with 1,247 occurrences." },
           { "type": "usage", "usage": { "inputTokens": 350, "outputTokens": 42 } }
         ]
       }
