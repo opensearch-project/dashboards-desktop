@@ -333,10 +333,67 @@ ipcMain.handle(IPC.AUTOROUTING_SET, (_e, config: Partial<{ enabled: boolean; loc
   return runtime.autoRouterConfig;
 });
 
+// --- Error handling ---
+process.on('unhandledRejection', (reason) => {
+  console.error('[main] Unhandled rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[main] Uncaught exception:', err);
+});
+
+// Wrap all IPC handlers with error serialization
+const originalHandle = ipcMain.handle.bind(ipcMain);
+ipcMain.handle = (channel: string, listener: (...args: unknown[]) => unknown) => {
+  return originalHandle(channel, async (...args: unknown[]) => {
+    try {
+      return await (listener as Function)(...args);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      const stack = err instanceof Error ? err.stack : undefined;
+      throw { message, stack, __ipcError: true };
+    }
+  });
+};
+
 // --- App lifecycle ---
+import { buildAppMenu } from './menu';
+import { registerAllM4IPC, setPluginManager, setMcpSupervisor, setUpdateManager } from './ipc';
+
 app.whenReady().then(async () => {
+  // 1. Critical path: storage + window (fast)
   await initStorage();
+  buildAppMenu();
   createWindow();
+
+  // 2. Register M4 IPC bridges
+  registerAllM4IPC();
+
+  // 3. Wire devops backends when available (setter injection)
+  try {
+    const { PluginManager } = await import('../core/plugins/manager');
+    setPluginManager(new PluginManager());
+  } catch { /* not yet landed */ }
+
+  try {
+    const { McpSupervisor } = await import('../core/mcp/supervisor');
+    setMcpSupervisor(new McpSupervisor());
+  } catch { /* not yet landed */ }
+
+  try {
+    const { UpdateManager } = await import('../core/updates/manager');
+    setUpdateManager(new UpdateManager());
+  } catch { /* not yet landed */ }
+
+  // 4. Lazy background tasks (after window shows)
+  setTimeout(() => {
+    // MCP servers start after window is visible
+    try {
+      const { McpSupervisor: Mcp } = require('../core/mcp/supervisor');
+      const supervisor = new Mcp();
+      supervisor.startAll?.();
+    } catch { /* MCP not available */ }
+  }, 1000);
 });
 
 app.on('window-all-closed', () => {
