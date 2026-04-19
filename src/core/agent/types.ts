@@ -65,14 +65,23 @@ export interface ModelInfo {
   local: boolean;
 }
 
+export interface ChatParams {
+  model: string;
+  messages: ChatMessage[];
+  tools?: ToolDefinition[];
+  signal?: AbortSignal;
+}
+
+export interface ChatParams {
+  model: string;
+  messages: ChatMessage[];
+  tools?: ToolDefinition[];
+  signal?: AbortSignal;
+}
+
 export interface ModelProvider {
   id: string;
   displayName: string;
   listModels(): Promise<ModelInfo[]>;
-  chat(params: {
-    model: string;
-    messages: ChatMessage[];
-    tools?: ToolDefinition[];
-    signal?: AbortSignal;
-  }): AsyncIterable<StreamChunk>;
+  chat(params: ChatParams): AsyncIterable<StreamChunk>;
 }

@@ -13,7 +13,7 @@ export class OpenAICompatibleProvider implements ModelProvider {
   constructor(opts: { id?: string; displayName?: string; baseUrl: string; apiKey?: string }) {
     this.id = opts.id ?? 'openai-compatible';
     this.displayName = opts.displayName ?? `OpenAI-compatible (${opts.baseUrl})`;
-    this.inner = new OpenAIProvider(opts.apiKey ?? '', opts.baseUrl);
+    this.inner = new OpenAIProvider({ apiKey: opts.apiKey ?? '', baseUrl: opts.baseUrl });
   }
 
   async listModels(): Promise<ModelInfo[]> {
