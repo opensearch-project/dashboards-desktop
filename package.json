@@ -1,23 +1,35 @@
 {
   "name": "dashboards-desktop",
-  "version": "1.0.0",
-  "description": "<img src=\"https://opensearch.org/assets/brand/SVG/Logo/opensearch_dashboards_logo_darkmode.svg\" height=\"64px\"/>",
-  "main": "main.js",
+  "version": "0.1.0",
+  "description": "OpenSearch Dashboards Desktop — GUI + TUI with AI agent",
+  "main": "src/main/index.js",
+  "bin": {
+    "osd": "./bin/osd.js"
+  },
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "tui": "node bin/osd.js --tui",
+    "dev": "electron . --dev",
+    "build": "electron-builder"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/johnnyon-amzn/dashboards-desktop-poc.git"
+    "url": "git+https://github.com/opensearch-project/dashboards-desktop.git"
   },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/johnnyon-amzn/dashboards-desktop-poc/issues"
+  "author": "OpenSearch Contributors",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@opensearch-project/opensearch": "^2.12.0",
+    "ink": "^5.1.0",
+    "ink-text-input": "^6.0.0",
+    "ink-spinner": "^5.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "better-sqlite3": "^11.7.0"
   },
-  "homepage": "https://github.com/johnnyon-amzn/dashboards-desktop-poc#readme",
   "devDependencies": {
-    "electron": "39.8.5",
-    "@electron/get": "2.0.2"
+    "electron": "^39.8.5",
+    "electron-builder": "^25.1.8",
+    "@electron/get": "^2.0.2"
   }
 }
