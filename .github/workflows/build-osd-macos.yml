@@ -1,0 +1,80 @@
+name: Build OSD for macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      osd_version:
+        description: "OpenSearch Dashboards version tag"
+        required: true
+        default: "3.6.0"
+  schedule:
+    - cron: "0 6 * * 1"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+        include:
+          - arch: x64
+            runner: macos-13
+          - arch: arm64
+            runner: macos-14
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Set OSD version
+        run: echo "OSD_VERSION=${{ github.event.inputs.osd_version || '3.6.0' }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        with:
+          repository: opensearch-project/OpenSearch-Dashboards
+          ref: ${{ env.OSD_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install -g yarn
+      - run: yarn osd bootstrap
+      - run: yarn build --skip-os-packages --release
+
+      - name: Package tar.gz
+        run: |
+          cd build/opensearch-dashboards-*
+          tar -czf ../../opensearch-dashboards-${{ env.OSD_VERSION }}-darwin-${{ matrix.arch }}.tar.gz .
+
+      - name: Generate SHA-256
+        run: shasum -a 256 opensearch-dashboards-${{ env.OSD_VERSION }}-darwin-${{ matrix.arch }}.tar.gz > opensearch-dashboards-${{ env.OSD_VERSION }}-darwin-${{ matrix.arch }}.tar.gz.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: osd-darwin-${{ matrix.arch }}
+          path: |
+            opensearch-dashboards-${{ env.OSD_VERSION }}-darwin-${{ matrix.arch }}.tar.gz
+            opensearch-dashboards-${{ env.OSD_VERSION }}-darwin-${{ matrix.arch }}.tar.gz.sha256
+          retention-days: 90
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: osd-darwin-*
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: osd-${{ github.event.inputs.osd_version || '3.6.0' }}-darwin
+          name: "OSD ${{ github.event.inputs.osd_version || '3.6.0' }} macOS Builds"
+          body: "OpenSearch Dashboards built from source for macOS (x64 + arm64)"
+          files: |
+            opensearch-dashboards-*.tar.gz
+            opensearch-dashboards-*.sha256
+          draft: false
+          prerelease: true
