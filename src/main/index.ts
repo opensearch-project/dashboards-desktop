@@ -665,7 +665,14 @@ app.whenReady().then(async () => {
     const win = BrowserWindow.getAllWindows()[0]!;
     win.loadURL(`http://localhost:${osdPort}`);
 
-    // Chat overlay (BrowserView sidebar — fee's implementation)
+    // Sidebar (left panel — desktop management)
+    const { setupSidebar, registerSidebarIPC } = await import('./sidebar.js');
+    setupSidebar(win);
+    if (osdBinPath && osdBinPath !== '__external__') {
+      registerSidebarIPC(osdBinPath);
+    }
+
+    // Chat overlay (right panel — agent chat)
     const chatOverlay = await import('./chat-overlay.js');
     const { setupChatOverlay } = chatOverlay;
     destroyChatOverlay = chatOverlay.destroyChatOverlay;
