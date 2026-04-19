@@ -644,9 +644,9 @@ app.whenReady().then(async () => {
     const win = BrowserWindow.getAllWindows()[0]!;
     win.loadURL(`http://localhost:${osdPort}`);
 
-    // Inject chat overlay into OSD UI
-    const { injectChatOverlay } = await import('../core/osd/chat-overlay.js');
-    injectChatOverlay(win);
+    // Chat overlay (BrowserView sidebar — fee's implementation)
+    const { setupChatOverlay } = await import('./chat-overlay.js');
+    setupChatOverlay(win);
   }
 
   // 5. Register M4 IPC bridges
