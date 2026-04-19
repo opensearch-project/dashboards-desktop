@@ -31,11 +31,7 @@ export const opensearchQueryTool: AgentTool = {
     }
 
     try {
-      const clientOpts: Record<string, unknown> = { node: conn.url };
-      if (conn.auth_type === 'basic' && conn.username) {
-        clientOpts.auth = { username: conn.username, password: conn.password ?? '' };
-      }
-      const client = new Client(clientOpts as ConstructorParameters<typeof Client>[0]);
+      const client = new Client({ node: conn.url } as ConstructorParameters<typeof Client>[0]);
       const res = await client.search({
         index: input.index as string,
         body: input.body as Record<string, unknown>,
