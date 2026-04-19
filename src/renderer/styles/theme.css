@@ -438,3 +438,10 @@ button { cursor: pointer; font: inherit; border: none; background: none; color: 
 .palette-item-name { flex: 1; }
 .palette-item-provider { color: var(--text-muted); font-size: 11px; }
 .palette-current { font-size: 10px; color: var(--accent); font-weight: 600; text-transform: uppercase; }
+
+/* === Error Boundary === */
+.error-boundary { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 12px; text-align: center; padding: 32px; }
+.error-boundary h1 { font-size: 20px; }
+.error-boundary p { color: var(--text-secondary); }
+.error-boundary details { font-size: 12px; color: var(--text-muted); max-width: 600px; }
+.error-boundary pre { margin-top: 4px; padding: 8px; background: var(--bg-tertiary); border-radius: var(--radius-sm); overflow-x: auto; text-align: left; }
