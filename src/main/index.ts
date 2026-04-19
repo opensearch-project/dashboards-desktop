@@ -46,7 +46,7 @@ ipcMain.handle(IPC.CREDENTIALS_LOAD, (_e, key: string) => {
 // --- IPC: Connections ---
 ipcMain.handle(IPC.CONNECTION_ADD, async (_e, input: ConnectionInput) => {
   const db = getStorageProxy();
-  return db.addConnectionAsync(input);
+  return db.addConnectionAsync(input as unknown as Record<string, unknown>);
 });
 
 ipcMain.handle(IPC.CONNECTION_UPDATE, async (_e, id: string, input: Partial<ConnectionInput>) => {
@@ -104,6 +104,8 @@ import { opensearchQueryTool } from '../core/agent/tools/opensearch-query';
 import { elasticsearchQueryTool } from '../core/agent/tools/elasticsearch-query';
 import { clusterHealthTool } from '../core/agent/tools/cluster-health';
 import { indexManageTool } from '../core/agent/tools/index-manage';
+import { osSecurityTool, osAlertingTool, osIsmTool, osSnapshotTool, osIngestTool } from '../core/agent/tools/admin-opensearch';
+import { esIlmTool, esWatcherTool, esSnapshotTool, esIngestTool, esSecurityTool } from '../core/agent/tools/admin-elasticsearch';
 import type { StreamEvent } from '../core/agent/types';
 import { initDatabase } from '../core/storage';
 import { McpSupervisor } from '../core/mcp/supervisor';
@@ -125,6 +127,26 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(elasticsearchQueryTool);
   tools.register(clusterHealthTool);
   tools.register(indexManageTool);
+
+  // M3: OpenSearch admin tools
+  tools.register(osSecurityTool);
+  tools.register(osAlertingTool);
+  tools.register(osIsmTool);
+  tools.register(osSnapshotTool);
+  tools.register(osIngestTool);
+
+  // M3: Elasticsearch admin tools
+  tools.register(esIlmTool);
+  tools.register(esWatcherTool);
+  tools.register(esSnapshotTool);
+  tools.register(esIngestTool);
+  tools.register(esSecurityTool);
+
+  // Trust levels: read ops auto-approve, write/delete ops ask
+  for (const name of ['os-security-manage', 'os-alerting-manage', 'os-ism-manage', 'os-snapshot-manage', 'os-ingest-manage',
+                       'es-ilm-manage', 'es-watcher-manage', 'es-snapshot-manage', 'es-ingest-manage', 'es-security-manage']) {
+    tools.setTrust(name, 'ask');
+  }
 
   // Wire MCP discovery into tool registry
   const supervisor = new McpSupervisor();

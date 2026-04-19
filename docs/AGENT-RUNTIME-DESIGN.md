@@ -517,6 +517,121 @@ interface IndexManageInput {
 
 `list` and `get-mapping` are read-only and default to `auto` trust. `delete` and `reindex` are destructive and default to `ask`.
 
+### M3 Admin Tools — OpenSearch
+
+All OpenSearch admin tools use `transport.request()` for plugin APIs (security, alerting, ISM) and native client methods for snapshot/ingest. All require approval (`ask` trust level) since they are multi-action tools covering both read and write operations.
+
+#### os-security-manage
+
+```typescript
+interface OsSecurityInput {
+  action: 'list-roles' | 'get-role' | 'create-role' | 'delete-role'
+        | 'list-users' | 'get-user' | 'create-user' | 'delete-user'
+        | 'list-tenants' | 'get-role-mapping' | 'create-role-mapping';
+  name?: string;
+  body?: Record<string, unknown>;
+}
+```
+
+#### os-alerting-manage
+
+```typescript
+interface OsAlertingInput {
+  action: 'list-monitors' | 'get-monitor' | 'create-monitor' | 'update-monitor' | 'delete-monitor'
+        | 'list-destinations' | 'create-destination' | 'delete-destination';
+  id?: string;
+  body?: Record<string, unknown>;
+}
+```
+
+#### os-ism-manage
+
+```typescript
+interface OsIsmInput {
+  action: 'list-policies' | 'get-policy' | 'create-policy' | 'delete-policy';
+  id?: string;
+  body?: Record<string, unknown>;
+}
+```
+
+#### os-snapshot-manage
+
+```typescript
+interface OsSnapshotInput {
+  action: 'list-repos' | 'list-snapshots' | 'create-snapshot' | 'restore-snapshot' | 'delete-snapshot';
+  repo?: string;
+  snapshot?: string;
+  body?: Record<string, unknown>;
+}
+```
+
+#### os-ingest-manage
+
+```typescript
+interface OsIngestInput {
+  action: 'list' | 'get' | 'create' | 'delete' | 'simulate';
+  id?: string;
+  body?: Record<string, unknown>;
+}
+```
+
+### M3 Admin Tools — Elasticsearch
+
+All Elasticsearch admin tools use the `@elastic/elasticsearch` client. Same `ask` trust level.
+
+#### es-ilm-manage
+
+```typescript
+interface EsIlmInput {
+  action: 'list' | 'get' | 'create' | 'delete';
+  name?: string;
+  body?: Record<string, unknown>;
+}
+```
+
+#### es-watcher-manage
+
+```typescript
+interface EsWatcherInput {
+  action: 'list' | 'get' | 'create' | 'update' | 'delete' | 'execute';
+  id?: string;
+  body?: Record<string, unknown>;
+}
+```
+
+#### es-snapshot-manage
+
+```typescript
+interface EsSnapshotInput {
+  action: 'list-repos' | 'list-snapshots' | 'create-snapshot' | 'restore-snapshot' | 'delete-snapshot';
+  repo?: string;
+  snapshot?: string;
+  body?: Record<string, unknown>;
+}
+```
+
+#### es-ingest-manage
+
+```typescript
+interface EsIngestInput {
+  action: 'list' | 'get' | 'create' | 'delete' | 'simulate';
+  id?: string;
+  body?: Record<string, unknown>;
+}
+```
+
+#### es-security-manage
+
+```typescript
+interface EsSecurityInput {
+  action: 'list-users' | 'get-user' | 'create-user' | 'delete-user'
+        | 'list-roles' | 'get-role' | 'create-role' | 'delete-role'
+        | 'list-api-keys' | 'create-api-key' | 'invalidate-api-key';
+  name?: string;
+  body?: Record<string, unknown>;
+}
+```
+
 ---
 
 ## 8. Fixture-Based Testing Strategy

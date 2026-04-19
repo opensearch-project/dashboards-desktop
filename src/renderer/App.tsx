@@ -31,7 +31,7 @@ export function App(): React.ReactElement {
   const refresh = useCallback(async () => {
     const ws = await window.osd.workspaces.list();
     setWorkspaces(ws);
-    if (!activeWorkspace && ws.length) setActiveWorkspace(ws.find(w => w.is_default) ?? ws[0]);
+    if (!activeWorkspace && ws.length) setActiveWorkspace(ws.find((w: Workspace) => w.is_default) ?? ws[0]);
     const conns = await window.osd.connections.list(activeWorkspace?.id);
     setConnections(conns);
     if (!activeConnection && conns.length) setActiveConnection(conns[0]);

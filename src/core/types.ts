@@ -100,6 +100,32 @@ export const IPC = {
   AUTH_LOGIN_GOOGLE: 'auth:login:google',
   AUTH_LOGOUT: 'auth:logout',
   AUTH_CURRENT_USER: 'auth:currentUser',
+  // M4: Extensibility
+  PLUGIN_LIST: 'plugin:list',
+  PLUGIN_INSTALL: 'plugin:install',
+  PLUGIN_UNINSTALL: 'plugin:uninstall',
+  PLUGIN_ENABLE: 'plugin:enable',
+  PLUGIN_DISABLE: 'plugin:disable',
+  SKILL_LIST: 'skill:list',
+  SKILL_INSTALL: 'skill:install',
+  SKILL_REMOVE: 'skill:remove',
+  SKILL_ACTIVATE: 'skill:activate',
+  AGENT_LIST_PERSONAS: 'agent:listPersonas',
+  AGENT_SWITCH_PERSONA: 'agent:switchPersona',
+  AGENT_ACTIVE_PERSONA: 'agent:activePersona',
+  MCP_LIST: 'mcp:list',
+  MCP_INSTALL: 'mcp:install',
+  MCP_START: 'mcp:start',
+  MCP_STOP: 'mcp:stop',
+  MCP_RESTART: 'mcp:restart',
+  MCP_CONFIG_GET: 'mcp:config:get',
+  MCP_CONFIG_SET: 'mcp:config:set',
+  MCP_TOOLS: 'mcp:tools',
+  SETTINGS_GET_ALL: 'settings:getAll',
+  UPDATE_CHECK: 'update:check',
+  UPDATE_INSTALL: 'update:install',
+  UPDATE_CHANNEL: 'update:channel',
+  UPDATE_SET_CHANNEL: 'update:setChannel',
 } as const;
 
 /** Streaming event from agent runtime → renderer (§3 of AGENT-RUNTIME-DESIGN) */
@@ -219,4 +245,74 @@ export interface AuthUser {
   email: string;
   avatar_url: string;
   provider: 'github' | 'google';
+}
+
+/** Plugin info */
+export interface PluginInfo {
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  enabled: boolean;
+  installed_at: string;
+  homepage?: string;
+  changelog?: string;
+}
+
+/** Skill info */
+export interface SkillInfo {
+  name: string;
+  description: string;
+  version: string;
+  enabled: boolean;
+  tools: string[];
+}
+
+/** Agent persona */
+export interface AgentPersona {
+  id: string;
+  name: string;
+  description: string;
+  skills: string[];
+  active: boolean;
+}
+
+/** MCP server info */
+export interface McpServerInfo {
+  name: string;
+  status: 'running' | 'stopped' | 'unhealthy' | 'restarting';
+  tools_count: number;
+  memory_mb: number;
+  config: McpServerConfig;
+}
+
+export interface McpServerConfig {
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+}
+
+/** MCP tool info */
+export interface McpToolInfo {
+  name: string;
+  description: string;
+  server: string;
+}
+
+/** Update info */
+export interface UpdateInfo {
+  available: boolean;
+  current_version: string;
+  latest_version?: string;
+  channel: 'stable' | 'beta' | 'nightly';
+  release_notes?: string;
+}
+
+/** Model provider config */
+export interface ModelProviderConfig {
+  id: string;
+  name: string;
+  type: 'ollama' | 'openai' | 'anthropic' | 'bedrock' | 'openai-compatible';
+  base_url?: string;
+  has_api_key: boolean;
 }

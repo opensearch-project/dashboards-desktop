@@ -88,6 +88,40 @@ const api = {
     logout: () => ipcRenderer.invoke(IPC.AUTH_LOGOUT),
     currentUser: () => ipcRenderer.invoke(IPC.AUTH_CURRENT_USER),
   },
+  plugins: {
+    list: () => ipcRenderer.invoke(IPC.PLUGIN_LIST),
+    install: (source: string) => ipcRenderer.invoke(IPC.PLUGIN_INSTALL, source),
+    uninstall: (name: string) => ipcRenderer.invoke(IPC.PLUGIN_UNINSTALL, name),
+    enable: (name: string) => ipcRenderer.invoke(IPC.PLUGIN_ENABLE, name),
+    disable: (name: string) => ipcRenderer.invoke(IPC.PLUGIN_DISABLE, name),
+  },
+  skills: {
+    list: () => ipcRenderer.invoke(IPC.SKILL_LIST),
+    install: (source: string) => ipcRenderer.invoke(IPC.SKILL_INSTALL, source),
+    remove: (name: string) => ipcRenderer.invoke(IPC.SKILL_REMOVE, name),
+    activate: (name: string) => ipcRenderer.invoke(IPC.SKILL_ACTIVATE, name),
+  },
+  agents: {
+    listPersonas: () => ipcRenderer.invoke(IPC.AGENT_LIST_PERSONAS),
+    switchPersona: (id: string) => ipcRenderer.invoke(IPC.AGENT_SWITCH_PERSONA, id),
+    activePersona: () => ipcRenderer.invoke(IPC.AGENT_ACTIVE_PERSONA),
+  },
+  mcp: {
+    list: () => ipcRenderer.invoke(IPC.MCP_LIST),
+    install: (source: string) => ipcRenderer.invoke(IPC.MCP_INSTALL, source),
+    start: (name: string) => ipcRenderer.invoke(IPC.MCP_START, name),
+    stop: (name: string) => ipcRenderer.invoke(IPC.MCP_STOP, name),
+    restart: (name: string) => ipcRenderer.invoke(IPC.MCP_RESTART, name),
+    getConfig: (name: string) => ipcRenderer.invoke(IPC.MCP_CONFIG_GET, name),
+    setConfig: (name: string, config: object) => ipcRenderer.invoke(IPC.MCP_CONFIG_SET, name, config),
+    tools: (name: string) => ipcRenderer.invoke(IPC.MCP_TOOLS, name),
+  },
+  updates: {
+    check: () => ipcRenderer.invoke(IPC.UPDATE_CHECK),
+    install: () => ipcRenderer.invoke(IPC.UPDATE_INSTALL),
+    channel: () => ipcRenderer.invoke(IPC.UPDATE_CHANNEL),
+    setChannel: (ch: string) => ipcRenderer.invoke(IPC.UPDATE_SET_CHANNEL, ch),
+  },
 };
 
 contextBridge.exposeInMainWorld('osd', api);
