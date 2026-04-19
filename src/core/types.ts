@@ -76,6 +76,8 @@ export const IPC = {
   CONVERSATION_RENAME: 'conversation:rename',
   CONVERSATION_MESSAGES: 'conversation:messages',
   CONVERSATION_BRANCH: 'conversation:branch',
+  AUTOROUTING_GET: 'autorouting:get',
+  AUTOROUTING_SET: 'autorouting:set',
   // M3: Admin
   CLUSTER_HEALTH: 'cluster:health',
   CLUSTER_NODES: 'cluster:nodes',

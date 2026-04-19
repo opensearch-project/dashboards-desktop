@@ -318,6 +318,19 @@ ipcMain.handle(IPC.CONVERSATION_BRANCH, (_e, conversationId: string, messageId: 
   return branchConversation(db, conversationId, messageId, workspaceId);
 });
 
+// --- IPC: Auto-routing settings ---
+ipcMain.handle(IPC.AUTOROUTING_GET, () => {
+  const runtime = getOrCreateRuntime();
+  return runtime.autoRouterConfig;
+});
+
+ipcMain.handle(IPC.AUTOROUTING_SET, (_e, config: Partial<{ enabled: boolean; localModel: string; cloudModel: string; complexityThreshold: number }>) => {
+  const runtime = getOrCreateRuntime();
+  Object.assign(runtime.autoRouterConfig, config);
+  if (!config.enabled) runtime.clearModelOverride();
+  return runtime.autoRouterConfig;
+});
+
 // --- App lifecycle ---
 app.whenReady().then(async () => {
   await initStorage();
