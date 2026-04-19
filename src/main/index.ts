@@ -441,6 +441,25 @@ ipcMain.handle(IPC.MULTI_AGENT_ROUTE, async (_e, message: string, strategy?: Rou
   return events;
 });
 
+// --- IPC: OAuth ---
+import { loginGithub } from '../core/auth/github';
+import { loginGoogle } from '../core/auth/google';
+
+ipcMain.handle(IPC.AUTH_LOGIN_GITHUB, async () => {
+  const db = getStorageProxy();
+  const clientId = await db.getSettingAsync('github_client_id');
+  if (!clientId) throw new Error('GitHub OAuth not configured. Set github_client_id in Settings.');
+  return loginGithub(clientId, 'osd://auth/github/callback');
+});
+ipcMain.handle(IPC.AUTH_LOGIN_GOOGLE, async () => {
+  const db = getStorageProxy();
+  const clientId = await db.getSettingAsync('google_client_id');
+  if (!clientId) throw new Error('Google OAuth not configured. Set google_client_id in Settings.');
+  return loginGoogle(clientId, 'osd://auth/google/callback');
+});
+ipcMain.handle(IPC.AUTH_LOGOUT, () => true);
+ipcMain.handle(IPC.AUTH_CURRENT_USER, () => null);
+
 // --- Error handling ---
 process.on('unhandledRejection', (reason) => {
   console.error('[main] Unhandled rejection:', reason);
