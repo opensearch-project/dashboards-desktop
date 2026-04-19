@@ -46,7 +46,7 @@ ipcMain.handle(IPC.CREDENTIALS_LOAD, (_e, key: string) => {
 // --- IPC: Connections ---
 ipcMain.handle(IPC.CONNECTION_ADD, async (_e, input: ConnectionInput) => {
   const db = getStorageProxy();
-  return db.addConnectionAsync(input as Record<string, unknown>);
+  return db.addConnectionAsync(input);
 });
 
 ipcMain.handle(IPC.CONNECTION_UPDATE, async (_e, id: string, input: Partial<ConnectionInput>) => {

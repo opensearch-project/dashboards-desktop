@@ -297,7 +297,7 @@ export class StorageProxy {
     });
   }
 
-  addConnectionAsync(input: ConnectionInput) { return this.call('addConnection', input) as Promise<string>; }
+  addConnectionAsync(input: Record<string, unknown>) { return this.call('addConnection', input) as Promise<string>; }
   getConnectionAsync(id: string) { return this.call('getConnection', id); }
   listConnectionsAsync(workspaceId?: string) { return this.call('listConnections', workspaceId) as Promise<unknown[]>; }
   updateConnectionAsync(id: string, fields: Record<string, unknown>) { return this.call('updateConnection', id, fields); }
