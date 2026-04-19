@@ -598,63 +598,51 @@ app.whenReady().then(async () => {
   await initStorage();
   const db = getStorageProxy();
 
-  // 2. Check OSD binary — auto-download if not installed
-  const { isOsdInstalled, downloadAndInstall, OSD_DIR } = await import('../core/osd/downloader.js');
+  // 2. Check OSD binary — guide user to configure
+  const { isOsdInstalled, OSD_DIR } = await import('../core/osd/downloader.js');
   let osdBinPath = await db.getSettingAsync('osd_bin_path') as string | null;
 
   if (!osdBinPath && !isOsdInstalled()) {
-    const { dialog, BrowserWindow: BW } = await import('electron');
+    const { dialog, shell } = await import('electron');
     const choice = await dialog.showMessageBox({
       type: 'question',
-      title: 'OpenSearch Dashboards Not Found',
-      message: 'Download OpenSearch Dashboards automatically?',
-      detail: 'This will download ~300MB and install to ~/.osd-desktop/osd/',
-      buttons: ['Download', 'Browse for existing...', 'Cancel'],
+      title: 'Configure OpenSearch Dashboards',
+      message: 'How would you like to connect to OpenSearch Dashboards?',
+      detail: 'Options:\n\n• Connect to running instance — if OSD is already running on localhost:5601\n• Browse for local install — select your opensearch-dashboards binary\n• Download from opensearch.org — opens browser to download page',
+      buttons: ['Connect to localhost:5601', 'Browse for local install...', 'Download from opensearch.org', 'Cancel'],
       defaultId: 0,
     });
 
     if (choice.response === 0) {
-      // Auto-download with progress
-      const progressWin = new BW({ width: 400, height: 120, frame: false, resizable: false, alwaysOnTop: true });
-      progressWin.loadURL(`data:text/html,<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#1a1a2e;color:#e8e8f0"><div id="m">Downloading OpenSearch Dashboards...</div></body>`);
-
-      await downloadAndInstall((p) => {
-        const pct = Number(p.percent).toFixed(0);
-        progressWin.webContents.executeJavaScript(
-          `document.getElementById('m').textContent='Downloading: ${pct}%'`
-        ).catch(() => {});
-      }).catch(async (err: Error) => {
-        progressWin.close();
-        await dialog.showMessageBox({
-          type: 'error',
-          title: 'Download Failed',
-          message: `Could not download OSD: ${err.message}`,
-          detail: 'Use "Browse for existing..." to select a local OSD installation instead.',
-        });
-        return;
-      });
-      if (progressWin && !progressWin.isDestroyed()) progressWin.close();
-      osdBinPath = path.join(OSD_DIR, 'bin', 'opensearch-dashboards');
+      // Use existing running instance — no binary needed
+      osdBinPath = '__external__';
       await db.setSettingAsync('osd_bin_path', osdBinPath);
     } else if (choice.response === 1) {
-      // Manual browse
+      // Browse for local binary or source checkout
       const result = await dialog.showOpenDialog({
-        title: 'Select OpenSearch Dashboards binary',
+        title: 'Select opensearch-dashboards startup script',
+        message: 'Select bin/opensearch-dashboards from your install or source checkout',
         properties: ['openFile'],
       });
       if (result.filePaths[0]) {
         osdBinPath = result.filePaths[0];
         await db.setSettingAsync('osd_bin_path', osdBinPath);
       }
+    } else if (choice.response === 2) {
+      // Open download page in browser
+      shell.openExternal('https://opensearch.org/downloads.html');
     }
   } else if (!osdBinPath && isOsdInstalled()) {
     osdBinPath = path.join(OSD_DIR, 'bin', 'opensearch-dashboards');
     await db.setSettingAsync('osd_bin_path', osdBinPath);
   }
 
-  // 3. Start OSD if binary configured
+  // 3. Start OSD or connect to external instance
   let osdReady = false;
-  if (osdBinPath) {
+  if (osdBinPath === '__external__') {
+    // User has OSD running externally — just try to connect
+    osdReady = true;
+  } else if (osdBinPath) {
     const { OsdLifecycle } = await import('../core/osd/lifecycle.js');
     const osd = new OsdLifecycle({ binPath: osdBinPath, port: Number(process.env.OSD_PORT ?? 5601) });
     osd.on('status', (s: string) => console.log(`[OSD] ${s}`));
