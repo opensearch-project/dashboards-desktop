@@ -2,10 +2,10 @@ import type { ChatMessage } from './types.js';
 
 /** Approximate tokens-per-character ratios by tokenizer family. */
 const RATIOS: Record<string, number> = {
-  cl100k: 0.25,    // GPT-4o, GPT-4, GPT-3.5
-  o200k: 0.25,     // o3, o4-mini
-  claude: 0.25,    // Anthropic models
-  default: 0.25,   // conservative fallback (~4 chars/token)
+  cl100k: 0.25, // GPT-4o, GPT-4, GPT-3.5
+  o200k: 0.25, // o3, o4-mini
+  claude: 0.25, // Anthropic models
+  default: 0.25, // conservative fallback (~4 chars/token)
 };
 
 /** Map provider:model prefixes to tokenizer families. */

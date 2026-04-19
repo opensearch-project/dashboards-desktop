@@ -33,25 +33,39 @@ export const ClusterPage: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  if (loading) return <div className="page-loading" role="status">Loading cluster data…</div>;
-  if (error) return (
-    <div className="page-error" role="alert">
-      <p>Failed to load cluster data: {error}</p>
-      <button className="btn-primary" onClick={load}>Retry</button>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="page-loading" role="status">
+        Loading cluster data…
+      </div>
+    );
+  if (error)
+    return (
+      <div className="page-error" role="alert">
+        <p>Failed to load cluster data: {error}</p>
+        <button className="btn-primary" onClick={load}>
+          Retry
+        </button>
+      </div>
+    );
   if (!health) return null;
 
   const statusClass = `health-${health.status}`;
-  const storagePercent = health.storage_total_bytes ? Math.round((health.storage_used_bytes / health.storage_total_bytes) * 100) : 0;
+  const storagePercent = health.storage_total_bytes
+    ? Math.round((health.storage_used_bytes / health.storage_total_bytes) * 100)
+    : 0;
 
   return (
     <div className="admin-page" role="region" aria-label="Cluster overview">
       <header className="admin-header">
         <h1>Cluster Overview</h1>
-        <button className="btn-sm" onClick={load} aria-label="Refresh">↻ Refresh</button>
+        <button className="btn-sm" onClick={load} aria-label="Refresh">
+          ↻ Refresh
+        </button>
       </header>
 
       {/* Health card */}
@@ -60,12 +74,23 @@ export const ClusterPage: React.FC = () => {
         <div className="health-details">
           <h2>{health.cluster_name}</h2>
           <div className="health-stats">
-            <div className="stat"><span className="stat-value">{health.number_of_nodes}</span><span className="stat-label">Nodes</span></div>
-            <div className="stat"><span className="stat-value">{health.active_shards}</span><span className="stat-label">Shards</span></div>
-            <div className="stat"><span className="stat-value">{health.unassigned_shards}</span><span className="stat-label">Unassigned</span></div>
+            <div className="stat">
+              <span className="stat-value">{health.number_of_nodes}</span>
+              <span className="stat-label">Nodes</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">{health.active_shards}</span>
+              <span className="stat-label">Shards</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">{health.unassigned_shards}</span>
+              <span className="stat-label">Unassigned</span>
+            </div>
             <div className="stat">
               <span className="stat-value">{formatBytes(health.storage_used_bytes)}</span>
-              <span className="stat-label">{storagePercent}% of {formatBytes(health.storage_total_bytes)}</span>
+              <span className="stat-label">
+                {storagePercent}% of {formatBytes(health.storage_total_bytes)}
+              </span>
             </div>
           </div>
         </div>
@@ -76,17 +101,34 @@ export const ClusterPage: React.FC = () => {
         <h2>Nodes ({nodes.length})</h2>
         <table className="admin-table" role="table">
           <thead>
-            <tr><th>Name</th><th>IP</th><th>Roles</th><th>CPU</th><th>Heap</th><th>Disk</th></tr>
+            <tr>
+              <th>Name</th>
+              <th>IP</th>
+              <th>Roles</th>
+              <th>CPU</th>
+              <th>Heap</th>
+              <th>Disk</th>
+            </tr>
           </thead>
           <tbody>
-            {nodes.map(n => (
+            {nodes.map((n) => (
               <tr key={n.id}>
                 <td>{n.name}</td>
-                <td><code>{n.ip}</code></td>
+                <td>
+                  <code>{n.ip}</code>
+                </td>
                 <td>{n.roles.join(', ')}</td>
-                <td><meter value={n.cpu_percent} max={100} aria-label={`CPU ${n.cpu_percent}%`} />{n.cpu_percent}%</td>
-                <td><meter value={n.heap_percent} max={100} aria-label={`Heap ${n.heap_percent}%`} />{n.heap_percent}%</td>
-                <td>{n.disk_used_percent}% of {formatBytes(n.disk_total_bytes)}</td>
+                <td>
+                  <meter value={n.cpu_percent} max={100} aria-label={`CPU ${n.cpu_percent}%`} />
+                  {n.cpu_percent}%
+                </td>
+                <td>
+                  <meter value={n.heap_percent} max={100} aria-label={`Heap ${n.heap_percent}%`} />
+                  {n.heap_percent}%
+                </td>
+                <td>
+                  {n.disk_used_percent}% of {formatBytes(n.disk_total_bytes)}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -98,7 +140,15 @@ export const ClusterPage: React.FC = () => {
         <h2>Shard Allocation ({shards.length})</h2>
         <table className="admin-table" role="table">
           <thead>
-            <tr><th>Index</th><th>Shard</th><th>Type</th><th>State</th><th>Node</th><th>Docs</th><th>Size</th></tr>
+            <tr>
+              <th>Index</th>
+              <th>Shard</th>
+              <th>Type</th>
+              <th>State</th>
+              <th>Node</th>
+              <th>Docs</th>
+              <th>Size</th>
+            </tr>
           </thead>
           <tbody>
             {shards.slice(0, 100).map((s, i) => (
@@ -106,7 +156,9 @@ export const ClusterPage: React.FC = () => {
                 <td>{s.index}</td>
                 <td>{s.shard}</td>
                 <td>{s.primary ? 'Primary' : 'Replica'}</td>
-                <td><span className={`shard-state shard-${s.state.toLowerCase()}`}>{s.state}</span></td>
+                <td>
+                  <span className={`shard-state shard-${s.state.toLowerCase()}`}>{s.state}</span>
+                </td>
                 <td>{s.node || '—'}</td>
                 <td>{s.docs.toLocaleString()}</td>
                 <td>{formatBytes(s.store_bytes)}</td>
@@ -114,7 +166,9 @@ export const ClusterPage: React.FC = () => {
             ))}
           </tbody>
         </table>
-        {shards.length > 100 && <p className="table-note">Showing first 100 of {shards.length} shards</p>}
+        {shards.length > 100 && (
+          <p className="table-note">Showing first 100 of {shards.length} shards</p>
+        )}
       </section>
     </div>
   );

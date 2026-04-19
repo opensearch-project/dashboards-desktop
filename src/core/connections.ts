@@ -33,7 +33,7 @@ interface TestOptions {
 
 export async function testConnection(
   input: ConnectionInput,
-  options?: TestOptions
+  options?: TestOptions,
 ): Promise<ConnectionTestResult> {
   try {
     if (input.type === 'opensearch') {
@@ -48,7 +48,7 @@ export async function testConnection(
 
 async function testOpenSearch(
   input: ConnectionInput,
-  options?: TestOptions
+  options?: TestOptions,
 ): Promise<ConnectionTestResult> {
   const opts: Record<string, unknown> = { node: input.url };
 
@@ -56,7 +56,10 @@ async function testOpenSearch(
     opts.auth = { username: input.username, password: input.password };
   } else if (input.auth_type === 'aws-sigv4' && input.region) {
     const { defaultProvider } = await import('@aws-sdk/credential-provider-node');
-    Object.assign(opts, AwsSigv4Signer({ region: input.region, getCredentials: defaultProvider() }));
+    Object.assign(
+      opts,
+      AwsSigv4Signer({ region: input.region, getCredentials: defaultProvider() }),
+    );
   }
   if (options?.timeoutMs) {
     opts.requestTimeout = options.timeoutMs;
@@ -74,7 +77,7 @@ async function testOpenSearch(
 
 async function testElasticsearch(
   input: ConnectionInput,
-  options?: TestOptions
+  options?: TestOptions,
 ): Promise<ConnectionTestResult> {
   const opts: Record<string, unknown> = { node: input.url };
 
@@ -87,7 +90,9 @@ async function testElasticsearch(
     opts.requestTimeout = options.timeoutMs;
   }
 
-  const client = new ElasticsearchClient(opts as ConstructorParameters<typeof ElasticsearchClient>[0]);
+  const client = new ElasticsearchClient(
+    opts as ConstructorParameters<typeof ElasticsearchClient>[0],
+  );
   const info = await client.info();
   return {
     success: true,

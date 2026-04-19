@@ -3,7 +3,14 @@
  * Uses fetch with streaming (SSE) for broad compatibility without SDK dependency.
  */
 
-import type { ModelProvider, ModelInfo, ChatMessage, StreamChunk, ToolDefinition, ChatParams } from '../types';
+import type {
+  ModelProvider,
+  ModelInfo,
+  ChatMessage,
+  StreamChunk,
+  ToolDefinition,
+  ChatParams,
+} from '../types';
 
 export class OpenAIProvider implements ModelProvider {
   id: string;
@@ -93,7 +100,10 @@ export class OpenAIProvider implements ModelProvider {
         if (chunk.usage) {
           yield {
             type: 'usage',
-            usage: { inputTokens: chunk.usage.prompt_tokens, outputTokens: chunk.usage.completion_tokens },
+            usage: {
+              inputTokens: chunk.usage.prompt_tokens,
+              outputTokens: chunk.usage.completion_tokens,
+            },
           };
         }
       }
@@ -124,12 +134,13 @@ export class OpenAIProvider implements ModelProvider {
 
       if (res.status === 429 && attempt < maxRetries) {
         const retryAfter = parseInt(res.headers.get('retry-after') ?? '', 10);
-        const delay = (retryAfter > 0 ? retryAfter * 1000 : 1000 * Math.pow(2, attempt));
+        const delay = retryAfter > 0 ? retryAfter * 1000 : 1000 * Math.pow(2, attempt);
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
 
-      if (res.status === 401) throw new Error('Invalid OpenAI API key. Check your key in Settings.');
+      if (res.status === 401)
+        throw new Error('Invalid OpenAI API key. Check your key in Settings.');
       throw new Error(`OpenAI error ${res.status}: ${text}`);
     }
     throw new Error('OpenAI rate limit exceeded after retries');

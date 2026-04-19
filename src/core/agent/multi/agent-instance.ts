@@ -10,9 +10,9 @@ import { trimToContextWindow } from '../token-estimator';
 export interface AgentConfig {
   id: string;
   name: string;
-  model: string;                    // "provider:model"
+  model: string; // "provider:model"
   systemPrompt: string;
-  toolFilter?: string[];            // tool names to include (empty = all)
+  toolFilter?: string[]; // tool names to include (empty = all)
   contextWindow?: number;
 }
 
@@ -66,7 +66,11 @@ export class AgentInstance {
   }
 
   /** Execute a tool through this agent's registry */
-  async executeTool(name: string, input: Record<string, unknown>, context: ToolContext): Promise<ToolResult> {
+  async executeTool(
+    name: string,
+    input: Record<string, unknown>,
+    context: ToolContext,
+  ): Promise<ToolResult> {
     return this.tools.execute(name, input, context);
   }
 

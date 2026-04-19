@@ -15,11 +15,18 @@ const AUTH_OPTIONS: { value: AuthType; label: string }[] = [
   { value: 'aws-sigv4', label: 'AWS SigV4' },
 ];
 
-export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onClose, onSaved }) => {
+export const ConnectionDialog: React.FC<Props> = ({
+  connection,
+  workspaceId,
+  onClose,
+  onSaved,
+}) => {
   const isEdit = !!connection;
   const [name, setName] = useState(connection?.name ?? '');
   const [url, setUrl] = useState(connection?.url ?? '');
-  const [type, setType] = useState<'opensearch' | 'elasticsearch'>(connection?.type ?? 'opensearch');
+  const [type, setType] = useState<'opensearch' | 'elasticsearch'>(
+    connection?.type ?? 'opensearch',
+  );
   const [authType, setAuthType] = useState<AuthType>(connection?.auth_type ?? 'none');
   const [username, setUsername] = useState(connection?.username ?? '');
   const [password, setPassword] = useState('');
@@ -32,47 +39,71 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
   const dialogRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  useEffect(() => { headingRef.current?.focus(); }, []);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
 
   // Trap focus in dialog
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
       if (e.key !== 'Tab' || !dialogRef.current) return;
-      const focusable = dialogRef.current.querySelectorAll<HTMLElement>('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
       if (!focusable.length) return;
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      const first = focusable[0],
+        last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
   const buildInput = () => ({
-    name, url, type, auth_type: authType, workspace_id: workspaceId,
+    name,
+    url,
+    type,
+    auth_type: authType,
+    workspace_id: workspaceId,
     ...(authType === 'basic' && { username, password }),
     ...(authType === 'apikey' && { api_key: apiKey }),
     ...(authType === 'aws-sigv4' && { region }),
   });
 
   const testConnection = async () => {
-    setTesting(true); setTestResult(null); setError('');
+    setTesting(true);
+    setTestResult(null);
+    setError('');
     try {
       const result = await window.osd.connections.test(buildInput());
       setTestResult(result ?? { success: false, error: 'IPC unavailable' });
-    } catch (e: unknown) { setTestResult({ success: false, error: e instanceof Error ? e.message : String(e) }); }
+    } catch (e: unknown) {
+      setTestResult({ success: false, error: e instanceof Error ? e.message : String(e) });
+    }
     setTesting(false);
   };
 
   const save = async () => {
-    if (!testResult?.success) { setError('Please test the connection before saving.'); return; }
-    setSaving(true); setError('');
+    if (!testResult?.success) {
+      setError('Please test the connection before saving.');
+      return;
+    }
+    setSaving(true);
+    setError('');
     try {
       if (isEdit) await window.osd.connections.update(connection!.id, buildInput());
       else await window.osd.connections.add(buildInput());
       onSaved();
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
     setSaving(false);
   };
 
@@ -83,36 +114,79 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
   };
 
   return (
-    <div className="dialog-overlay" role="presentation" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="conn-dialog-title">
+    <div
+      className="dialog-overlay"
+      role="presentation"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={dialogRef}
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="conn-dialog-title"
+      >
         <h2 id="conn-dialog-title" ref={headingRef} tabIndex={-1}>
           {isEdit ? 'Edit Connection' : 'Add Connection'}
         </h2>
 
-        {error && <div className="dialog-error" role="alert">{error}</div>}
+        {error && (
+          <div className="dialog-error" role="alert">
+            {error}
+          </div>
+        )}
 
         <div className="form-group">
           <label htmlFor="cd-name">Name</label>
-          <input id="cd-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. prod-opensearch" required />
+          <input
+            id="cd-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. prod-opensearch"
+            required
+          />
         </div>
 
         <div className="form-group">
           <label htmlFor="cd-url">URL</label>
-          <input id="cd-url" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." required />
+          <input
+            id="cd-url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://..."
+            required
+          />
         </div>
 
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="cd-type">Type</label>
-            <select id="cd-type" value={type} onChange={e => setType(e.target.value as 'opensearch' | 'elasticsearch')}>
+            <select
+              id="cd-type"
+              value={type}
+              onChange={(e) => setType(e.target.value as 'opensearch' | 'elasticsearch')}
+            >
               <option value="opensearch">OpenSearch</option>
               <option value="elasticsearch">Elasticsearch</option>
             </select>
           </div>
           <div className="form-group">
             <label htmlFor="cd-auth">Authentication</label>
-            <select id="cd-auth" value={authType} onChange={e => { setAuthType(e.target.value as AuthType); setTestResult(null); }}>
-              {AUTH_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            <select
+              id="cd-auth"
+              value={authType}
+              onChange={(e) => {
+                setAuthType(e.target.value as AuthType);
+                setTestResult(null);
+              }}
+            >
+              {AUTH_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -122,32 +196,52 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
           <>
             <div className="form-group">
               <label htmlFor="cd-user">Username</label>
-              <input id="cd-user" value={username} onChange={e => setUsername(e.target.value)} />
+              <input id="cd-user" value={username} onChange={(e) => setUsername(e.target.value)} />
             </div>
             <div className="form-group">
               <label htmlFor="cd-pass">Password</label>
-              <input id="cd-pass" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+              <input
+                id="cd-pass"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
           </>
         )}
         {authType === 'apikey' && (
           <div className="form-group">
             <label htmlFor="cd-apikey">API Key</label>
-            <input id="cd-apikey" type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} />
+            <input
+              id="cd-apikey"
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
           </div>
         )}
         {authType === 'aws-sigv4' && (
           <div className="form-group">
             <label htmlFor="cd-region">AWS Region</label>
-            <input id="cd-region" value={region} onChange={e => setRegion(e.target.value)} placeholder="us-east-1" />
+            <input
+              id="cd-region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              placeholder="us-east-1"
+            />
           </div>
         )}
 
         {/* Test result */}
         {testResult && (
-          <div className={`test-result ${testResult.success ? 'test-result-pass' : 'test-result-fail'}`} role="status">
+          <div
+            className={`test-result ${testResult.success ? 'test-result-pass' : 'test-result-fail'}`}
+            role="status"
+          >
             {testResult.success ? (
-              <span>✓ Connected — {testResult.cluster_name} (v{testResult.version})</span>
+              <span>
+                ✓ Connected — {testResult.cluster_name} (v{testResult.version})
+              </span>
             ) : (
               <div>
                 <span>✕ Connection failed: {testResult.error}</span>
@@ -167,13 +261,23 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
 
         {/* Actions */}
         <div className="dialog-actions">
-          {isEdit && <button className="btn-danger" onClick={handleDelete} aria-label="Delete connection">Delete</button>}
+          {isEdit && (
+            <button className="btn-danger" onClick={handleDelete} aria-label="Delete connection">
+              Delete
+            </button>
+          )}
           <div className="dialog-actions-right">
             <button className="btn-secondary" onClick={testConnection} disabled={!url || testing}>
               {testing ? 'Testing…' : 'Test Connection'}
             </button>
-            <button className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button className="btn-primary" onClick={save} disabled={!testResult?.success || saving}>
+            <button className="btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              className="btn-primary"
+              onClick={save}
+              disabled={!testResult?.success || saving}
+            >
               {saving ? 'Saving…' : 'Save'}
             </button>
           </div>

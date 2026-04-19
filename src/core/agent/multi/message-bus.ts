@@ -6,12 +6,12 @@ import { EventEmitter } from 'events';
 
 export interface AgentMessage {
   id: string;
-  from: string;           // agent ID
-  to: string | '*';       // agent ID or '*' for broadcast
+  from: string; // agent ID
+  to: string | '*'; // agent ID or '*' for broadcast
   type: 'request' | 'response' | 'delegate' | 'notify';
   content: string;
   metadata?: Record<string, unknown>;
-  replyTo?: string;       // message ID this is responding to
+  replyTo?: string; // message ID this is responding to
   timestamp: number;
 }
 
@@ -54,7 +54,12 @@ export class MessageBus {
   }
 
   /** Send a request and wait for a response */
-  async request(from: string, to: string, content: string, timeoutMs = 30_000): Promise<AgentMessage> {
+  async request(
+    from: string,
+    to: string,
+    content: string,
+    timeoutMs = 30_000,
+  ): Promise<AgentMessage> {
     const msg = this.send({ from, to, type: 'request', content });
 
     return new Promise((resolve, reject) => {

@@ -44,7 +44,10 @@ export function rollback(): { success: boolean; error?: string } {
     writeLaunchLog({ lastSuccess: 0, rapidCrashes: 0 });
     return { success: true };
   } catch (err) {
-    return { success: false, error: `Rollback failed: ${err instanceof Error ? err.message : err}` };
+    return {
+      success: false,
+      error: `Rollback failed: ${err instanceof Error ? err.message : err}`,
+    };
   }
 }
 

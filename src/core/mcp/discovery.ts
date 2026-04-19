@@ -66,9 +66,10 @@ export class McpDiscovery {
 
       // List available tools
       const response = await this.sendRequest(state, 'tools/list', {});
-      const tools: ToolDefinition[] = (response.result?.tools ?? []).map(
-        (t: ToolDefinition) => ({ ...t, source: name }),
-      );
+      const tools: ToolDefinition[] = (response.result?.tools ?? []).map((t: ToolDefinition) => ({
+        ...t,
+        source: name,
+      }));
 
       this.mcpTools.set(name, tools);
       return tools;
@@ -126,7 +127,9 @@ export class McpDiscovery {
               }
               return;
             }
-          } catch { /* not our message */ }
+          } catch {
+            /* not our message */
+          }
         }
       };
 

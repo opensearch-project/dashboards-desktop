@@ -8,7 +8,12 @@ interface Props {
   onNew: () => void;
 }
 
-export const ConversationSidebar: React.FC<Props> = ({ workspaceId, activeId, onSelect, onNew }) => {
+export const ConversationSidebar: React.FC<Props> = ({
+  workspaceId,
+  activeId,
+  onSelect,
+  onNew,
+}) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [search, setSearch] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -22,12 +27,16 @@ export const ConversationSidebar: React.FC<Props> = ({ workspaceId, activeId, on
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, [workspaceId]);
+  useEffect(() => {
+    load();
+  }, [workspaceId]);
 
-  useEffect(() => { if (renamingId) renameRef.current?.focus(); }, [renamingId]);
+  useEffect(() => {
+    if (renamingId) renameRef.current?.focus();
+  }, [renamingId]);
 
   const filtered = search
-    ? conversations.filter(c => c.title.toLowerCase().includes(search.toLowerCase()))
+    ? conversations.filter((c) => c.title.toLowerCase().includes(search.toLowerCase()))
     : conversations;
 
   const handleRename = async (id: string) => {
@@ -49,28 +58,40 @@ export const ConversationSidebar: React.FC<Props> = ({ workspaceId, activeId, on
       <div className="conv-sidebar-header">
         <input
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           placeholder="Search…"
           aria-label="Search conversations"
           className="conv-search"
         />
-        <button className="btn-sm" onClick={onNew} aria-label="New conversation">+ New</button>
+        <button className="btn-sm" onClick={onNew} aria-label="New conversation">
+          + New
+        </button>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="conv-empty" role="status">{search ? 'No matches' : 'No conversations yet'}</p>
+        <p className="conv-empty" role="status">
+          {search ? 'No matches' : 'No conversations yet'}
+        </p>
       ) : (
         <ul className="conv-list" role="list">
-          {filtered.map(c => (
+          {filtered.map((c) => (
             <li key={c.id} className={`conv-item-row ${c.id === activeId ? 'active' : ''}`}>
               {renamingId === c.id ? (
-                <form className="conv-rename-form" onSubmit={e => { e.preventDefault(); handleRename(c.id); }}>
+                <form
+                  className="conv-rename-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRename(c.id);
+                  }}
+                >
                   <input
                     ref={renameRef}
                     value={renameValue}
-                    onChange={e => setRenameValue(e.target.value)}
+                    onChange={(e) => setRenameValue(e.target.value)}
                     onBlur={() => handleRename(c.id)}
-                    onKeyDown={e => { if (e.key === 'Escape') setRenamingId(null); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setRenamingId(null);
+                    }}
                     aria-label="Rename conversation"
                   />
                 </form>
@@ -87,14 +108,21 @@ export const ConversationSidebar: React.FC<Props> = ({ workspaceId, activeId, on
               <div className="conv-item-actions">
                 <button
                   className="btn-icon-sm"
-                  onClick={() => { setRenamingId(c.id); setRenameValue(c.title); }}
+                  onClick={() => {
+                    setRenamingId(c.id);
+                    setRenameValue(c.title);
+                  }}
                   aria-label={`Rename "${c.title}"`}
-                >✎</button>
+                >
+                  ✎
+                </button>
                 <button
                   className="btn-icon-sm"
                   onClick={() => handleDelete(c.id)}
                   aria-label={`Delete "${c.title}"`}
-                >✕</button>
+                >
+                  ✕
+                </button>
               </div>
             </li>
           ))}

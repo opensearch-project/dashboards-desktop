@@ -12,8 +12,14 @@ export const ModelSwitcher: React.FC<Props> = ({ onModelSwitch }) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    window.osd.models.list().then(setModels).catch(() => {});
-    window.osd.models.current().then(setCurrent).catch(() => {});
+    window.osd.models
+      .list()
+      .then(setModels)
+      .catch(() => {});
+    window.osd.models
+      .current()
+      .then(setCurrent)
+      .catch(() => {});
   }, []);
 
   // Close on outside click
@@ -33,21 +39,23 @@ export const ModelSwitcher: React.FC<Props> = ({ onModelSwitch }) => {
     onModelSwitch?.(id);
   };
 
-  const currentModel = models.find(m => m.id === current);
+  const currentModel = models.find((m) => m.id === current);
   const label = currentModel?.displayName ?? current ?? 'No model';
 
   return (
     <div className="model-switcher" ref={ref}>
       <button
         className="model-pill"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`Current model: ${label}`}
       >
         <span>{label}</span>
         {currentModel && (
-          <span className={`model-badge ${currentModel.local ? 'model-badge-local' : 'model-badge-cloud'}`}>
+          <span
+            className={`model-badge ${currentModel.local ? 'model-badge-local' : 'model-badge-cloud'}`}
+          >
             {currentModel.local ? 'local' : 'cloud'}
           </span>
         )}
@@ -56,9 +64,11 @@ export const ModelSwitcher: React.FC<Props> = ({ onModelSwitch }) => {
       {open && (
         <ul className="model-dropdown" role="listbox" aria-label="Select model">
           {models.length === 0 ? (
-            <li className="model-option" role="status">No models available</li>
+            <li className="model-option" role="status">
+              No models available
+            </li>
           ) : (
-            models.map(m => (
+            models.map((m) => (
               <li key={m.id} role="option" aria-selected={m.id === current}>
                 <button
                   className={`model-option ${m.id === current ? 'active' : ''}`}
@@ -66,7 +76,9 @@ export const ModelSwitcher: React.FC<Props> = ({ onModelSwitch }) => {
                 >
                   <span className="model-option-name">{m.displayName}</span>
                   <span className="model-option-provider">{m.provider}</span>
-                  <span className={`model-badge ${m.local ? 'model-badge-local' : 'model-badge-cloud'}`}>
+                  <span
+                    className={`model-badge ${m.local ? 'model-badge-local' : 'model-badge-cloud'}`}
+                  >
                     {m.local ? 'local' : 'cloud'}
                   </span>
                 </button>

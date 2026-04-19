@@ -37,7 +37,11 @@ export function getCurrentUser(): AuthUser | null {
   return currentUser;
 }
 
-export function registerAuthIPC(config: { githubClientId: string; googleClientId: string; redirectUri: string }): void {
+export function registerAuthIPC(config: {
+  githubClientId: string;
+  googleClientId: string;
+  redirectUri: string;
+}): void {
   ipcMain.handle('auth:loginGithub', async () => {
     const result = await loginGithub(config.githubClientId, config.redirectUri);
     storeToken('github', result.accessToken);
@@ -68,7 +72,10 @@ export function registerAuthIPC(config: { githubClientId: string; googleClientId
   ipcMain.handle('auth:logout', () => {
     currentUser = null;
     tokenStore.clear();
-    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
     return true;
   });
 

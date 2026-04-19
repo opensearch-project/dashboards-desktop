@@ -17,7 +17,13 @@ export class OpenAICompatibleProvider implements ModelProvider {
   private baseUrl: string;
   private fallbackModel: string;
 
-  constructor(opts: { id?: string; displayName?: string; baseUrl: string; apiKey?: string; fallbackModel?: string }) {
+  constructor(opts: {
+    id?: string;
+    displayName?: string;
+    baseUrl: string;
+    apiKey?: string;
+    fallbackModel?: string;
+  }) {
     this.id = opts.id ?? 'openai-compatible';
     this.displayName = opts.displayName ?? `OpenAI-compatible (${opts.baseUrl})`;
     this.baseUrl = opts.baseUrl;
@@ -29,15 +35,19 @@ export class OpenAICompatibleProvider implements ModelProvider {
     try {
       const models = await this.inner.listModels();
       if (models.length > 0) return models.map((m) => ({ ...m, local: true }));
-    } catch { /* server may not implement /v1/models */ }
+    } catch {
+      /* server may not implement /v1/models */
+    }
 
-    return [{
-      id: this.fallbackModel,
-      displayName: `${this.displayName} (${this.fallbackModel})`,
-      contextWindow: 8192,
-      supportsTools: false,
-      local: true,
-    }];
+    return [
+      {
+        id: this.fallbackModel,
+        displayName: `${this.displayName} (${this.fallbackModel})`,
+        contextWindow: 8192,
+        supportsTools: false,
+        local: true,
+      },
+    ];
   }
 
   async *chat(params: ChatParams): AsyncIterable<StreamChunk> {
@@ -47,12 +57,17 @@ export class OpenAICompatibleProvider implements ModelProvider {
       const msg = err instanceof Error ? err.message : String(err);
 
       // If tools caused the error, retry without tools
-      if (params.tools?.length && (msg.includes('tool') || msg.includes('400') || msg.includes('422'))) {
+      if (
+        params.tools?.length &&
+        (msg.includes('tool') || msg.includes('400') || msg.includes('422'))
+      ) {
         yield* this.inner.chat({ ...params, tools: undefined });
         return;
       }
 
-      throw new Error(`${this.displayName} error: ${msg}. Check that ${this.baseUrl} is reachable and the model supports the OpenAI chat/completions API.`);
+      throw new Error(
+        `${this.displayName} error: ${msg}. Check that ${this.baseUrl} is reachable and the model supports the OpenAI chat/completions API.`,
+      );
     }
   }
 }

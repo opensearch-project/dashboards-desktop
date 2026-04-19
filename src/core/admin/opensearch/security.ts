@@ -8,11 +8,15 @@ import { Client } from '@opensearch-project/opensearch';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ApiResult = any;
 
-function client(url: string): Client { return new Client({ node: url }); }
+function client(url: string): Client {
+  return new Client({ node: url });
+}
 
 async function api(url: string, method: string, path: string, body?: unknown): Promise<ApiResult> {
   const c = client(url);
-  const res = await c.transport.request({ method, path, body } as Parameters<typeof c.transport.request>[0]);
+  const res = await c.transport.request({ method, path, body } as Parameters<
+    typeof c.transport.request
+  >[0]);
   return (res as ApiResult).body ?? res;
 }
 

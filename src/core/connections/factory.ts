@@ -66,7 +66,9 @@ function createESClient(config: ConnectionConfig): UnifiedClient {
   } else if (config.auth_type === 'apikey' && config.api_key) {
     opts.auth = { apiKey: config.api_key };
   }
-  const client = new ElasticsearchClient(opts as ConstructorParameters<typeof ElasticsearchClient>[0]);
+  const client = new ElasticsearchClient(
+    opts as ConstructorParameters<typeof ElasticsearchClient>[0],
+  );
 
   return {
     type: 'elasticsearch',

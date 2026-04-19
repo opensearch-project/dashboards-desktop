@@ -3,7 +3,14 @@
  * Uses fetch with SSE for zero SDK dependency.
  */
 
-import type { ModelProvider, ModelInfo, ChatMessage, StreamChunk, ToolDefinition, ChatParams } from '../types';
+import type {
+  ModelProvider,
+  ModelInfo,
+  ChatMessage,
+  StreamChunk,
+  ToolDefinition,
+  ChatParams,
+} from '../types';
 
 export class AnthropicProvider implements ModelProvider {
   id = 'anthropic';
@@ -18,9 +25,27 @@ export class AnthropicProvider implements ModelProvider {
 
   async listModels(): Promise<ModelInfo[]> {
     return [
-      { id: 'claude-sonnet-4-20250514', displayName: 'Claude Sonnet 4', contextWindow: 200000, supportsTools: true, local: false },
-      { id: 'claude-opus-4-20250514', displayName: 'Claude Opus 4', contextWindow: 200000, supportsTools: true, local: false },
-      { id: 'claude-haiku-3-5-20241022', displayName: 'Claude Haiku 3.5', contextWindow: 200000, supportsTools: true, local: false },
+      {
+        id: 'claude-sonnet-4-20250514',
+        displayName: 'Claude Sonnet 4',
+        contextWindow: 200000,
+        supportsTools: true,
+        local: false,
+      },
+      {
+        id: 'claude-opus-4-20250514',
+        displayName: 'Claude Opus 4',
+        contextWindow: 200000,
+        supportsTools: true,
+        local: false,
+      },
+      {
+        id: 'claude-haiku-3-5-20241022',
+        displayName: 'Claude Haiku 3.5',
+        contextWindow: 200000,
+        supportsTools: true,
+        local: false,
+      },
     ];
   }
 
@@ -40,11 +65,7 @@ export class AnthropicProvider implements ModelProvider {
       body.tools = params.tools.map(toAnthropicTool);
     }
 
-    const res = await this.fetchWithRetry(
-      `${this.baseUrl}/v1/messages`,
-      body,
-      params.signal,
-    );
+    const res = await this.fetchWithRetry(`${this.baseUrl}/v1/messages`, body, params.signal);
     if (!res.body) throw new Error('No response body');
 
     const reader = res.body.getReader();
@@ -64,7 +85,10 @@ export class AnthropicProvider implements ModelProvider {
         const event = JSON.parse(line.slice(6)) as AnthropicEvent;
 
         if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
-          yield { type: 'tool_call_start', toolCall: { id: event.content_block.id, name: event.content_block.name } };
+          yield {
+            type: 'tool_call_start',
+            toolCall: { id: event.content_block.id, name: event.content_block.name },
+          };
         } else if (event.type === 'content_block_delta') {
           if (event.delta?.type === 'text_delta') {
             yield { type: 'text', content: event.delta.text ?? '' };
@@ -77,7 +101,10 @@ export class AnthropicProvider implements ModelProvider {
         } else if (event.type === 'message_delta' && event.usage) {
           yield {
             type: 'usage',
-            usage: { inputTokens: event.usage.input_tokens ?? 0, outputTokens: event.usage.output_tokens ?? 0 },
+            usage: {
+              inputTokens: event.usage.input_tokens ?? 0,
+              outputTokens: event.usage.output_tokens ?? 0,
+            },
           };
         }
       }
@@ -113,8 +140,10 @@ export class AnthropicProvider implements ModelProvider {
         continue;
       }
 
-      if (res.status === 401) throw new Error('Invalid Anthropic API key. Check your key in Settings.');
-      if (res.status === 529) throw new Error('Anthropic API is overloaded. Try again in a moment.');
+      if (res.status === 401)
+        throw new Error('Invalid Anthropic API key. Check your key in Settings.');
+      if (res.status === 529)
+        throw new Error('Anthropic API is overloaded. Try again in a moment.');
       throw new Error(`Anthropic error ${res.status}: ${text}`);
     }
     throw new Error('Anthropic rate limit exceeded after retries');

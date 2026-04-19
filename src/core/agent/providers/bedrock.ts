@@ -1,4 +1,11 @@
-import type { ModelProvider, ModelInfo, ChatParams, StreamChunk, ChatMessage, ToolDefinition } from '../types.js';
+import type {
+  ModelProvider,
+  ModelInfo,
+  ChatParams,
+  StreamChunk,
+  ChatMessage,
+  ToolDefinition,
+} from '../types.js';
 
 /**
  * AWS Bedrock provider — uses the Converse Stream API.
@@ -20,10 +27,34 @@ export class BedrockProvider implements ModelProvider {
 
   async listModels(): Promise<ModelInfo[]> {
     return [
-      { id: 'anthropic.claude-sonnet-4-20250514-v1:0', displayName: 'Claude Sonnet 4 (Bedrock)', contextWindow: 200_000, supportsTools: true, local: false },
-      { id: 'anthropic.claude-haiku-3-5-20241022-v1:0', displayName: 'Claude 3.5 Haiku (Bedrock)', contextWindow: 200_000, supportsTools: true, local: false },
-      { id: 'amazon.nova-pro-v1:0', displayName: 'Amazon Nova Pro', contextWindow: 300_000, supportsTools: true, local: false },
-      { id: 'amazon.nova-lite-v1:0', displayName: 'Amazon Nova Lite', contextWindow: 300_000, supportsTools: true, local: false },
+      {
+        id: 'anthropic.claude-sonnet-4-20250514-v1:0',
+        displayName: 'Claude Sonnet 4 (Bedrock)',
+        contextWindow: 200_000,
+        supportsTools: true,
+        local: false,
+      },
+      {
+        id: 'anthropic.claude-haiku-3-5-20241022-v1:0',
+        displayName: 'Claude 3.5 Haiku (Bedrock)',
+        contextWindow: 200_000,
+        supportsTools: true,
+        local: false,
+      },
+      {
+        id: 'amazon.nova-pro-v1:0',
+        displayName: 'Amazon Nova Pro',
+        contextWindow: 300_000,
+        supportsTools: true,
+        local: false,
+      },
+      {
+        id: 'amazon.nova-lite-v1:0',
+        displayName: 'Amazon Nova Lite',
+        contextWindow: 300_000,
+        supportsTools: true,
+        local: false,
+      },
     ];
   }
 
@@ -49,7 +80,11 @@ export class BedrockProvider implements ModelProvider {
     yield* parseBedrockStream(res);
   }
 
-  private async fetchWithRetry(url: string, jsonBody: string, signal?: AbortSignal): Promise<Response> {
+  private async fetchWithRetry(
+    url: string,
+    jsonBody: string,
+    signal?: AbortSignal,
+  ): Promise<Response> {
     let lastError: Error | undefined;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) {
@@ -89,22 +124,27 @@ export class BedrockProvider implements ModelProvider {
       const aws4 = await import('aws4');
       const creds = await defaultProvider()();
       const parsed = new URL(url);
-      const signed = aws4.sign({
-        host: parsed.host,
-        path: parsed.pathname,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: init.body as string,
-        service: 'bedrock',
-        region: this.region,
-      }, {
-        accessKeyId: creds.accessKeyId,
-        secretAccessKey: creds.secretAccessKey,
-        sessionToken: creds.sessionToken,
-      });
+      const signed = aws4.sign(
+        {
+          host: parsed.host,
+          path: parsed.pathname,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: init.body as string,
+          service: 'bedrock',
+          region: this.region,
+        },
+        {
+          accessKeyId: creds.accessKeyId,
+          secretAccessKey: creds.secretAccessKey,
+          sessionToken: creds.sessionToken,
+        },
+      );
       return { ...init, headers: signed.headers as Record<string, string> };
     } catch (err) {
-      throw new Error(`AWS credential resolution failed: ${err instanceof Error ? err.message : err}`);
+      throw new Error(
+        `AWS credential resolution failed: ${err instanceof Error ? err.message : err}`,
+      );
     }
   }
 }
@@ -121,15 +161,24 @@ function toConverseMessage(msg: ChatMessage) {
   if (msg.role === 'tool') {
     return {
       role: 'user',
-      content: [{ toolResult: { toolUseId: msg.toolCallId, content: [{ text: msg.content ?? '' }] } }],
+      content: [
+        { toolResult: { toolUseId: msg.toolCallId, content: [{ text: msg.content ?? '' }] } },
+      ],
     };
   }
-  return { role: msg.role === 'user' ? 'user' : 'assistant', content: [{ text: msg.content ?? '' }] };
+  return {
+    role: msg.role === 'user' ? 'user' : 'assistant',
+    content: [{ text: msg.content ?? '' }],
+  };
 }
 
 function toConverseTool(tool: ToolDefinition) {
   return {
-    toolSpec: { name: tool.name, description: tool.description, inputSchema: { json: tool.inputSchema } },
+    toolSpec: {
+      name: tool.name,
+      description: tool.description,
+      inputSchema: { json: tool.inputSchema },
+    },
   };
 }
 

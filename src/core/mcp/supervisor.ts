@@ -87,9 +87,7 @@ export class McpSupervisor extends EventEmitter {
   async shutdownAll(): Promise<void> {
     this.shuttingDown = true;
     if (this.healthTimer) clearInterval(this.healthTimer);
-    await Promise.all(
-      [...this.servers.keys()].map((name) => this.stop(name)),
-    );
+    await Promise.all([...this.servers.keys()].map((name) => this.stop(name)));
   }
 
   /** Start periodic health checks */
@@ -144,10 +142,7 @@ export class McpSupervisor extends EventEmitter {
     }
 
     state.restarts++;
-    const delay = Math.min(
-      BASE_BACKOFF_MS * Math.pow(2, state.restarts - 1),
-      MAX_BACKOFF_MS,
-    );
+    const delay = Math.min(BASE_BACKOFF_MS * Math.pow(2, state.restarts - 1), MAX_BACKOFF_MS);
 
     this.emit('restarting', name, delay, state.restarts);
     setTimeout(() => {
@@ -166,7 +161,11 @@ export class McpSupervisor extends EventEmitter {
 
     return new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
-        try { child.kill('SIGKILL'); } catch { /* already dead */ }
+        try {
+          child.kill('SIGKILL');
+        } catch {
+          /* already dead */
+        }
         resolve();
       }, SHUTDOWN_TIMEOUT_MS);
 
@@ -176,7 +175,11 @@ export class McpSupervisor extends EventEmitter {
         resolve();
       });
 
-      try { child.kill('SIGTERM'); } catch { resolve(); }
+      try {
+        child.kill('SIGTERM');
+      } catch {
+        resolve();
+      }
     });
   }
 
@@ -212,11 +215,15 @@ export class McpSupervisor extends EventEmitter {
           this.emit('memory-warning', name, state.memoryMB);
         }
       }
-    } catch { /* process may have exited */ }
+    } catch {
+      /* process may have exited */
+    }
   }
 
   private registerCleanup(): void {
-    const cleanup = () => { void this.shutdownAll(); };
+    const cleanup = () => {
+      void this.shutdownAll();
+    };
     process.on('exit', cleanup);
     process.on('SIGINT', cleanup);
     process.on('SIGTERM', cleanup);

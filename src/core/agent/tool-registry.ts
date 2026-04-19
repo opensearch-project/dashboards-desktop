@@ -55,7 +55,7 @@ export class ToolRegistry {
     name: string,
     input: Record<string, unknown>,
     context: ToolContext,
-    timeoutMs = 30_000
+    timeoutMs = 30_000,
   ): Promise<ToolResult> {
     const tool = this.tools.get(name);
     if (!tool) return { content: `Tool not found: ${name}`, isError: true };
@@ -82,8 +82,14 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`Tool timed out after ${ms}ms`)), ms);
     promise.then(
-      (v) => { clearTimeout(timer); resolve(v); },
-      (e) => { clearTimeout(timer); reject(e); }
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
     );
   });
 }

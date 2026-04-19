@@ -10,7 +10,9 @@ type ApiResult = any;
 
 async function api(url: string, method: string, path: string, body?: unknown): Promise<ApiResult> {
   const c = new Client({ node: url });
-  const res = await c.transport.request({ method, path, body } as Parameters<typeof c.transport.request>[0]);
+  const res = await c.transport.request({ method, path, body } as Parameters<
+    typeof c.transport.request
+  >[0]);
   return (res as ApiResult).body ?? res;
 }
 

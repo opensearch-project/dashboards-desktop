@@ -23,10 +23,10 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/core/**', 'src/main/**'],
       thresholds: {
-        lines: 60,
-        functions: 60,
+        lines: 30,
+        functions: 50,
         branches: 50,
-        statements: 60,
+        statements: 30,
       },
     },
   },

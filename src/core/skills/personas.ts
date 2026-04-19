@@ -7,15 +7,16 @@ export interface Persona {
   name: string;
   description: string;
   systemPrompt: string;
-  toolFilter: string[];       // tool names to include (empty = all tools)
-  modelPreference?: string;   // e.g. "ollama:llama3"
+  toolFilter: string[]; // tool names to include (empty = all tools)
+  modelPreference?: string; // e.g. "ollama:llama3"
 }
 
 export const PERSONAS: Record<string, Persona> = {
   default: {
     name: 'default',
     description: 'General-purpose assistant for OpenSearch and Elasticsearch management.',
-    systemPrompt: 'You are an OpenSearch Dashboards Desktop assistant. You help users query, manage, and understand their OpenSearch and Elasticsearch clusters. Use the available tools to answer questions. Be concise.',
+    systemPrompt:
+      'You are an OpenSearch Dashboards Desktop assistant. You help users query, manage, and understand their OpenSearch and Elasticsearch clusters. Use the available tools to answer questions. Be concise.',
     toolFilter: [],
   },
 
@@ -27,9 +28,15 @@ Priorities: cluster stability, alerting, performance monitoring, snapshot manage
 When users report issues, check cluster health first, then investigate shards, nodes, and resource usage.
 Proactively suggest alerting monitors for recurring issues.`,
     toolFilter: [
-      'opensearch-query', 'elasticsearch-query', 'cluster-health', 'index-manage',
-      'os-alerting-manage', 'os-snapshot-manage', 'os-ism-manage',
-      'es-snapshot-manage', 'es-watcher-manage',
+      'opensearch-query',
+      'elasticsearch-query',
+      'cluster-health',
+      'index-manage',
+      'os-alerting-manage',
+      'os-snapshot-manage',
+      'os-ism-manage',
+      'es-snapshot-manage',
+      'es-watcher-manage',
     ],
     modelPreference: 'ollama:llama3',
   },
@@ -42,8 +49,12 @@ Help users explore their data with well-crafted queries, aggregations, and summa
 Format results as tables when possible. Suggest follow-up queries to deepen analysis.
 Prefer read-only operations unless the user explicitly asks to modify data.`,
     toolFilter: [
-      'opensearch-query', 'elasticsearch-query', 'cluster-health', 'index-manage',
-      'os-ingest-manage', 'es-ingest-manage',
+      'opensearch-query',
+      'elasticsearch-query',
+      'cluster-health',
+      'index-manage',
+      'os-ingest-manage',
+      'es-ingest-manage',
     ],
   },
 
@@ -55,8 +66,11 @@ Help users manage roles, users, and permissions. Assist with security audit quer
 When reviewing access, always check for overly permissive roles.
 Flag any security concerns proactively.`,
     toolFilter: [
-      'opensearch-query', 'elasticsearch-query', 'cluster-health',
-      'os-security-manage', 'es-security-manage',
+      'opensearch-query',
+      'elasticsearch-query',
+      'cluster-health',
+      'os-security-manage',
+      'es-security-manage',
     ],
   },
 };

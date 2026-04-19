@@ -49,15 +49,23 @@ export async function search(query?: string): Promise<RegistryEntry[]> {
   ];
 }
 
-interface GHRepo { name: string; full_name: string; description: string }
-interface NpmResult { package: { name: string; version: string; description: string } }
+interface GHRepo {
+  name: string;
+  full_name: string;
+  description: string;
+}
+interface NpmResult {
+  package: { name: string; version: string; description: string };
+}
 
 function httpGet(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'osd-registry' } }, (res) => {
-      let data = '';
-      res.on('data', (c) => (data += c));
-      res.on('end', () => resolve(data));
-    }).on('error', reject);
+    https
+      .get(url, { headers: { 'User-Agent': 'osd-registry' } }, (res) => {
+        let data = '';
+        res.on('data', (c) => (data += c));
+        res.on('end', () => resolve(data));
+      })
+      .on('error', reject);
   });
 }

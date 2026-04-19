@@ -45,7 +45,10 @@ export async function installBundleUpdate(
       fs.rmSync(BUNDLE_DIR, { recursive: true, force: true });
       fs.renameSync(BACKUP_DIR, BUNDLE_DIR);
     }
-    return { success: false, error: `Extraction failed: ${err instanceof Error ? err.message : err}` };
+    return {
+      success: false,
+      error: `Extraction failed: ${err instanceof Error ? err.message : err}`,
+    };
   }
 }
 

@@ -34,7 +34,9 @@ const api = {
     onStream: (cb: (event: StreamEvent) => void) => {
       const handler = (_e: Electron.IpcRendererEvent, event: StreamEvent) => cb(event);
       ipcRenderer.on(IPC.AGENT_STREAM, handler);
-      return () => { ipcRenderer.removeListener(IPC.AGENT_STREAM, handler); };
+      return () => {
+        ipcRenderer.removeListener(IPC.AGENT_STREAM, handler);
+      };
     },
   },
   models: {
@@ -48,7 +50,8 @@ const api = {
       ipcRenderer.invoke(IPC.CONVERSATION_CREATE, workspaceId, title),
     delete: (id: string) => ipcRenderer.invoke(IPC.CONVERSATION_DELETE, id),
     rename: (id: string, title: string) => ipcRenderer.invoke(IPC.CONVERSATION_RENAME, id, title),
-    messages: (conversationId: string) => ipcRenderer.invoke(IPC.CONVERSATION_MESSAGES, conversationId),
+    messages: (conversationId: string) =>
+      ipcRenderer.invoke(IPC.CONVERSATION_MESSAGES, conversationId),
   },
   cluster: {
     health: () => ipcRenderer.invoke(IPC.CLUSTER_HEALTH),
@@ -62,7 +65,8 @@ const api = {
     delete: (name: string) => ipcRenderer.invoke(IPC.INDICES_DELETE, name),
     close: (name: string) => ipcRenderer.invoke(IPC.INDICES_CLOSE, name),
     open: (name: string) => ipcRenderer.invoke(IPC.INDICES_OPEN, name),
-    reindex: (source: string, dest: string) => ipcRenderer.invoke(IPC.INDICES_REINDEX, source, dest),
+    reindex: (source: string, dest: string) =>
+      ipcRenderer.invoke(IPC.INDICES_REINDEX, source, dest),
     aliases: () => ipcRenderer.invoke(IPC.INDICES_ALIASES),
     updateAlias: (actions: object[]) => ipcRenderer.invoke(IPC.INDICES_UPDATE_ALIAS, actions),
   },
@@ -74,12 +78,14 @@ const api = {
     },
     users: {
       list: () => ipcRenderer.invoke(IPC.SECURITY_USERS_LIST),
-      save: (username: string, body: object) => ipcRenderer.invoke(IPC.SECURITY_USERS_SAVE, username, body),
+      save: (username: string, body: object) =>
+        ipcRenderer.invoke(IPC.SECURITY_USERS_SAVE, username, body),
       delete: (username: string) => ipcRenderer.invoke(IPC.SECURITY_USERS_DELETE, username),
     },
     tenants: {
       list: () => ipcRenderer.invoke(IPC.SECURITY_TENANTS_LIST),
-      save: (name: string, body: object) => ipcRenderer.invoke(IPC.SECURITY_TENANTS_SAVE, name, body),
+      save: (name: string, body: object) =>
+        ipcRenderer.invoke(IPC.SECURITY_TENANTS_SAVE, name, body),
       delete: (name: string) => ipcRenderer.invoke(IPC.SECURITY_TENANTS_DELETE, name),
     },
   },
@@ -114,7 +120,8 @@ const api = {
     stop: (name: string) => ipcRenderer.invoke(IPC.MCP_STOP, name),
     restart: (name: string) => ipcRenderer.invoke(IPC.MCP_RESTART, name),
     getConfig: (name: string) => ipcRenderer.invoke(IPC.MCP_CONFIG_GET, name),
-    setConfig: (name: string, config: object) => ipcRenderer.invoke(IPC.MCP_CONFIG_SET, name, config),
+    setConfig: (name: string, config: object) =>
+      ipcRenderer.invoke(IPC.MCP_CONFIG_SET, name, config),
     tools: (name: string) => ipcRenderer.invoke(IPC.MCP_TOOLS, name),
   },
   updates: {
@@ -126,7 +133,8 @@ const api = {
   messages: {
     pin: (messageId: string) => ipcRenderer.invoke(IPC.MESSAGE_PIN, messageId),
     unpin: (messageId: string) => ipcRenderer.invoke(IPC.MESSAGE_UNPIN, messageId),
-    listPinned: (conversationId: string) => ipcRenderer.invoke(IPC.MESSAGE_LIST_PINNED, conversationId),
+    listPinned: (conversationId: string) =>
+      ipcRenderer.invoke(IPC.MESSAGE_LIST_PINNED, conversationId),
   },
 };
 

@@ -38,7 +38,10 @@ export const opensearchQueryTool: AgentTool = {
       } as Record<string, unknown>);
       return { content: JSON.stringify(res.body, null, 2), isError: false };
     } catch (err: unknown) {
-      return { content: `Query failed: ${err instanceof Error ? err.message : err}`, isError: true };
+      return {
+        content: `Query failed: ${err instanceof Error ? err.message : err}`,
+        isError: true,
+      };
     }
   },
 };

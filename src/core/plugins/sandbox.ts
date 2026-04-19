@@ -89,10 +89,16 @@ export class PluginSandbox extends EventEmitter {
 function terminateWorker(worker: Worker): Promise<void> {
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
-      worker.terminate().then(() => resolve(), () => resolve());
+      worker.terminate().then(
+        () => resolve(),
+        () => resolve(),
+      );
     }, SHUTDOWN_TIMEOUT_MS);
 
-    worker.once('exit', () => { clearTimeout(timeout); resolve(); });
+    worker.once('exit', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
     worker.postMessage({ type: 'shutdown' });
   });
 }

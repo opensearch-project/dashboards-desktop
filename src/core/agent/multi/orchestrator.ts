@@ -14,27 +14,83 @@ export type RoutingStrategy = 'single' | 'fan-out' | 'pipeline';
 /** Built-in agent configs matching our personas */
 const BUILTIN_AGENTS: AgentConfig[] = [
   {
-    id: 'ops', name: 'Ops Agent', model: 'ollama:llama3',
-    systemPrompt: 'You are an operations agent. Focus on cluster health, alerting, performance, and incident response. Be concise.',
-    toolFilter: ['opensearch-query', 'elasticsearch-query', 'cluster-health', 'index-manage', 'admin-opensearch', 'admin-elasticsearch'],
+    id: 'ops',
+    name: 'Ops Agent',
+    model: 'ollama:llama3',
+    systemPrompt:
+      'You are an operations agent. Focus on cluster health, alerting, performance, and incident response. Be concise.',
+    toolFilter: [
+      'opensearch-query',
+      'elasticsearch-query',
+      'cluster-health',
+      'index-manage',
+      'admin-opensearch',
+      'admin-elasticsearch',
+    ],
   },
   {
-    id: 'analyst', name: 'Analyst Agent', model: 'ollama:llama3',
-    systemPrompt: 'You are a data analyst agent. Help with queries, aggregations, and data exploration. Format results as tables.',
+    id: 'analyst',
+    name: 'Analyst Agent',
+    model: 'ollama:llama3',
+    systemPrompt:
+      'You are a data analyst agent. Help with queries, aggregations, and data exploration. Format results as tables.',
     toolFilter: ['opensearch-query', 'elasticsearch-query', 'cluster-health'],
   },
   {
-    id: 'security', name: 'Security Agent', model: 'ollama:llama3',
-    systemPrompt: 'You are a security agent. Focus on access control, roles, users, audit, and threat detection.',
-    toolFilter: ['opensearch-query', 'elasticsearch-query', 'admin-opensearch', 'admin-elasticsearch'],
+    id: 'security',
+    name: 'Security Agent',
+    model: 'ollama:llama3',
+    systemPrompt:
+      'You are a security agent. Focus on access control, roles, users, audit, and threat detection.',
+    toolFilter: [
+      'opensearch-query',
+      'elasticsearch-query',
+      'admin-opensearch',
+      'admin-elasticsearch',
+    ],
   },
 ];
 
 /** Intent classification keywords */
 const INTENT_MAP: Record<string, string[]> = {
-  ops: ['health', 'cluster', 'shard', 'node', 'alert', 'monitor', 'snapshot', 'restart', 'slow', 'down', 'error', 'status'],
-  analyst: ['query', 'search', 'count', 'aggregate', 'average', 'sum', 'top', 'trend', 'show me', 'how many', 'find'],
-  security: ['role', 'user', 'permission', 'tenant', 'access', 'audit', 'api key', 'security', 'who can'],
+  ops: [
+    'health',
+    'cluster',
+    'shard',
+    'node',
+    'alert',
+    'monitor',
+    'snapshot',
+    'restart',
+    'slow',
+    'down',
+    'error',
+    'status',
+  ],
+  analyst: [
+    'query',
+    'search',
+    'count',
+    'aggregate',
+    'average',
+    'sum',
+    'top',
+    'trend',
+    'show me',
+    'how many',
+    'find',
+  ],
+  security: [
+    'role',
+    'user',
+    'permission',
+    'tenant',
+    'access',
+    'audit',
+    'api key',
+    'security',
+    'who can',
+  ],
 };
 
 export class MultiAgentOrchestrator {
@@ -131,7 +187,11 @@ export class MultiAgentOrchestrator {
     // Execute tool calls
     for (const tc of pendingToolCalls) {
       let parsed: Record<string, unknown> = {};
-      try { parsed = JSON.parse(tc.input); } catch { /* empty */ }
+      try {
+        parsed = JSON.parse(tc.input);
+      } catch {
+        /* empty */
+      }
       const result = await agent.executeTool(tc.name, parsed, toolContext);
       agent.addToolResult(tc.id, result);
       yield { type: 'tool_result', id: tc.id, output: result.content, isError: result.isError };
@@ -157,7 +217,7 @@ export class MultiAgentOrchestrator {
 
     // Run all agents in parallel
     const promises = agents.map(async (agent) => {
-      let text = "";
+      let text = '';
       for await (const chunk of agent.chat(userMessage, signal)) {
         if (chunk.type === 'text') text += chunk.content ?? '';
       }

@@ -29,7 +29,9 @@ export function installFromArchive(archivePath: string): PluginMeta {
     if (archivePath.endsWith('.zip')) {
       execFileSync('unzip', ['-o', archivePath, '-d', tmpDir], { stdio: 'pipe' });
     } else {
-      execFileSync('tar', ['xzf', archivePath, '-C', tmpDir, '--strip-components=1'], { stdio: 'pipe' });
+      execFileSync('tar', ['xzf', archivePath, '-C', tmpDir, '--strip-components=1'], {
+        stdio: 'pipe',
+      });
     }
 
     const meta = readMeta(tmpDir);
@@ -97,7 +99,11 @@ export function listPlugins(): PluginMeta[] {
   return entries
     .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
     .map((e) => {
-      try { return readMeta(path.join(PLUGINS_DIR, e.name)); } catch { return null; }
+      try {
+        return readMeta(path.join(PLUGINS_DIR, e.name));
+      } catch {
+        return null;
+      }
     })
     .filter((m): m is PluginMeta => m !== null);
 }

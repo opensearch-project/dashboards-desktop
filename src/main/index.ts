@@ -94,14 +94,21 @@ import * as osSecurity from '../core/admin/opensearch/security';
 let activeConnectionUrl = '';
 let activeConnectionType: 'opensearch' | 'elasticsearch' = 'opensearch';
 
-ipcMain.handle('admin:setActiveConnection', (_e, url: string, type: 'opensearch' | 'elasticsearch') => {
-  activeConnectionUrl = url;
-  activeConnectionType = type;
-});
+ipcMain.handle(
+  'admin:setActiveConnection',
+  (_e, url: string, type: 'opensearch' | 'elasticsearch') => {
+    activeConnectionUrl = url;
+    activeConnectionType = type;
+  },
+);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function osClient(): any { return new OSClient({ node: activeConnectionUrl }); }
-function esClient(): ESClient { return new ESClient({ node: activeConnectionUrl }); }
+function osClient(): any {
+  return new OSClient({ node: activeConnectionUrl });
+}
+function esClient(): ESClient {
+  return new ESClient({ node: activeConnectionUrl });
+}
 
 // Cluster
 ipcMain.handle(IPC.CLUSTER_HEALTH, async () => {
@@ -155,7 +162,9 @@ ipcMain.handle(IPC.INDICES_DELETE, async (_e, index: string) => {
 
 ipcMain.handle(IPC.INDICES_REINDEX, async (_e, source: string, dest: string) => {
   if (activeConnectionType === 'opensearch') {
-    const res = await osClient().reindex({ body: { source: { index: source }, dest: { index: dest } } });
+    const res = await osClient().reindex({
+      body: { source: { index: source }, dest: { index: dest } },
+    });
     return res.body;
   }
   return esClient().reindex({ source: { index: source }, dest: { index: dest } });
@@ -171,14 +180,26 @@ ipcMain.handle(IPC.INDICES_ALIASES, async () => {
 
 // Security (OpenSearch only — Elasticsearch uses different API)
 ipcMain.handle(IPC.SECURITY_ROLES_LIST, async () => osSecurity.listRoles(activeConnectionUrl));
-ipcMain.handle(IPC.SECURITY_ROLES_SAVE, async (_e, name: string, body: Record<string, unknown>) => osSecurity.createRole(activeConnectionUrl, name, body));
-ipcMain.handle(IPC.SECURITY_ROLES_DELETE, async (_e, name: string) => osSecurity.deleteRole(activeConnectionUrl, name));
+ipcMain.handle(IPC.SECURITY_ROLES_SAVE, async (_e, name: string, body: Record<string, unknown>) =>
+  osSecurity.createRole(activeConnectionUrl, name, body),
+);
+ipcMain.handle(IPC.SECURITY_ROLES_DELETE, async (_e, name: string) =>
+  osSecurity.deleteRole(activeConnectionUrl, name),
+);
 ipcMain.handle(IPC.SECURITY_USERS_LIST, async () => osSecurity.listUsers(activeConnectionUrl));
-ipcMain.handle(IPC.SECURITY_USERS_SAVE, async (_e, name: string, body: Record<string, unknown>) => osSecurity.createUser(activeConnectionUrl, name, body));
-ipcMain.handle(IPC.SECURITY_USERS_DELETE, async (_e, name: string) => osSecurity.deleteUser(activeConnectionUrl, name));
+ipcMain.handle(IPC.SECURITY_USERS_SAVE, async (_e, name: string, body: Record<string, unknown>) =>
+  osSecurity.createUser(activeConnectionUrl, name, body),
+);
+ipcMain.handle(IPC.SECURITY_USERS_DELETE, async (_e, name: string) =>
+  osSecurity.deleteUser(activeConnectionUrl, name),
+);
 ipcMain.handle(IPC.SECURITY_TENANTS_LIST, async () => osSecurity.listTenants(activeConnectionUrl));
-ipcMain.handle(IPC.SECURITY_TENANTS_SAVE, async (_e, name: string, body: Record<string, unknown>) => osSecurity.createTenant(activeConnectionUrl, name, body));
-ipcMain.handle(IPC.SECURITY_TENANTS_DELETE, async (_e, name: string) => osSecurity.deleteTenant(activeConnectionUrl, name));
+ipcMain.handle(IPC.SECURITY_TENANTS_SAVE, async (_e, name: string, body: Record<string, unknown>) =>
+  osSecurity.createTenant(activeConnectionUrl, name, body),
+);
+ipcMain.handle(IPC.SECURITY_TENANTS_DELETE, async (_e, name: string) =>
+  osSecurity.deleteTenant(activeConnectionUrl, name),
+);
 
 // --- Agent Runtime ---
 import { ModelRouter } from '../core/agent/model-router';
@@ -222,7 +243,13 @@ function getOrCreateRuntime(): AgentRuntime {
       const anthropicKey = await db.getSettingAsync('anthropic_api_key');
       if (anthropicKey) router.register(new AnthropicProvider({ apiKey: anthropicKey }));
       const compatUrl = await db.getSettingAsync('openai_compatible_url');
-      if (compatUrl) router.register(new OpenAICompatibleProvider({ baseUrl: compatUrl, apiKey: (await db.getSettingAsync('openai_compatible_key')) ?? '' }));
+      if (compatUrl)
+        router.register(
+          new OpenAICompatibleProvider({
+            baseUrl: compatUrl,
+            apiKey: (await db.getSettingAsync('openai_compatible_key')) ?? '',
+          }),
+        );
     } catch {
       // Settings not available yet — cloud providers can be added later
     }
@@ -254,9 +281,12 @@ function getOrCreateRuntime(): AgentRuntime {
   const conversations = new ConversationManager(db);
 
   agentRuntime = new AgentRuntime(
-    router, tools, conversations,
-    'ollama:llama3', 'default',
-    () => null // TODO: wire to active connection from UI state
+    router,
+    tools,
+    conversations,
+    'ollama:llama3',
+    'default',
+    () => null, // TODO: wire to active connection from UI state
   );
   return agentRuntime;
 }
@@ -266,7 +296,11 @@ async function initMcpServers(supervisor: McpSupervisor): Promise<void> {
   const config = loadConfig();
   const starts = Object.entries(config.mcpServers)
     .filter(([_, cfg]) => cfg.enabled !== false)
-    .map(([name, cfg]) => supervisor.start(name, cfg).catch(() => { /* log and continue */ }));
+    .map(([name, cfg]) =>
+      supervisor.start(name, cfg).catch(() => {
+        /* log and continue */
+      }),
+    );
   await Promise.allSettled(starts);
   supervisor.startHealthChecks();
 }
@@ -303,11 +337,14 @@ ipcMain.handle(IPC.MODEL_CURRENT, () => {
 // --- IPC: Conversation branching ---
 import { branchConversation } from '../core/agent/branching';
 
-ipcMain.handle(IPC.CONVERSATION_BRANCH, (_e, conversationId: string, messageId: string, workspaceId: string) => {
-  const dbPath = path.join(require('os').homedir(), '.osd', 'osd.db');
-  const db = initDatabase(dbPath);
-  return branchConversation(db, conversationId, messageId, workspaceId);
-});
+ipcMain.handle(
+  IPC.CONVERSATION_BRANCH,
+  (_e, conversationId: string, messageId: string, workspaceId: string) => {
+    const dbPath = path.join(require('os').homedir(), '.osd', 'osd.db');
+    const db = initDatabase(dbPath);
+    return branchConversation(db, conversationId, messageId, workspaceId);
+  },
+);
 
 // --- IPC: Auto-routing settings ---
 ipcMain.handle(IPC.AUTOROUTING_GET, () => {
@@ -315,12 +352,23 @@ ipcMain.handle(IPC.AUTOROUTING_GET, () => {
   return runtime.autoRouterConfig;
 });
 
-ipcMain.handle(IPC.AUTOROUTING_SET, (_e, config: Partial<{ enabled: boolean; localModel: string; cloudModel: string; complexityThreshold: number }>) => {
-  const runtime = getOrCreateRuntime();
-  Object.assign(runtime.autoRouterConfig, config);
-  if (!config.enabled) runtime.clearModelOverride();
-  return runtime.autoRouterConfig;
-});
+ipcMain.handle(
+  IPC.AUTOROUTING_SET,
+  (
+    _e,
+    config: Partial<{
+      enabled: boolean;
+      localModel: string;
+      cloudModel: string;
+      complexityThreshold: number;
+    }>,
+  ) => {
+    const runtime = getOrCreateRuntime();
+    Object.assign(runtime.autoRouterConfig, config);
+    if (!config.enabled) runtime.clearModelOverride();
+    return runtime.autoRouterConfig;
+  },
+);
 
 // --- IPC: Multi-Agent ---
 import { MultiAgentOrchestrator } from '../core/agent/multi/orchestrator';
@@ -355,7 +403,11 @@ ipcMain.handle(IPC.MULTI_AGENT_KILL, (_e, id: string) => {
 
 ipcMain.handle(IPC.MULTI_AGENT_ROUTE, async (_e, message: string, strategy?: RoutingStrategy) => {
   const ma = getOrCreateMultiAgent();
-  const context = { workspaceId: 'default', activeConnection: null, signal: new AbortController().signal };
+  const context = {
+    workspaceId: 'default',
+    activeConnection: null,
+    signal: new AbortController().signal,
+  };
   const events: unknown[] = [];
   for await (const event of ma.route(message, strategy ?? 'single', context)) {
     mainWindow?.webContents.send(IPC.AGENT_STREAM, event);
@@ -423,17 +475,23 @@ app.whenReady().then(async () => {
   try {
     const pluginMgr = await import('../core/plugins/manager.js');
     setPluginManager(pluginMgr as any);
-  } catch { /* not yet landed */ }
+  } catch {
+    /* not yet landed */
+  }
 
   try {
     const { McpSupervisor } = await import('../core/mcp/supervisor.js');
     setMcpSupervisor(new McpSupervisor() as any);
-  } catch { /* not yet landed */ }
+  } catch {
+    /* not yet landed */
+  }
 
   try {
     const updateMgr = await import('../core/updates/update-checker.js');
     setUpdateManager(updateMgr as any);
-  } catch { /* not yet landed */ }
+  } catch {
+    /* not yet landed */
+  }
 
   // 4. Lazy background tasks (after window shows)
   setTimeout(() => {
@@ -442,7 +500,9 @@ app.whenReady().then(async () => {
       const { McpSupervisor: Mcp } = require('../core/mcp/supervisor');
       const supervisor = new Mcp();
       supervisor.startAll?.();
-    } catch { /* MCP not available */ }
+    } catch {
+      /* MCP not available */
+    }
   }, 1000);
 });
 

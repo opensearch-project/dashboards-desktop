@@ -6,7 +6,7 @@
  * registers/unregisters tools when servers start or stop.
  */
 
-import type { AgentTool,  ToolResult, ToolContext } from '../agent/types';
+import type { AgentTool, ToolResult, ToolContext } from '../agent/types';
 import { ToolRegistry } from '../agent/tool-registry';
 import { McpDiscovery } from './discovery';
 import { McpSupervisor } from './supervisor';
@@ -40,7 +40,12 @@ export class McpToolBridge {
     this.supervisor.on('max-restarts', (_name: string) => this.pruneDeadTools());
   }
 
-  private registerMcpTool(mcpTool: { name: string; description: string; inputSchema: Record<string, unknown>; source: string }): void {
+  private registerMcpTool(mcpTool: {
+    name: string;
+    description: string;
+    inputSchema: Record<string, unknown>;
+    source: string;
+  }): void {
     const qualifiedName = `${mcpTool.source}/${mcpTool.name}`;
     const agentTool: AgentTool = {
       definition: {
@@ -71,7 +76,12 @@ export class McpToolBridge {
 
     return new Promise((resolve) => {
       const id = Date.now();
-      const request = { jsonrpc: '2.0', id, method: 'tools/call', params: { name: toolName, arguments: input } };
+      const request = {
+        jsonrpc: '2.0',
+        id,
+        method: 'tools/call',
+        params: { name: toolName, arguments: input },
+      };
       const timeout = setTimeout(() => {
         cleanup();
         resolve({ content: `MCP tool '${toolName}' timed out`, isError: true });
@@ -92,11 +102,15 @@ export class McpToolBridge {
             if (msg.error) {
               resolve({ content: msg.error.message ?? 'MCP tool error', isError: true });
             } else {
-              const text = msg.result?.content?.map((c: { text?: string }) => c.text ?? '').join('') ?? JSON.stringify(msg.result);
+              const text =
+                msg.result?.content?.map((c: { text?: string }) => c.text ?? '').join('') ??
+                JSON.stringify(msg.result);
               resolve({ content: text, isError: false });
             }
             return;
-          } catch { /* not our message */ }
+          } catch {
+            /* not our message */
+          }
         }
       };
 

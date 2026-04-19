@@ -45,7 +45,12 @@ function matchesChannel(tag: string, channel: Channel): boolean {
   if (channel === 'nightly') return tag.includes('nightly');
   if (channel === 'beta') return tag.includes('beta') || tag.includes('rc');
   // stable = no prerelease suffix
-  return !tag.includes('nightly') && !tag.includes('beta') && !tag.includes('rc') && !tag.includes('alpha');
+  return (
+    !tag.includes('nightly') &&
+    !tag.includes('beta') &&
+    !tag.includes('rc') &&
+    !tag.includes('alpha')
+  );
 }
 
 function isNewer(tag: string, current: string): boolean {
@@ -56,8 +61,19 @@ function isNewer(tag: string, current: string): boolean {
   return aM > bM || (aM === bM && (am > bm || (am === bm && (ap ?? 0) > (bp ?? 0))));
 }
 
-interface GHAsset { name: string; browser_download_url: string; size: number }
-interface GHRelease { tag_name: string; html_url: string; body: string; published_at: string; assets: GHAsset[]; prerelease: boolean }
+interface GHAsset {
+  name: string;
+  browser_download_url: string;
+  size: number;
+}
+interface GHRelease {
+  tag_name: string;
+  html_url: string;
+  body: string;
+  published_at: string;
+  assets: GHAsset[];
+  prerelease: boolean;
+}
 
 function fetchReleases(): Promise<GHRelease[]> {
   return new Promise((resolve, reject) => {
@@ -66,12 +82,18 @@ function fetchReleases(): Promise<GHRelease[]> {
       path: `/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=20`,
       headers: { 'User-Agent': 'osd-updater', Accept: 'application/vnd.github+json' },
     };
-    https.get(opts, (res) => {
-      let data = '';
-      res.on('data', (c) => (data += c));
-      res.on('end', () => {
-        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
-      });
-    }).on('error', reject);
+    https
+      .get(opts, (res) => {
+        let data = '';
+        res.on('data', (c) => (data += c));
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(e);
+          }
+        });
+      })
+      .on('error', reject);
   });
 }

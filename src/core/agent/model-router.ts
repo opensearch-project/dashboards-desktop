@@ -18,7 +18,8 @@ export class ModelRouter {
   /** Parse "provider:model" string, e.g. "ollama:llama3" */
   resolve(specifier: string): { provider: ModelProvider; model: string } {
     const sep = specifier.indexOf(':');
-    if (sep === -1) throw new Error(`Invalid model specifier "${specifier}" — use "provider:model"`);
+    if (sep === -1)
+      throw new Error(`Invalid model specifier "${specifier}" — use "provider:model"`);
     const providerId = specifier.slice(0, sep);
     const model = specifier.slice(sep + 1);
     const provider = this.providers.get(providerId);
@@ -34,7 +35,7 @@ export class ModelRouter {
     specifier: string,
     messages: ChatMessage[],
     tools: ToolDefinition[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): AsyncIterable<StreamChunk> {
     const { provider, model } = this.resolve(specifier);
     yield* provider.chat({ model, messages, tools, signal });

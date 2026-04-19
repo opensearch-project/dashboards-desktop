@@ -7,9 +7,9 @@ import type { ChatMessage, ToolDefinition } from './types';
 
 export interface AutoRouterConfig {
   enabled: boolean;
-  localModel: string;    // e.g. "ollama:llama3"
-  cloudModel: string;    // e.g. "anthropic:claude-sonnet-4-20250514"
-  complexityThreshold: number;  // 0-1, above = cloud
+  localModel: string; // e.g. "ollama:llama3"
+  cloudModel: string; // e.g. "anthropic:claude-sonnet-4-20250514"
+  complexityThreshold: number; // 0-1, above = cloud
 }
 
 export const DEFAULT_CONFIG: AutoRouterConfig = {
