@@ -49,10 +49,18 @@ function downloadFile(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(dest);
+    const MAX_REDIRECTS = 5;
+    let redirects = 0;
     const get = (u: string) => {
       https
         .get(u, { headers: { 'User-Agent': 'osd-updater' } }, (res) => {
           if (res.statusCode === 302 || res.statusCode === 301) {
+            if (++redirects > MAX_REDIRECTS) {
+              file.close();
+              fs.unlinkSync(dest);
+              reject(new Error(`Too many redirects (>${MAX_REDIRECTS})`));
+              return;
+            }
             return get(res.headers.location!);
           }
           let downloaded = 0;
