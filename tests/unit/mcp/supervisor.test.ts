@@ -91,14 +91,11 @@ describe('McpSupervisor: crash recovery', () => {
     await supervisor.start('echo', testConfig);
     const state = supervisor.get('echo')!;
 
-    // Simulate 5 crashes (MAX_RESTARTS = 5)
-    for (let i = 0; i < 5; i++) {
-      state.restarts = i;
-      state.status = 'running';
-      state.process = mockChild() as any;
-    }
-    state.restarts = 5;
-    state.process!.emit('exit', 1, null);
+    // Directly set restarts to max and trigger maybeRestart via crash
+    state.restarts = 5; // MAX_RESTARTS = 5
+    // Simulate crash on the actual spawned process
+    const child = state.process!;
+    child.emit('exit', 1, null);
 
     expect(maxCb).toHaveBeenCalledWith('echo');
   });
