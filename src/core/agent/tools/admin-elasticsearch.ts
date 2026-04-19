@@ -106,3 +106,10 @@ async function execSecurity(url: string, action: string, name: string, body: Rec
     default: return `Unknown security action: ${action}`;
   }
 }
+
+// Individual tool aliases for granular registration
+export const esIlmTool = adminElasticsearchTool;
+export const esWatcherTool = adminElasticsearchTool;
+export const esSnapshotTool = adminElasticsearchTool;
+export const esIngestTool = adminElasticsearchTool;
+export const esSecurityTool = adminElasticsearchTool;

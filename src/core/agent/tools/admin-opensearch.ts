@@ -105,3 +105,10 @@ async function execSnapshots(url: string, action: string, name: string, repo: st
     default: return `Unknown snapshot action: ${action}`;
   }
 }
+
+// Individual tool aliases for granular registration
+export const osSecurityTool = adminOpenSearchTool;
+export const osAlertingTool = adminOpenSearchTool;
+export const osIsmTool = adminOpenSearchTool;
+export const osSnapshotTool = adminOpenSearchTool;
+export const osIngestTool = adminOpenSearchTool;
