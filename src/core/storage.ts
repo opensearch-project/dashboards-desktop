@@ -182,9 +182,13 @@ export function listConnections(db: DB, workspaceId?: string): unknown[] {
   return db.prepare('SELECT * FROM connections ORDER BY name').all();
 }
 
+const ALLOWED_CONNECTION_COLUMNS = new Set(['name', 'url', 'type', 'auth_type', 'workspace_id', 'username', 'region']);
+
 export function updateConnection(db: DB, id: string, fields: Record<string, unknown>): void {
-  const sets = Object.keys(fields).map((k) => `${k} = ?`).concat("updated_at = datetime('now')");
-  const vals = Object.values(fields);
+  const safeFields = Object.entries(fields).filter(([k]) => ALLOWED_CONNECTION_COLUMNS.has(k));
+  if (safeFields.length === 0) return;
+  const sets = safeFields.map(([k]) => `${k} = ?`).concat("updated_at = datetime('now')");
+  const vals = safeFields.map(([, v]) => v);
   db.prepare(`UPDATE connections SET ${sets.join(', ')} WHERE id = ?`).run(...vals, id);
 }
 
