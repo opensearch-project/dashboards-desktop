@@ -94,6 +94,101 @@ ipcMain.handle(IPC.SETTINGS_SET, async (_e, key: string, value: string) => {
 // In-memory credential store (encrypted buffers)
 const credentialStore = new Map<string, Buffer>();
 
+// --- IPC: Admin — Cluster, Indices, Security ---
+import { Client as OSClient } from '@opensearch-project/opensearch';
+import { Client as ESClient } from '@elastic/elasticsearch';
+import * as osSecurity from '../core/admin/opensearch/security';
+
+// Helper: get active connection URL and type (placeholder — will be wired to UI state)
+let activeConnectionUrl = '';
+let activeConnectionType: 'opensearch' | 'elasticsearch' = 'opensearch';
+
+ipcMain.handle('admin:setActiveConnection', (_e, url: string, type: 'opensearch' | 'elasticsearch') => {
+  activeConnectionUrl = url;
+  activeConnectionType = type;
+});
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function osClient(): any { return new OSClient({ node: activeConnectionUrl }); }
+function esClient(): ESClient { return new ESClient({ node: activeConnectionUrl }); }
+
+// Cluster
+ipcMain.handle(IPC.CLUSTER_HEALTH, async () => {
+  if (activeConnectionType === 'opensearch') {
+    const res = await osClient().cluster.health();
+    return res.body;
+  }
+  return esClient().cluster.health();
+});
+
+ipcMain.handle(IPC.CLUSTER_NODES, async () => {
+  if (activeConnectionType === 'opensearch') {
+    const res = await osClient().nodes.stats();
+    return res.body;
+  }
+  return esClient().nodes.stats();
+});
+
+ipcMain.handle(IPC.CLUSTER_SHARDS, async () => {
+  if (activeConnectionType === 'opensearch') {
+    const res = await osClient().cat.shards({ format: 'json' });
+    return res.body;
+  }
+  return esClient().cat.shards({ format: 'json' });
+});
+
+// Indices
+ipcMain.handle(IPC.INDICES_LIST, async () => {
+  if (activeConnectionType === 'opensearch') {
+    const res = await osClient().cat.indices({ format: 'json' });
+    return res.body;
+  }
+  return esClient().cat.indices({ format: 'json' });
+});
+
+ipcMain.handle(IPC.INDICES_CREATE, async (_e, index: string, body?: Record<string, unknown>) => {
+  if (activeConnectionType === 'opensearch') {
+    const res = await osClient().indices.create({ index, body });
+    return res.body;
+  }
+  return esClient().indices.create({ index, ...body });
+});
+
+ipcMain.handle(IPC.INDICES_DELETE, async (_e, index: string) => {
+  if (activeConnectionType === 'opensearch') {
+    const res = await osClient().indices.delete({ index });
+    return res.body;
+  }
+  return esClient().indices.delete({ index });
+});
+
+ipcMain.handle(IPC.INDICES_REINDEX, async (_e, source: string, dest: string) => {
+  if (activeConnectionType === 'opensearch') {
+    const res = await osClient().reindex({ body: { source: { index: source }, dest: { index: dest } } });
+    return res.body;
+  }
+  return esClient().reindex({ source: { index: source }, dest: { index: dest } });
+});
+
+ipcMain.handle(IPC.INDICES_ALIASES, async () => {
+  if (activeConnectionType === 'opensearch') {
+    const res = await osClient().cat.aliases({ format: 'json' });
+    return res.body;
+  }
+  return esClient().cat.aliases({ format: 'json' });
+});
+
+// Security (OpenSearch only — Elasticsearch uses different API)
+ipcMain.handle(IPC.SECURITY_ROLES_LIST, async () => osSecurity.listRoles(activeConnectionUrl));
+ipcMain.handle(IPC.SECURITY_ROLES_SAVE, async (_e, name: string, body: Record<string, unknown>) => osSecurity.createRole(activeConnectionUrl, name, body));
+ipcMain.handle(IPC.SECURITY_ROLES_DELETE, async (_e, name: string) => osSecurity.deleteRole(activeConnectionUrl, name));
+ipcMain.handle(IPC.SECURITY_USERS_LIST, async () => osSecurity.listUsers(activeConnectionUrl));
+ipcMain.handle(IPC.SECURITY_USERS_SAVE, async (_e, name: string, body: Record<string, unknown>) => osSecurity.createUser(activeConnectionUrl, name, body));
+ipcMain.handle(IPC.SECURITY_USERS_DELETE, async (_e, name: string) => osSecurity.deleteUser(activeConnectionUrl, name));
+ipcMain.handle(IPC.SECURITY_TENANTS_LIST, async () => osSecurity.listTenants(activeConnectionUrl));
+ipcMain.handle(IPC.SECURITY_TENANTS_SAVE, async (_e, name: string, body: Record<string, unknown>) => osSecurity.createTenant(activeConnectionUrl, name, body));
+ipcMain.handle(IPC.SECURITY_TENANTS_DELETE, async (_e, name: string) => osSecurity.deleteTenant(activeConnectionUrl, name));
+
 // --- Agent Runtime ---
 import { ModelRouter } from '../core/agent/model-router';
 import { ToolRegistry } from '../core/agent/tool-registry';
