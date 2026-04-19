@@ -77,6 +77,7 @@ export const Sidebar: React.FC<Props> = ({
             onClick={() => onNavigate(item.id)}
             aria-current={activePage === item.id ? 'page' : undefined}
             aria-label={item.label}
+            title={item.label}
           >
             <span className="sidebar-icon" aria-hidden="true">
               {item.icon}

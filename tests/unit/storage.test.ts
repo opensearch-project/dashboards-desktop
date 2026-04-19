@@ -33,6 +33,16 @@ import {
   createWorkspace,
   getSetting,
   setSetting,
+  createConversation,
+  listConversations,
+  deleteConversation,
+  addMessage,
+  getMessages,
+  deleteWorkspace,
+  renameConversation,
+  pinMessage,
+  unpinMessage,
+  listPinnedMessages,
 } from '../../src/core/storage';
 
 // Helper: create a fake db object that mimics better-sqlite3 API
@@ -163,5 +173,111 @@ describe('Storage: settings', () => {
   it('getSetting returns undefined for missing key', () => {
     const db = { prepare: vi.fn(() => ({ get: vi.fn(() => undefined) })) };
     expect(getSetting(db, 'missing')).toBeUndefined();
+  });
+});
+
+describe('Storage: conversations', () => {
+  it('createConversation returns id', () => {
+    const db = fakeDb();
+    const id = createConversation(db, 'ws-1', 'ollama:llama3', 'Test chat');
+    expect(id).toBeTruthy();
+    expect(db._mockRun).toHaveBeenCalled();
+  });
+
+  it('createConversation uses default title when omitted', () => {
+    const db = fakeDb();
+    createConversation(db, 'ws-1', 'ollama:llama3');
+    expect(db._mockRun).toHaveBeenCalledWith(
+      expect.any(String), 'ws-1', 'New conversation', 'ollama:llama3'
+    );
+  });
+
+  it('listConversations returns array for workspace', () => {
+    const mockAll = vi.fn(() => [{ id: 'c1', title: 'Chat 1' }]);
+    const db = { prepare: vi.fn(() => ({ all: mockAll })) };
+    expect(listConversations(db, 'ws-1')).toHaveLength(1);
+    expect(mockAll).toHaveBeenCalledWith('ws-1');
+  });
+
+  it('deleteConversation deletes by id', () => {
+    const mockRun = vi.fn();
+    const db = { prepare: vi.fn(() => ({ run: mockRun })) };
+    deleteConversation(db, 'c1');
+    expect(mockRun).toHaveBeenCalledWith('c1');
+  });
+
+  it('renameConversation updates title', () => {
+    const mockRun = vi.fn();
+    const db = { prepare: vi.fn(() => ({ run: mockRun })) };
+    renameConversation(db, 'c1', 'New title');
+    expect(mockRun).toHaveBeenCalledWith('New title', 'c1');
+  });
+});
+
+describe('Storage: messages', () => {
+  it('addMessage returns id and updates conversation', () => {
+    const mockRun = vi.fn();
+    const db = { prepare: vi.fn(() => ({ run: mockRun })) };
+    const id = addMessage(db, 'c1', 'user', 'Hello');
+    expect(id).toBeTruthy();
+    // Called twice: insert message + update conversation updated_at
+    expect(db.prepare).toHaveBeenCalledTimes(2);
+  });
+
+  it('addMessage stores tool_calls and tool_call_id', () => {
+    const mockRun = vi.fn();
+    const db = { prepare: vi.fn(() => ({ run: mockRun })) };
+    addMessage(db, 'c1', 'assistant', 'result', '[{"name":"query"}]', 'tc-1');
+    expect(mockRun).toHaveBeenCalledWith(
+      expect.any(String), 'c1', 'assistant', 'result', '[{"name":"query"}]', 'tc-1', expect.any(Number)
+    );
+  });
+
+  it('addMessage computes token_count as ceil(length/4)', () => {
+    const mockRun = vi.fn();
+    const db = { prepare: vi.fn(() => ({ run: mockRun })) };
+    addMessage(db, 'c1', 'user', 'Hello world!'); // 12 chars → ceil(12/4) = 3
+    const tokenArg = mockRun.mock.calls[0][6];
+    expect(tokenArg).toBe(3);
+  });
+
+  it('getMessages returns array', () => {
+    const mockAll = vi.fn(() => [{ id: 'm1', role: 'user', content: 'Hi' }]);
+    const db = { prepare: vi.fn(() => ({ all: mockAll })) };
+    expect(getMessages(db, 'c1')).toHaveLength(1);
+    expect(mockAll).toHaveBeenCalledWith('c1');
+  });
+});
+
+describe('Storage: message pinning', () => {
+  it('pinMessage sets pinned = 1', () => {
+    const mockRun = vi.fn();
+    const db = { prepare: vi.fn(() => ({ run: mockRun })) };
+    pinMessage(db, 'm1');
+    expect(mockRun).toHaveBeenCalledWith('m1');
+  });
+
+  it('unpinMessage sets pinned = 0', () => {
+    const mockRun = vi.fn();
+    const db = { prepare: vi.fn(() => ({ run: mockRun })) };
+    unpinMessage(db, 'm1');
+    expect(mockRun).toHaveBeenCalledWith('m1');
+  });
+
+  it('listPinnedMessages returns only pinned messages', () => {
+    const mockAll = vi.fn(() => [{ id: 'm2', role: 'assistant', content: 'Important', pinned: 1 }]);
+    const db = { prepare: vi.fn(() => ({ all: mockAll })) };
+    const pinned = listPinnedMessages(db, 'c1');
+    expect(pinned).toHaveLength(1);
+    expect(mockAll).toHaveBeenCalledWith('c1');
+  });
+});
+
+describe('Storage: deleteWorkspace', () => {
+  it('deletes workspace by id', () => {
+    const mockRun = vi.fn();
+    const db = { prepare: vi.fn(() => ({ run: mockRun })) };
+    deleteWorkspace(db, 'ws-1');
+    expect(mockRun).toHaveBeenCalledWith('ws-1');
   });
 });

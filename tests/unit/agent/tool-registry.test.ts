@@ -60,7 +60,7 @@ describe('ToolRegistry: dispatch', () => {
     const result = await reg.execute('opensearch-query', { index: 'logs-*' }, ctx);
     expect(result.content).toBe('opensearch-query result');
     expect(result.isError).toBe(false);
-    expect(tool.execute).toHaveBeenCalledWith({ index: 'logs-*' }, ctx);
+    expect(tool.execute).toHaveBeenCalledWith({ index: 'logs-*' }, expect.objectContaining({ workspaceId: 'ws-1' }));
   });
 
   it('returns error for unknown tool', async () => {
@@ -84,7 +84,10 @@ describe('ToolRegistry: dispatch', () => {
     const reg = new ToolRegistry();
     const tool = makeTool('slow');
     (tool.execute as ReturnType<typeof vi.fn>).mockImplementation(
-      () => new Promise((r) => setTimeout(() => r({ content: 'late', isError: false }), 5000))
+      (_input: unknown, c: ToolContext) => new Promise((_resolve, reject) => {
+        const t = setTimeout(() => _resolve({ content: 'late', isError: false }), 60_000);
+        c.signal.addEventListener('abort', () => { clearTimeout(t); reject(new Error('aborted')); }, { once: true });
+      })
     );
     reg.register(tool);
     const result = await reg.execute('slow', {}, ctx, 50);

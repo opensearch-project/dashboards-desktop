@@ -40,6 +40,16 @@ switch (command) {
     handlePluginCommand(args.slice(1));
     break;
   }
+  case 'connect': {
+    const { handleConnectCommand } = require('../src/cli/connect.js');
+    handleConnectCommand(args.slice(1));
+    break;
+  }
+  case 'settings': {
+    const { handleSettingsCommand } = require('../src/cli/settings.js');
+    handleSettingsCommand(args.slice(1));
+    break;
+  }
   case '--help':
   case '-h':
   case 'help':
@@ -79,6 +89,8 @@ Commands:
   (none)          Launch desktop GUI
   --tui           Launch terminal UI
   chat            Agent chat (CLI mode)
+  connect         Manage data source connections
+  settings        View and set app settings
   mcp             Manage MCP servers
   skill           Manage skills
   agent           Manage agent personas

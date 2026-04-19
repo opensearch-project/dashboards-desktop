@@ -19,7 +19,7 @@ import * as crypto from 'crypto';
 // Schema
 // ---------------------------------------------------------------------------
 
-export const LATEST_SCHEMA_VERSION = 3;
+export const LATEST_SCHEMA_VERSION = 4;
 
 interface Migration {
   version: number;
@@ -102,6 +102,14 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_conversations_workspace ON conversations(workspace_id, updated_at DESC);
       CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at ASC);
       UPDATE schema_version SET version = 3;
+    `,
+  },
+  {
+    version: 4,
+    up: `
+      ALTER TABLE messages ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;
+      CREATE INDEX IF NOT EXISTS idx_messages_pinned ON messages(conversation_id, pinned) WHERE pinned = 1;
+      UPDATE schema_version SET version = 4;
     `,
   },
 ];
@@ -264,6 +272,89 @@ export function deleteCredential(db: DB, connectionId: string): void {
   db.prepare('DELETE FROM credentials WHERE connection_id = ?').run(connectionId);
 }
 
+// --- Conversations ---
+
+export function createConversation(
+  db: DB,
+  workspaceId: string,
+  model: string,
+  title?: string,
+): string {
+  const id = crypto.randomUUID();
+  db.prepare(
+    "INSERT INTO conversations (id, workspace_id, title, model, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))",
+  ).run(id, workspaceId, title ?? 'New conversation', model);
+  return id;
+}
+
+export function listConversations(db: DB, workspaceId: string): unknown[] {
+  return db
+    .prepare(
+      'SELECT id, title, model, updated_at FROM conversations WHERE workspace_id = ? ORDER BY updated_at DESC',
+    )
+    .all(workspaceId);
+}
+
+export function deleteConversation(db: DB, id: string): void {
+  db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
+}
+
+export function addMessage(
+  db: DB,
+  conversationId: string,
+  role: string,
+  content: string,
+  toolCalls?: string,
+  toolCallId?: string,
+): string {
+  const id = crypto.randomUUID();
+  const tokenCount = Math.ceil(content.length / 4);
+  db.prepare(
+    "INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id, token_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))",
+  ).run(id, conversationId, role, content, toolCalls ?? null, toolCallId ?? null, tokenCount);
+  db.prepare("UPDATE conversations SET updated_at = datetime('now') WHERE id = ?").run(
+    conversationId,
+  );
+  return id;
+}
+
+export function getMessages(db: DB, conversationId: string): unknown[] {
+  return db
+    .prepare(
+      'SELECT id, role, content, tool_calls, tool_call_id, token_count, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at ASC',
+    )
+    .all(conversationId);
+}
+
+export function deleteWorkspace(db: DB, id: string): void {
+  db.prepare('DELETE FROM workspaces WHERE id = ?').run(id);
+}
+
+// --- Conversation extras ---
+
+export function renameConversation(db: DB, id: string, title: string): void {
+  db.prepare("UPDATE conversations SET title = ?, updated_at = datetime('now') WHERE id = ?").run(
+    title,
+    id,
+  );
+}
+
+export function pinMessage(db: DB, messageId: string): void {
+  db.prepare('UPDATE messages SET pinned = 1 WHERE id = ?').run(messageId);
+}
+
+export function unpinMessage(db: DB, messageId: string): void {
+  db.prepare('UPDATE messages SET pinned = 0 WHERE id = ?').run(messageId);
+}
+
+export function listPinnedMessages(db: DB, conversationId: string): unknown[] {
+  return db
+    .prepare(
+      'SELECT id, role, content, created_at FROM messages WHERE conversation_id = ? AND pinned = 1 ORDER BY created_at ASC',
+    )
+    .all(conversationId);
+}
+
 // ---------------------------------------------------------------------------
 // Worker thread: handles messages from StorageProxy
 // ---------------------------------------------------------------------------
@@ -323,6 +414,48 @@ if (!isMainThread && parentPort) {
         }
         case 'deleteCredential':
           result = deleteCredential(db, req.args[0] as string);
+          break;
+        case 'createConversation':
+          result = createConversation(
+            db,
+            req.args[0] as string,
+            req.args[1] as string,
+            req.args[2] as string | undefined,
+          );
+          break;
+        case 'listConversations':
+          result = listConversations(db, req.args[0] as string);
+          break;
+        case 'deleteConversation':
+          result = deleteConversation(db, req.args[0] as string);
+          break;
+        case 'addMessage':
+          result = addMessage(
+            db,
+            req.args[0] as string,
+            req.args[1] as string,
+            req.args[2] as string,
+            req.args[3] as string | undefined,
+            req.args[4] as string | undefined,
+          );
+          break;
+        case 'getMessages':
+          result = getMessages(db, req.args[0] as string);
+          break;
+        case 'deleteWorkspace':
+          result = deleteWorkspace(db, req.args[0] as string);
+          break;
+        case 'renameConversation':
+          result = renameConversation(db, req.args[0] as string, req.args[1] as string);
+          break;
+        case 'pinMessage':
+          result = pinMessage(db, req.args[0] as string);
+          break;
+        case 'unpinMessage':
+          result = unpinMessage(db, req.args[0] as string);
+          break;
+        case 'listPinnedMessages':
+          result = listPinnedMessages(db, req.args[0] as string);
           break;
         default:
           throw new Error(`Unknown method: ${req.method}`);
@@ -418,6 +551,51 @@ export class StorageProxy {
   }
   deleteCredentialAsync(connectionId: string) {
     return this.call('deleteCredential', connectionId);
+  }
+
+  // Conversations
+  createConversationAsync(workspaceId: string, model: string, title?: string) {
+    return this.call('createConversation', workspaceId, model, title) as Promise<string>;
+  }
+  listConversationsAsync(workspaceId: string) {
+    return this.call('listConversations', workspaceId) as Promise<unknown[]>;
+  }
+  deleteConversationAsync(id: string) {
+    return this.call('deleteConversation', id);
+  }
+  addMessageAsync(
+    conversationId: string,
+    role: string,
+    content: string,
+    toolCalls?: string,
+    toolCallId?: string,
+  ) {
+    return this.call(
+      'addMessage',
+      conversationId,
+      role,
+      content,
+      toolCalls,
+      toolCallId,
+    ) as Promise<string>;
+  }
+  getMessagesAsync(conversationId: string) {
+    return this.call('getMessages', conversationId) as Promise<unknown[]>;
+  }
+  deleteWorkspaceAsync(id: string) {
+    return this.call('deleteWorkspace', id);
+  }
+  renameConversationAsync(id: string, title: string) {
+    return this.call('renameConversation', id, title);
+  }
+  pinMessageAsync(messageId: string) {
+    return this.call('pinMessage', messageId);
+  }
+  unpinMessageAsync(messageId: string) {
+    return this.call('unpinMessage', messageId);
+  }
+  listPinnedMessagesAsync(conversationId: string) {
+    return this.call('listPinnedMessages', conversationId) as Promise<unknown[]>;
   }
 
   // Fix #2: drain pending promises before terminating
