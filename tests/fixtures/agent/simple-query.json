@@ -1,0 +1,22 @@
+{
+  "name": "simple-query",
+  "model": "ollama:llama3",
+  "turns": [
+    {
+      "request": {
+        "model": "llama3",
+        "messages": [
+          { "role": "user", "content": "What is OpenSearch?" }
+        ]
+      },
+      "response": {
+        "chunks": [
+          { "type": "text", "content": "OpenSearch is an open-source search and analytics engine " },
+          { "type": "text", "content": "derived from Elasticsearch 7.10. It supports full-text search, " },
+          { "type": "text", "content": "log analytics, and observability use cases." },
+          { "type": "usage", "usage": { "inputTokens": 12, "outputTokens": 34 } }
+        ]
+      }
+    }
+  ]
+}
