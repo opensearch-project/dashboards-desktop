@@ -35,28 +35,46 @@ npx electron-rebuild -f -w better-sqlite3
 
 ```
 src/
-  main/           # Electron main process (TypeScript)
-    index.ts      # App entry — BrowserWindow, IPC handlers, lifecycle
-    migrations/   # SQLite schema migrations (v1, v2, ...)
-  preload/        # Preload scripts (context bridge)
-    index.ts      # Exposes safe IPC API to renderer
-  renderer/       # React UI (TypeScript + React)
-    index.tsx      # React entry point
-    App.tsx        # Root component, layout shell
-    pages/         # Page-level components (HomePage, etc.)
-    components/    # Reusable UI components
-    styles/        # CSS and theme files
-    types.d.ts     # Renderer type declarations
-  core/           # Shared business logic (used by main + renderer)
-    types.ts       # Shared TypeScript interfaces
-    storage.ts     # SQLite worker thread, migrations, CRUD
-    connections.ts # Connection manager, client factories
-  tui/            # Ink TUI (M5, placeholder)
-    index.ts
+  main/              # Electron main process
+    index.ts         # App entry — BrowserWindow, lifecycle
+    menu.ts          # Application menu with keyboard shortcuts
+    ipc/             # IPC handler modules (connections, MCP, plugins, skills, updates, settings)
+  preload/           # Preload scripts (context bridge)
+    index.ts         # Exposes safe IPC API to renderer
+  renderer/          # React UI (TypeScript + React)
+    index.tsx        # React entry point
+    App.tsx          # Root component, layout shell, routing
+    pages/           # Page components (Home, Cluster, Indices, Security, Settings, Plugins, Skills, MCP)
+    components/      # Reusable UI (ChatPanel, ConnectionDialog, Onboarding, ModelSwitcher, etc.)
+    styles/          # CSS and theme files
+  core/              # Shared business logic (used by main + renderer + CLI)
+    types.ts         # Shared TypeScript interfaces
+    storage.ts       # SQLite worker thread, WAL mode, migrations, CRUD
+    connections.ts   # Connection manager
+    connections/     # Client factory and connection pool
+    agent/           # Agent runtime, model router, tool registry, conversation, branching
+      providers/     # Model providers (Ollama, OpenAI, Anthropic, Bedrock, OpenAI-compatible)
+      tools/         # Built-in agent tools (query, health, index, admin)
+      multi/         # Multi-agent framework (registry, message bus, orchestrator)
+      testing/       # Fixture recorder and replayer for agent tests
+    admin/           # Cluster admin modules
+      opensearch/    # Alerting, ingest, ISM, security, snapshots
+      elasticsearch/ # ILM, ingest, security, snapshots, Watcher
+    auth/            # OAuth (GitHub PKCE, Google PKCE, auth manager)
+    mcp/             # MCP host (supervisor, config, discovery, tool bridge)
+    plugins/         # Plugin manager, registry, sandbox
+    skills/          # Skill loader, agent personas
+    updates/         # Update checker, downloader, installer, rollback
+  cli/               # CLI commands (chat, doctor, mcp, plugins, skills, agents, update)
+  tui/               # Ink TUI (placeholder)
 bin/
-  osd.js          # CLI entry point
-docs/             # User-facing documentation
-tests/            # Test files (mirrors src/ structure)
+  osd.js             # CLI entry point
+docs/                # User-facing documentation
+tests/               # Test files (mirrors src/ structure)
+  unit/              # Vitest unit tests
+  components/        # React Testing Library component tests
+  e2e/               # Playwright E2E tests
+  fixtures/          # Mock data, recorded agent responses
 ```
 
 ### Key Conventions

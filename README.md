@@ -58,14 +58,18 @@ An agent-first, local-first desktop application for AI chat and OpenSearch/Elast
 ### Install
 
 ```bash
-# macOS
-brew install --cask osd-desktop
+# Download from GitHub Releases (macOS, Linux, Windows)
+# https://github.com/opensearch-project/dashboards-desktop/releases
 
-# Linux
-sudo apt-get install osd-desktop
-
-# Or download from GitHub Releases
+# Or build from source (requires Node 20)
+git clone https://github.com/opensearch-project/dashboards-desktop.git
+cd dashboards-desktop
+npm ci
+npm run build:ts
+npx electron-builder --mac    # or --linux or --win
 ```
+
+> Homebrew cask and apt packages are planned for stable release.
 
 ### Launch
 
