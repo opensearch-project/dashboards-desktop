@@ -31,7 +31,7 @@ export const IndicesPage: React.FC = () => {
   const load = async () => {
     setLoading(true); setError('');
     try { setIndices(await window.osd.indices.list()); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setLoading(false);
   };
 
@@ -43,19 +43,19 @@ export const IndicesPage: React.FC = () => {
     try {
       await window.osd.indices.create(newName, JSON.parse(newSettings), JSON.parse(newMappings));
       setDialog(null); setNewName(''); load();
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const handleDelete = async (name: string) => {
     if (!confirm(`Delete index "${name}"? This cannot be undone.`)) return;
     try { await window.osd.indices.delete(name); load(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const handleReindex = async () => {
     if (!selected || !reindexDest) return;
     try { await window.osd.indices.reindex(selected, reindexDest); setDialog(null); load(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const handleAddAlias = async () => {
@@ -63,14 +63,14 @@ export const IndicesPage: React.FC = () => {
     try {
       await window.osd.indices.updateAlias([{ add: { index: aliasIndex, alias: aliasName } }]);
       setDialog(null); load();
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const handleRemoveAlias = async (index: string, alias: string) => {
     try {
       await window.osd.indices.updateAlias([{ remove: { index, alias } }]);
       load();
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   if (loading) return <div className="page-loading" role="status">Loading indices…</div>;

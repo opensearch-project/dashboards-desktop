@@ -27,8 +27,8 @@ export const ClusterPage: React.FC = () => {
       setHealth(h);
       setNodes(n);
       setShards(s);
-    } catch (e: any) {
-      setError(e.message ?? 'Failed to load cluster data');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to load cluster data');
     }
     setLoading(false);
   };

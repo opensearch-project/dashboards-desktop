@@ -134,7 +134,8 @@ function toConverseTool(tool: ToolDefinition) {
 }
 
 async function* parseBedrockStream(res: Response): AsyncIterable<StreamChunk> {
-  const reader = res.body!.getReader();
+  if (!res.body) throw new Error('No response body from Bedrock');
+  const reader = res.body.getReader();
   let inputTokens = 0;
   let outputTokens = 0;
   let buf = new Uint8Array(0);

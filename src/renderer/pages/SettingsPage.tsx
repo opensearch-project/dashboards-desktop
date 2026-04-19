@@ -35,13 +35,13 @@ export const SettingsPage: React.FC = () => {
   const checkUpdates = async () => {
     setChecking(true); setError('');
     try { setUpdateInfo(await window.osd.updates.check()); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setChecking(false);
   };
 
   const installUpdate = async () => {
     try { await window.osd.updates.install(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const changeChannel = async (ch: string) => {
@@ -134,7 +134,7 @@ export const SettingsPage: React.FC = () => {
           <dl className="about-list">
             <dt>Version</dt><dd>0.1.0</dd>
             <dt>License</dt><dd>Apache-2.0</dd>
-            <dt>Repository</dt><dd><a href="https://github.com/opensearch-project/dashboards-desktop" target="_blank" rel="noopener">GitHub</a></dd>
+            <dt>Repository</dt><dd><a href="https://github.com/opensearch-project/dashboards-desktop" target="_blank" rel="noreferrer">GitHub</a></dd>
             <dt>Electron</dt><dd>{navigator.userAgent.match(/Electron\/([\d.]+)/)?.[1] ?? 'N/A'}</dd>
             <dt>Chrome</dt><dd>{navigator.userAgent.match(/Chrome\/([\d.]+)/)?.[1] ?? 'N/A'}</dd>
           </dl>

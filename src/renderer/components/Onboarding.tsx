@@ -24,8 +24,8 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
     try {
       const result = await window.osd.connections.test({ name: connName, url: connUrl, type: connType, auth_type: authType, workspace_id: 'default' });
       setTestResult(result ?? { success: false, error: 'IPC unavailable' });
-    } catch (e: any) {
-      setTestResult({ success: false, error: e.message });
+    } catch (e: unknown) {
+      setTestResult({ success: false, error: e instanceof Error ? e.message : String(e) });
     }
     setTesting(false);
   };
@@ -85,7 +85,7 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="ob-conn-type">Type</label>
-                <select id="ob-conn-type" value={connType} onChange={e => setConnType(e.target.value as any)}>
+                <select id="ob-conn-type" value={connType} onChange={e => setConnType(e.target.value as 'opensearch' | 'elasticsearch')}>
                   <option value="opensearch">OpenSearch</option>
                   <option value="elasticsearch">Elasticsearch</option>
                 </select>

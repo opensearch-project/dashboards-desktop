@@ -18,7 +18,7 @@ export const SkillsPage: React.FC = () => {
     try {
       const [s, p] = await Promise.all([window.osd.skills.list(), window.osd.agents.listPersonas()]);
       setSkills(s); setPersonas(p);
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setLoading(false);
   };
 
@@ -28,18 +28,18 @@ export const SkillsPage: React.FC = () => {
     if (!installSource.trim()) return;
     setInstalling(true);
     try { await window.osd.skills.install(installSource.trim()); setInstallOpen(false); setInstallSource(''); load(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setInstalling(false);
   };
 
   const toggleSkill = async (s: SkillInfo) => {
     try { await window.osd.skills.activate(s.name); load(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const switchAgent = async (id: string) => {
     try { await window.osd.agents.switchPersona(id); load(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   if (loading) return <div className="page-loading" role="status">Loading…</div>;

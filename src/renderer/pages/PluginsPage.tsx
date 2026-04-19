@@ -14,7 +14,7 @@ export const PluginsPage: React.FC = () => {
   const load = async () => {
     setLoading(true);
     try { setPlugins(await window.osd.plugins.list()); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setLoading(false);
   };
 
@@ -24,14 +24,14 @@ export const PluginsPage: React.FC = () => {
     if (!installSource.trim()) return;
     setInstalling(true); setError('');
     try { await window.osd.plugins.install(installSource.trim()); setInstallOpen(false); setInstallSource(''); load(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setInstalling(false);
   };
 
   const handleUninstall = async (name: string) => {
     if (!confirm(`Uninstall "${name}"?`)) return;
     try { await window.osd.plugins.uninstall(name); load(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const togglePlugin = async (p: PluginInfo) => {
@@ -39,7 +39,7 @@ export const PluginsPage: React.FC = () => {
       if (p.enabled) await window.osd.plugins.disable(p.name);
       else await window.osd.plugins.enable(p.name);
       load();
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const filtered = search ? plugins.filter(p => p.name.toLowerCase().includes(search.toLowerCase())) : plugins;

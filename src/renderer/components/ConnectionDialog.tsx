@@ -61,7 +61,7 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
     try {
       const result = await window.osd.connections.test(buildInput());
       setTestResult(result ?? { success: false, error: 'IPC unavailable' });
-    } catch (e: any) { setTestResult({ success: false, error: e.message }); }
+    } catch (e: unknown) { setTestResult({ success: false, error: e instanceof Error ? e.message : String(e) }); }
     setTesting(false);
   };
 
@@ -72,7 +72,7 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
       if (isEdit) await window.osd.connections.update(connection!.id, buildInput());
       else await window.osd.connections.add(buildInput());
       onSaved();
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setSaving(false);
   };
 
@@ -104,7 +104,7 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="cd-type">Type</label>
-            <select id="cd-type" value={type} onChange={e => setType(e.target.value as any)}>
+            <select id="cd-type" value={type} onChange={e => setType(e.target.value as 'opensearch' | 'elasticsearch')}>
               <option value="opensearch">OpenSearch</option>
               <option value="elasticsearch">Elasticsearch</option>
             </select>

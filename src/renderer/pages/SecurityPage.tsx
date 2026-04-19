@@ -40,7 +40,7 @@ export const SecurityPage: React.FC = () => {
         window.osd.security.tenants.list(),
       ]);
       setRoles(r); setUsers(u); setTenants(t);
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setLoading(false);
   };
 
@@ -84,26 +84,26 @@ export const SecurityPage: React.FC = () => {
         }] : [],
       });
       setDialog(null); resetForms(); load();
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const saveUser = async () => {
     try {
-      const body: any = {
+      const body: Record<string, unknown> = {
         backend_roles: userBackendRoles.split(',').map(s => s.trim()).filter(Boolean),
         opendistro_security_roles: userRoles.split(',').map(s => s.trim()).filter(Boolean),
       };
       if (userPassword) body.password = userPassword;
       await window.osd.security.users.save(userName, body);
       setDialog(null); resetForms(); load();
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const saveTenant = async () => {
     try {
       await window.osd.security.tenants.save(tenantName, { description: tenantDesc });
       setDialog(null); resetForms(); load();
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   if (loading) return <div className="page-loading" role="status">Loading security configuration…</div>;

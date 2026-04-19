@@ -16,7 +16,7 @@ export const McpPage: React.FC = () => {
   const load = async () => {
     setLoading(true); setError('');
     try { setServers(await window.osd.mcp.list()); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setLoading(false);
   };
 
@@ -26,7 +26,7 @@ export const McpPage: React.FC = () => {
     if (!installSource.trim()) return;
     setInstalling(true);
     try { await window.osd.mcp.install(installSource.trim()); setInstallOpen(false); setInstallSource(''); load(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     setInstalling(false);
   };
 
@@ -35,18 +35,18 @@ export const McpPage: React.FC = () => {
       const cfg = await window.osd.mcp.getConfig(name);
       setConfigJson(JSON.stringify(cfg, null, 2));
       setConfigServer(name);
-    } catch (e: any) { setError(e.message); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const saveConfig = async () => {
     if (!configServer) return;
     try { await window.osd.mcp.setConfig(configServer, JSON.parse(configJson)); setConfigServer(null); load(); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const openTools = async (name: string) => {
     try { setTools(await window.osd.mcp.tools(name)); setToolsServer(name); }
-    catch (e: any) { setError(e.message); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
   };
 
   const statusClass = (s: string) => s === 'running' ? 'health-green' : s === 'unhealthy' ? 'health-yellow' : 'health-red';
