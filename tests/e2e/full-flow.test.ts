@@ -1,8 +1,6 @@
 /**
- * E2E acceptance test — full user flow with OSD-wrapping architecture.
- * Launch → OSD loads at localhost:5601 → chat overlay → send message → admin via OSD
- *
- * STUB: Requires sde M3 (OSD lifecycle) + fee M4 (chat overlay) to implement fully.
+ * E2E acceptance test — OSD-wrapping architecture with chat overlay.
+ * Launch → OSD loads → chat button → sidebar → send message → Cmd+K toggle
  */
 import { test, expect, _electron as electron, type ElectronApplication, type Page } from '@playwright/test';
 import path from 'path';
@@ -14,10 +12,10 @@ let page: Page;
 let tmpDir: string;
 
 test.beforeAll(async () => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'osd-e2e-full-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'osd-e2e-overlay-'));
   app = await electron.launch({
     args: [path.resolve(__dirname, '../../dist/main/index.js')],
-    env: { ...process.env, OSD_DATA_DIR: tmpDir, OSD_TEST_MODE: '1' },
+    env: { ...process.env, OSD_DATA_DIR: tmpDir, OSD_TEST_MODE: '1', OSD_SKIP_ONBOARDING: '1' },
   });
   page = await app.firstWindow();
   await page.waitForLoadState('domcontentloaded');
@@ -28,40 +26,50 @@ test.afterAll(async () => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test.describe.serial('Full flow: launch → OSD → chat → admin', () => {
-  test('1. app launches and shows onboarding or OSD loading', async () => {
-    // First run: onboarding wizard OR OSD loading indicator
-    const content = page.locator('[data-testid="onboarding"], [data-testid="osd-loading"], webview, iframe');
-    await expect(content.first()).toBeVisible({ timeout: 10000 });
+test.describe.serial('Chat overlay E2E', () => {
+  test('1. app launches and chat button is visible', async () => {
+    const chatBtn = page.locator('[data-testid="chat-toggle"], #osd-chat-toggle, button.chat-toggle');
+    await expect(chatBtn.first()).toBeVisible({ timeout: 15000 });
   });
 
-  test('2. OSD web UI loads at localhost:5601', async () => {
-    // After onboarding, BrowserWindow should load OSD
-    // TODO: implement once sde lands OSD lifecycle (M3)
-    test.skip(true, 'Blocked on sde M3: OSD lifecycle');
+  test('2. clicking chat button opens sidebar', async () => {
+    const chatBtn = page.locator('[data-testid="chat-toggle"], #osd-chat-toggle, button.chat-toggle');
+    await chatBtn.first().click();
+    const sidebar = page.locator('[data-testid="chat-sidebar"], #osd-chat-sidebar, .chat-sidebar');
+    await expect(sidebar.first()).toBeVisible({ timeout: 3000 });
   });
 
-  test('3. chat overlay is accessible', async () => {
-    // Chat overlay injected into OSD page
-    // TODO: implement once fee lands chat overlay (M4)
-    test.skip(true, 'Blocked on fee M4: chat overlay');
+  test('3. send message and get response', async () => {
+    const input = page.locator('[data-testid="chat-input"], #osd-chat-input, .chat-input input, .chat-input textarea');
+    await expect(input.first()).toBeVisible({ timeout: 3000 });
+    await input.first().fill('Hello agent');
+    await input.first().press('Enter');
+
+    // User message appears
+    const userMsg = page.locator('[data-testid="msg-user"], .msg-user, .message-user');
+    await expect(userMsg.first()).toBeVisible({ timeout: 5000 });
+
+    // Agent response appears (from fixture/mock provider)
+    const agentMsg = page.locator('[data-testid="msg-assistant"], .msg-assistant, .message-assistant');
+    await expect(agentMsg.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('4. send message via chat overlay and get response', async () => {
-    // Type message in overlay, get agent response
-    // TODO: implement once fee M4 + aieng wiring complete
-    test.skip(true, 'Blocked on fee M4 + aieng wiring');
+  test('4. Cmd+K toggles overlay closed', async () => {
+    const sidebar = page.locator('[data-testid="chat-sidebar"], #osd-chat-sidebar, .chat-sidebar');
+    await expect(sidebar.first()).toBeVisible();
+    await page.keyboard.press('Meta+k');
+    await expect(sidebar.first()).not.toBeVisible({ timeout: 3000 });
   });
 
-  test('5. navigate OSD admin pages (cluster, indices, security)', async () => {
-    // OSD provides admin UI natively — verify navigation works
-    // TODO: implement once OSD is running
-    test.skip(true, 'Blocked on sde M3: OSD lifecycle');
+  test('5. Cmd+K toggles overlay open again', async () => {
+    await page.keyboard.press('Meta+k');
+    const sidebar = page.locator('[data-testid="chat-sidebar"], #osd-chat-sidebar, .chat-sidebar');
+    await expect(sidebar.first()).toBeVisible({ timeout: 3000 });
   });
 
-  test('6. multi-cluster switching via connection manager', async () => {
-    // Switch active cluster, OSD reloads with new datasource
-    // TODO: implement once signing proxy supports multi-cluster
-    test.skip(true, 'Blocked on sde M3: signing proxy');
+  test('6. previous messages persist after toggle', async () => {
+    const messages = page.locator('[data-testid="msg-user"], [data-testid="msg-assistant"], .msg-user, .msg-assistant');
+    const count = await messages.count();
+    expect(count).toBeGreaterThanOrEqual(2);
   });
 });
