@@ -2,50 +2,15 @@ import { platform, arch } from 'os';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-export const OSD_VERSION = '3.6.0';
+export const RELEASES_API = 'https://api.github.com/repos/opensearch-project/OpenSearch-Dashboards/releases';
+export const ARTIFACTS_BASE = 'https://artifacts.opensearch.org/releases/core/opensearch-dashboards';
 
 export interface OsdArtifact {
   url: string;
-  sha256: string;
+  version: string;
   size: number;
   format: 'tar.gz' | 'zip';
 }
-
-const ARTIFACTS_BASE =
-  'https://artifacts.opensearch.org/releases/core/opensearch-dashboards';
-
-const MANIFEST: Record<string, OsdArtifact> = {
-  'linux-x64': {
-    url: `${ARTIFACTS_BASE}/${OSD_VERSION}/opensearch-dashboards-min-${OSD_VERSION}-linux-x64.tar.gz`,
-    sha256: '',
-    size: 217769295,
-    format: 'tar.gz',
-  },
-  'linux-arm64': {
-    url: `${ARTIFACTS_BASE}/${OSD_VERSION}/opensearch-dashboards-min-${OSD_VERSION}-linux-arm64.tar.gz`,
-    sha256: '',
-    size: 0,
-    format: 'tar.gz',
-  },
-  'win32-x64': {
-    url: '',
-    sha256: '',
-    size: 0,
-    format: 'zip',
-  },
-  'darwin-x64': {
-    url: '',
-    sha256: '',
-    size: 0,
-    format: 'tar.gz',
-  },
-  'darwin-arm64': {
-    url: '',
-    sha256: '',
-    size: 0,
-    format: 'tar.gz',
-  },
-};
 
 export function getPlatformKey(): string {
   const p = platform();
@@ -53,14 +18,52 @@ export function getPlatformKey(): string {
   return `${p}-${a}`;
 }
 
-export function getArtifact(key?: string): OsdArtifact {
-  const k = key ?? getPlatformKey();
-  const artifact = MANIFEST[k];
-  if (!artifact) throw new Error(`No OSD artifact for platform: ${k}`);
-  return artifact;
+/**
+ * Fetches the latest 3.x release version from GitHub API.
+ */
+export async function getLatestVersion(): Promise<string> {
+  const res = await fetch(RELEASES_API + '?per_page=20', {
+    headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'osd-desktop' },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch releases: ${res.status}`);
+  const releases = await res.json() as Array<{ tag_name: string; prerelease: boolean; draft: boolean }>;
+  const stable = releases.find(r => !r.prerelease && !r.draft && r.tag_name.match(/^\d+\.\d+\.\d+$/));
+  if (!stable) throw new Error('No stable release found');
+  return stable.tag_name;
 }
 
-export function loadLocalManifest(resourcesPath: string): typeof MANIFEST {
+/**
+ * Builds the artifact URL for the given version and platform.
+ * Returns null if no artifact available for this platform.
+ */
+export function buildArtifactUrl(version: string, platformKey?: string): OsdArtifact | null {
+  const key = platformKey ?? getPlatformKey();
+  const [os, arch] = key.split('-');
+
+  // Only linux min builds are available on artifacts.opensearch.org
+  if (os === 'linux') {
+    return {
+      url: `${ARTIFACTS_BASE}/${version}/opensearch-dashboards-min-${version}-linux-${arch}.tar.gz`,
+      version,
+      size: arch === 'x64' ? 217_000_000 : 200_000_000,
+      format: 'tar.gz',
+    };
+  }
+
+  // macOS and Windows — no min builds available yet
+  return null;
+}
+
+/**
+ * Gets the best available artifact for this platform.
+ * Fetches latest version dynamically.
+ */
+export async function getLatestArtifact(): Promise<OsdArtifact | null> {
+  const version = await getLatestVersion();
+  return buildArtifactUrl(version);
+}
+
+export function loadLocalManifest(resourcesPath: string): Record<string, OsdArtifact> {
   const p = join(resourcesPath, 'osd-setup', 'manifest.json');
   return JSON.parse(readFileSync(p, 'utf-8')).artifacts;
 }

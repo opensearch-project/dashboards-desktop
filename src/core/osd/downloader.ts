@@ -5,7 +5,7 @@ import { pipeline } from 'stream/promises';
 import { createReadStream } from 'fs';
 import { execFileSync } from 'child_process';
 import { homedir } from 'os';
-import { getArtifact, type OsdArtifact } from './manifest.js';
+import { getLatestArtifact, type OsdArtifact } from './manifest.js';
 
 export const OSD_HOME = join(homedir(), '.osd-desktop');
 export const OSD_DIR = join(OSD_HOME, 'osd');
@@ -25,7 +25,10 @@ export function isOsdInstalled(): boolean {
 export async function downloadAndInstall(
   onProgress?: ProgressCallback,
 ): Promise<void> {
-  const artifact = getArtifact();
+  const artifact = await getLatestArtifact();
+  if (!artifact) {
+    throw new Error('No OSD download available for this platform. Please install OpenSearch Dashboards manually and use "Browse for existing..." to select it.');
+  }
   if (!artifact.url) {
     throw new Error('No OSD download available for this platform. Please install OpenSearch Dashboards manually and use "Browse for existing..." to select it.');
   }

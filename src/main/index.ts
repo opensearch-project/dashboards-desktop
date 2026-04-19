@@ -604,20 +604,25 @@ app.whenReady().then(async () => {
 
   if (!osdBinPath && !isOsdInstalled()) {
     const { dialog, BrowserWindow: BW } = await import('electron');
-    const { getArtifact, getPlatformKey, OSD_VERSION } = await import('../core/osd/manifest.js');
+    const { getLatestArtifact, getPlatformKey, getLatestVersion } = await import('../core/osd/manifest.js');
     const { downloadAndInstall } = await import('../core/osd/downloader.js');
 
     const platformKey = getPlatformKey();
-    const artifact = getArtifact();
-    const hasDownload = !!artifact.url;
+    let artifact: Awaited<ReturnType<typeof getLatestArtifact>> = null;
+    let version = 'latest';
+    try {
+      version = await getLatestVersion();
+      artifact = await getLatestArtifact();
+    } catch { /* offline — no download available */ }
+    const hasDownload = !!artifact?.url;
 
     const buttons = hasDownload
-      ? [`Download OSD ${OSD_VERSION} (${platformKey})`, 'Browse for local install...', 'Connect to localhost:5601', 'Cancel']
+      ? [`Download OSD ${version} (${platformKey})`, 'Browse for local install...', 'Connect to localhost:5601', 'Cancel']
       : ['Browse for local install...', 'Connect to localhost:5601', 'Cancel'];
 
     const detail = hasDownload
-      ? `OpenSearch Dashboards ${OSD_VERSION} will be downloaded (~${Math.round((artifact.size || 200_000_000) / 1_000_000)}MB) and installed to ~/.osd-desktop/osd/`
-      : `No pre-built OSD available for ${platformKey}. Please install OSD manually or use a running instance.`;
+      ? `OpenSearch Dashboards ${version} will be downloaded (~${Math.round((artifact!.size || 200_000_000) / 1_000_000)}MB) and installed to ~/.osd-desktop/osd/`
+      : `No pre-built OSD available for ${platformKey}. Install manually or connect to a running instance.`;
 
     const choice = await dialog.showMessageBox({
       type: 'question',
@@ -635,7 +640,7 @@ app.whenReady().then(async () => {
     if (action === 'download') {
       // In-app download with progress
       const progressWin = new BW({ width: 450, height: 140, frame: false, resizable: false, alwaysOnTop: true, show: true });
-      progressWin.loadURL(`data:text/html,<body style="font-family:system-ui;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#1a1a2e;color:#e8e8f0"><h3 style="margin:0 0 8px">Downloading OSD ${OSD_VERSION}</h3><div id="m" style="color:#a0a0c0">Starting...</div><div style="width:80%;height:6px;background:#333;border-radius:3px;margin-top:12px"><div id="bar" style="height:100%;background:#4da6ff;border-radius:3px;width:0%;transition:width 0.3s"></div></div></body>`);
+      progressWin.loadURL(`data:text/html,<body style="font-family:system-ui;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#1a1a2e;color:#e8e8f0"><h3 style="margin:0 0 8px">Downloading OSD ${version}</h3><div id="m" style="color:#a0a0c0">Starting...</div><div style="width:80%;height:6px;background:#333;border-radius:3px;margin-top:12px"><div id="bar" style="height:100%;background:#4da6ff;border-radius:3px;width:0%;transition:width 0.3s"></div></div></body>`);
 
       try {
         await downloadAndInstall((p) => {
