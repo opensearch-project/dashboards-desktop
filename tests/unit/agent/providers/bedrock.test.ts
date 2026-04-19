@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { BedrockProvider } from '../../../../src/core/agent/providers/bedrock';
 import type { StreamChunk } from '../../../../src/core/agent/types';
 
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 beforeEach(() => mockFetch.mockReset());
+afterAll(() => vi.unstubAllGlobals());
 
 /**
  * Build an AWS event-stream binary frame.
