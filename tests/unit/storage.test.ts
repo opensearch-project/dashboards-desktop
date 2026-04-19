@@ -9,12 +9,17 @@ vi.mock('uuid', () => ({ v4: vi.fn(() => 'test-uuid-' + Math.random().toString(3
 vi.mock('better-sqlite3', () => ({ default: vi.fn() }));
 
 // Mock worker_threads to prevent worker code from running on import
-vi.mock('worker_threads', () => ({
-  isMainThread: true,
-  parentPort: null,
-  workerData: {},
-  Worker: vi.fn(),
-}));
+vi.mock('worker_threads', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('worker_threads')>();
+  return {
+    ...actual,
+    default: actual,
+    isMainThread: true,
+    parentPort: null,
+    workerData: {},
+    Worker: vi.fn(),
+  };
+});
 
 import {
   LATEST_SCHEMA_VERSION,

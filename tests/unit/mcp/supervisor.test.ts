@@ -18,9 +18,14 @@ const mockChild = () => {
   return child;
 };
 
-vi.mock('child_process', () => ({
-  spawn: vi.fn(() => mockChild()),
-}));
+vi.mock('child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('child_process')>();
+  return {
+    ...actual,
+    default: actual,
+    spawn: vi.fn(() => mockChild()),
+  };
+});
 
 import { McpSupervisor } from '../../../src/core/mcp/supervisor';
 import { spawn } from 'child_process';
