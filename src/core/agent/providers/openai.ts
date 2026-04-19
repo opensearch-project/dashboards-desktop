@@ -3,7 +3,7 @@
  * Uses fetch with streaming (SSE) for broad compatibility without SDK dependency.
  */
 
-import type { ModelProvider, ModelInfo, ChatMessage, StreamChunk, ToolDefinition } from '../types';
+import type { ModelProvider, ModelInfo, ChatMessage, StreamChunk, ToolDefinition, ChatParams } from '../types';
 
 export class OpenAIProvider implements ModelProvider {
   id: string;
@@ -35,31 +35,18 @@ export class OpenAIProvider implements ModelProvider {
       }));
   }
 
-  async *chat(params: {
-    model: string;
-    messages: ChatMessage[];
-    tools?: ToolDefinition[];
-    signal?: AbortSignal;
-  }): AsyncIterable<StreamChunk> {
+  async *chat(params: ChatParams): AsyncIterable<StreamChunk> {
     const body: Record<string, unknown> = {
       model: params.model,
       messages: params.messages.map(toOpenAIMessage),
       stream: true,
+      stream_options: { include_usage: true },
     };
     if (params.tools?.length) {
       body.tools = params.tools.map(toOpenAITool);
     }
 
-    const res = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(body),
-      signal: params.signal,
-    });
-    if (!res.ok) throw new Error(`OpenAI error: ${res.status} ${await res.text()}`);
+    const res = await this.fetchWithRetry(`${this.baseUrl}/chat/completions`, body, params.signal);
     if (!res.body) throw new Error('No response body');
 
     const reader = res.body.getReader();
@@ -111,6 +98,41 @@ export class OpenAIProvider implements ModelProvider {
         }
       }
     }
+  }
+
+  /** Fetch with retry on 429 rate limit */
+  private async fetchWithRetry(
+    url: string,
+    body: Record<string, unknown>,
+    signal?: AbortSignal,
+    maxRetries = 3,
+  ): Promise<Response> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(body),
+        signal,
+      });
+
+      if (res.ok) return res;
+
+      const text = await res.text().catch(() => '');
+
+      if (res.status === 429 && attempt < maxRetries) {
+        const retryAfter = parseInt(res.headers.get('retry-after') ?? '', 10);
+        const delay = (retryAfter > 0 ? retryAfter * 1000 : 1000 * Math.pow(2, attempt));
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+
+      if (res.status === 401) throw new Error('Invalid OpenAI API key. Check your key in Settings.');
+      throw new Error(`OpenAI error ${res.status}: ${text}`);
+    }
+    throw new Error('OpenAI rate limit exceeded after retries');
   }
 }
 

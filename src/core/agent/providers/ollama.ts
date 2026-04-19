@@ -3,7 +3,7 @@
  * Uses Ollama's /api/chat endpoint with streaming.
  */
 
-import type { ModelProvider, ModelInfo, ChatMessage, StreamChunk, ToolDefinition } from '../types';
+import type { ModelProvider, ModelInfo, ChatMessage, StreamChunk, ToolDefinition, ChatParams } from '../types';
 
 const DEFAULT_BASE_URL = 'http://localhost:11434';
 
@@ -17,7 +17,12 @@ export class OllamaProvider implements ModelProvider {
   }
 
   async listModels(): Promise<ModelInfo[]> {
-    const res = await fetch(`${this.baseUrl}/api/tags`);
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}/api/tags`);
+    } catch (err: unknown) {
+      throw new Error(`Cannot connect to Ollama at ${this.baseUrl}. Is Ollama running? (ollama serve)`);
+    }
     if (!res.ok) throw new Error(`Ollama unavailable: ${res.status}`);
     const data = (await res.json()) as { models: Array<{ name: string; details?: { parameter_size?: string } }> };
     return (data.models || []).map((m) => ({
@@ -29,12 +34,7 @@ export class OllamaProvider implements ModelProvider {
     }));
   }
 
-  async *chat(params: {
-    model: string;
-    messages: ChatMessage[];
-    tools?: ToolDefinition[];
-    signal?: AbortSignal;
-  }): AsyncIterable<StreamChunk> {
+  async *chat(params: ChatParams): AsyncIterable<StreamChunk> {
     const body: Record<string, unknown> = {
       model: params.model,
       messages: params.messages.map(toOllamaMessage),
@@ -44,13 +44,25 @@ export class OllamaProvider implements ModelProvider {
       body.tools = params.tools.map(toOllamaTool);
     }
 
-    const res = await fetch(`${this.baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: params.signal,
-    });
-    if (!res.ok) throw new Error(`Ollama error: ${res.status} ${await res.text()}`);
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: params.signal,
+      });
+    } catch (err: unknown) {
+      if (params.signal?.aborted) throw err;
+      throw new Error(`Cannot connect to Ollama at ${this.baseUrl}. Is Ollama running? (ollama serve)`);
+    }
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      if (text.includes('not found')) {
+        throw new Error(`Model "${params.model}" not found. Run: ollama pull ${params.model}`);
+      }
+      throw new Error(`Ollama error ${res.status}: ${text}`);
+    }
     if (!res.body) throw new Error('No response body from Ollama');
 
     const reader = res.body.getReader();

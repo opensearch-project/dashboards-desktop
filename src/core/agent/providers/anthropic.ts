@@ -3,7 +3,7 @@
  * Uses fetch with SSE for zero SDK dependency.
  */
 
-import type { ModelProvider, ModelInfo, ChatMessage, StreamChunk, ToolDefinition } from '../types';
+import type { ModelProvider, ModelInfo, ChatMessage, StreamChunk, ToolDefinition, ChatParams } from '../types';
 
 export class AnthropicProvider implements ModelProvider {
   id = 'anthropic';
@@ -24,12 +24,7 @@ export class AnthropicProvider implements ModelProvider {
     ];
   }
 
-  async *chat(params: {
-    model: string;
-    messages: ChatMessage[];
-    tools?: ToolDefinition[];
-    signal?: AbortSignal;
-  }): AsyncIterable<StreamChunk> {
+  async *chat(params: ChatParams): AsyncIterable<StreamChunk> {
     // Separate system message from conversation
     const systemMsg = params.messages.find((m) => m.role === 'system');
     const messages = params.messages.filter((m) => m.role !== 'system').map(toAnthropicMessage);
@@ -45,17 +40,11 @@ export class AnthropicProvider implements ModelProvider {
       body.tools = params.tools.map(toAnthropicTool);
     }
 
-    const res = await fetch(`${this.baseUrl}/v1/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(body),
-      signal: params.signal,
-    });
-    if (!res.ok) throw new Error(`Anthropic error: ${res.status} ${await res.text()}`);
+    const res = await this.fetchWithRetry(
+      `${this.baseUrl}/v1/messages`,
+      body,
+      params.signal,
+    );
     if (!res.body) throw new Error('No response body');
 
     const reader = res.body.getReader();
@@ -93,6 +82,42 @@ export class AnthropicProvider implements ModelProvider {
         }
       }
     }
+  }
+
+  private async fetchWithRetry(
+    url: string,
+    body: Record<string, unknown>,
+    signal?: AbortSignal,
+    maxRetries = 3,
+  ): Promise<Response> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(body),
+        signal,
+      });
+
+      if (res.ok) return res;
+
+      const text = await res.text().catch(() => '');
+
+      if (res.status === 429 && attempt < maxRetries) {
+        const retryAfter = parseInt(res.headers.get('retry-after') ?? '', 10);
+        const delay = retryAfter > 0 ? retryAfter * 1000 : 1000 * Math.pow(2, attempt);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+
+      if (res.status === 401) throw new Error('Invalid Anthropic API key. Check your key in Settings.');
+      if (res.status === 529) throw new Error('Anthropic API is overloaded. Try again in a moment.');
+      throw new Error(`Anthropic error ${res.status}: ${text}`);
+    }
+    throw new Error('Anthropic rate limit exceeded after retries');
   }
 }
 
