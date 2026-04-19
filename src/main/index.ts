@@ -540,11 +540,53 @@ import { buildAppMenu } from './menu';
 import { registerAllM4IPC, setPluginManager, setMcpSupervisor, setUpdateManager } from './ipc';
 
 app.whenReady().then(async () => {
-  // 1. Menu first (instant), then window + storage in parallel
+  // 1. Storage + menu
   buildAppMenu();
-  const [_storage] = await Promise.all([initStorage(), (createWindow(), Promise.resolve())]);
+  await initStorage();
+  const db = getStorageProxy();
 
-  // 2. Register M4 IPC bridges
+  // 2. Check OSD binary path — first-run dialog if not configured
+  let osdBinPath = await db.getSettingAsync('osd_bin_path') as string | null;
+  if (!osdBinPath) {
+    const { dialog } = await import('electron');
+    const result = await dialog.showOpenDialog({
+      title: 'Select OpenSearch Dashboards binary',
+      message: 'Where is your opensearch-dashboards startup script?',
+      properties: ['openFile'],
+      filters: [{ name: 'Scripts', extensions: ['sh', 'bat', ''] }],
+    });
+    if (result.filePaths[0]) {
+      osdBinPath = result.filePaths[0];
+      await db.setSettingAsync('osd_bin_path', osdBinPath);
+    }
+  }
+
+  // 3. Start OSD if binary configured
+  let osdReady = false;
+  if (osdBinPath) {
+    const { OsdLifecycle } = await import('../core/osd/lifecycle.js');
+    const osd = new OsdLifecycle({ binPath: osdBinPath, port: Number(process.env.OSD_PORT ?? 5601) });
+    osd.on('status', (s: string) => console.log(`[OSD] ${s}`));
+    osd.on('log', (msg: string) => process.stdout.write(`[OSD] ${msg}`));
+    try {
+      await osd.start();
+      osdReady = true;
+    } catch (err) {
+      console.error('[OSD] Failed to start:', err);
+    }
+
+    // Graceful shutdown
+    app.on('before-quit', () => osd.stop());
+  }
+
+  // 4. Create window — loads OSD if ready, fallback otherwise
+  createWindow();
+  if (osdReady) {
+    const osdPort = process.env.OSD_PORT ?? '5601';
+    BrowserWindow.getAllWindows()[0]?.loadURL(`http://localhost:${osdPort}`);
+  }
+
+  // 5. Register M4 IPC bridges
   registerAllM4IPC();
 
   // 3. Wire devops backends when available (setter injection)
