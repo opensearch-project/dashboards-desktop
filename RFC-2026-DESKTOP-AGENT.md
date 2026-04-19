@@ -65,6 +65,8 @@ osd chat             # Quick agent chat (no GUI)
 
 ### 3.3 Architecture
 
+> **Architecture Pivot (2026-04-19):** The desktop app wraps a local OSD instance (localhost:5601) rather than reimplementing the UI from scratch. Electron is a shell around the real OpenSearch Dashboards web UI, with agent chat as an overlay.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     osd (CLI entry point)                    │
@@ -72,28 +74,51 @@ osd chat             # Quick agent chat (no GUI)
 ├─────────────────────┬───────────────────────────────────────┤
 │  Electron Shell     │  TUI Shell (Ink)                      │
 │  ┌───────────────┐  │  ┌─────────────────────────────────┐  │
-│  │ Homepage       │  │  │ Chat + Split Pane               │  │
-│  │ Workspace Mgr  │  │  │ (conversation | results)        │  │
-│  │ Chat Panel     │  │  └─────────────────────────────────┘  │
-│  │ Admin Console  │  │                                      │
+│  │ BrowserWindow  │  │  │ Chat + Split Pane               │  │
+│  │ localhost:5601 │  │  │ (conversation | results)        │  │
+│  │ (real OSD UI)  │  │  └─────────────────────────────────┘  │
+│  │ + Chat Overlay │  │                                      │
 │  └───────────────┘  │                                      │
 ├─────────────────────┴───────────────────────────────────────┤
-│                        Core Layer                            │
+│                     Main Process Layer                        │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
+│  │ OSD Lifecycle │ │ Auth Proxy   │ │ Multi-Datasource     │ │
+│  │ (spawn/stop)  │ │ (SigV4 sign) │ │ Switcher             │ │
+│  └──────────────┘ └──────────────┘ └──────────────────────┘ │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
 │  │ Agent Runtime │ │ Model Router │ │ MCP Host             │ │
 │  │ (chat, tools) │ │ (any model)  │ │ (local MCP servers)  │ │
 │  └──────────────┘ └──────────────┘ └──────────────────────┘ │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
-│  │ Data Source   │ │ Plugin Mgr   │ │ Skill / CLI          │ │
-│  │ Connector     │ │ (OSD plugins)│ │ Registry             │ │
-│  └──────────────┘ └──────────────┘ └──────────────────────┘ │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
-│  │ Auth (OAuth)  │ │ SQLite Store │ │ Update Manager       │ │
-│  │ GitHub/Google │ │ (all local)  │ │ (pull src or dist)   │ │
+│  │ Data Source   │ │ SQLite Store │ │ Update Manager       │ │
+│  │ Connector     │ │ (all local)  │ │ (OSD + shell)        │ │
 │  └──────────────┘ └──────────────┘ └──────────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
 │  OpenSearch Client (JS)  │  Elasticsearch Client (JS)       │
 └─────────────────────────────────────────────────────────────┘
+```
+
+#### Implementation Change Summary
+
+| Component | Previous | New |
+|-----------|----------|-----|
+| Admin UI | Custom React pages (HomePage, ClusterPage, IndicesPage, SecurityPage) | Real OSD web UI at localhost:5601 |
+| BrowserWindow | Loads local HTML/React bundle | Loads `http://localhost:5601` |
+| Chat panel | React component in custom renderer | Overlay/sidebar injected into OSD web UI |
+| Request auth | Direct client calls with auth | Proxy intercepts requests, adds SigV4/auth headers |
+| Multi-cluster | Connection manager switches clients | Proxy switches which cluster OSD points to |
+| OSD lifecycle | N/A | Main process spawns/manages local OSD instance |
+
+#### What Stays the Same
+
+- Agent runtime (providers, tool registry, MCP, streaming)
+- CLI (chat, connect, settings, mcp, skill, doctor)
+- SQLite storage (connections, conversations, settings)
+- Connection manager + auth (SigV4, basic, API key)
+- Preload IPC bridge
+- Electron shell + native menus
+- CI/CD pipeline + packaging
+- All user-facing requirements and acceptance criteria
 ```
 
 ### 3.4 Homepage & Workspace
@@ -483,7 +508,7 @@ All 12 issues should be closed with a comment linking to this RFC once approved:
 | MCP support | First-class MCP host | Industry-standard tool extensibility |
 | Local models | Ollama integration | Best UX — `ollama pull` then select |
 | Auth storage | Electron `safeStorage` | OS-level encryption |
-| OSD integration | Bundle as dependency | Avoid fork maintenance |
+| OSD integration | Wrap local OSD instance (localhost:5601) | Real OSD UI via BrowserWindow. Electron adds auth proxy, chat overlay, native menus. No UI reimplementation. |
 | Update | `electron-updater` + custom OSD updater | Separate shell and core updates |
 | Search engine clients | `@opensearch-project/opensearch` + `@elastic/elasticsearch` | Native clients for both |
 
