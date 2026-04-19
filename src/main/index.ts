@@ -18,12 +18,26 @@ function createWindow(): void {
       preload: path.join(__dirname, '..', 'preload', 'index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   });
 
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 }
+
+// --- IPC error serialization (MUST be before all handlers) ---
+const originalHandle = ipcMain.handle.bind(ipcMain);
+ipcMain.handle = ((channel: string, listener: (...args: any[]) => any) => {
+  return originalHandle(channel, async (...args: any[]) => {
+    try {
+      return await (listener as Function)(...args);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      const stack = err instanceof Error ? err.stack : undefined;
+      throw { message, stack, __ipcError: true };
+    }
+  });
+}) as typeof ipcMain.handle;
 
 // --- IPC: Storage ---
 ipcMain.handle(IPC.STORAGE_INIT, async () => {
@@ -99,9 +113,13 @@ ipcMain.handle('admin:setActiveConnection', (_e, url: string, type: 'opensearch'
   activeConnectionType = type;
 });
 
+function requireActiveConnection(): void {
+  if (!activeConnectionUrl) throw new Error('No active connection. Add a connection in Settings first.');
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function osClient(): any { return new OSClient({ node: activeConnectionUrl }); }
-function esClient(): ESClient { return new ESClient({ node: activeConnectionUrl }); }
+function osClient(): any { requireActiveConnection(); return new OSClient({ node: activeConnectionUrl }); }
+function esClient(): ESClient { requireActiveConnection(); return new ESClient({ node: activeConnectionUrl }); }
 
 // Cluster
 ipcMain.handle(IPC.CLUSTER_HEALTH, async () => {
@@ -180,6 +198,66 @@ ipcMain.handle(IPC.SECURITY_TENANTS_LIST, async () => osSecurity.listTenants(act
 ipcMain.handle(IPC.SECURITY_TENANTS_SAVE, async (_e, name: string, body: Record<string, unknown>) => osSecurity.createTenant(activeConnectionUrl, name, body));
 ipcMain.handle(IPC.SECURITY_TENANTS_DELETE, async (_e, name: string) => osSecurity.deleteTenant(activeConnectionUrl, name));
 
+// --- IPC: Missing index ops ---
+ipcMain.handle(IPC.INDICES_CLOSE, async (_e, index: string) => {
+  if (activeConnectionType === 'opensearch') return (await osClient().indices.close({ index })).body;
+  return esClient().indices.close({ index });
+});
+ipcMain.handle(IPC.INDICES_OPEN, async (_e, index: string) => {
+  if (activeConnectionType === 'opensearch') return (await osClient().indices.open({ index })).body;
+  return esClient().indices.open({ index });
+});
+ipcMain.handle(IPC.INDICES_UPDATE_ALIAS, async (_e, actions: Record<string, unknown>) => {
+  if (activeConnectionType === 'opensearch') return (await osClient().indices.updateAliases({ body: { actions } })).body;
+  return esClient().indices.updateAliases({ actions });
+});
+
+// --- IPC: Conversations ---
+ipcMain.handle(IPC.CONVERSATION_LIST, async (_e, workspaceId: string) => {
+  return getStorageProxy().listConversationsAsync(workspaceId);
+});
+ipcMain.handle(IPC.CONVERSATION_CREATE, async (_e, workspaceId: string, title?: string) => {
+  const model = agentRuntime?.getModel() ?? 'ollama:llama3';
+  return getStorageProxy().createConversationAsync(workspaceId, model, title);
+});
+ipcMain.handle(IPC.CONVERSATION_DELETE, async (_e, id: string) => {
+  return getStorageProxy().deleteConversationAsync(id);
+});
+ipcMain.handle(IPC.CONVERSATION_MESSAGES, async (_e, conversationId: string) => {
+  return getStorageProxy().getMessagesAsync(conversationId);
+});
+ipcMain.handle(IPC.CONVERSATION_RENAME, async (_e, id: string, title: string) => {
+  // Update title via generic update — conversations table
+  return 'ok'; // TODO: add renameConversation to storage
+});
+
+// --- IPC: OAuth ---
+ipcMain.handle(IPC.AUTH_LOGIN_GITHUB, async () => {
+  throw new Error('OAuth not configured. Set GitHub client ID in Settings.');
+});
+ipcMain.handle(IPC.AUTH_LOGIN_GOOGLE, async () => {
+  throw new Error('OAuth not configured. Set Google client ID in Settings.');
+});
+ipcMain.handle(IPC.AUTH_LOGOUT, () => { return true; });
+ipcMain.handle(IPC.AUTH_CURRENT_USER, () => { return null; });
+
+// --- IPC: Agent Personas ---
+import { listPersonas, switchPersona, getActivePersona } from '../core/skills/personas';
+ipcMain.handle(IPC.AGENT_LIST_PERSONAS, () => listPersonas());
+ipcMain.handle(IPC.AGENT_SWITCH_PERSONA, (_e, name: string) => { switchPersona(name); return true; });
+ipcMain.handle(IPC.AGENT_ACTIVE_PERSONA, () => getActivePersona());
+
+// --- IPC: Message Pinning ---
+ipcMain.handle(IPC.MESSAGE_PIN, async (_e, messageId: string) => {
+  return 'ok'; // TODO: add pin column to messages table
+});
+ipcMain.handle(IPC.MESSAGE_UNPIN, async (_e, messageId: string) => {
+  return 'ok'; // TODO: add pin column to messages table
+});
+ipcMain.handle(IPC.MESSAGE_LIST_PINNED, async (_e, conversationId: string) => {
+  return []; // TODO: query pinned messages
+});
+
 // --- Agent Runtime ---
 import { ModelRouter } from '../core/agent/model-router';
 import { ToolRegistry } from '../core/agent/tool-registry';
@@ -223,8 +301,8 @@ function getOrCreateRuntime(): AgentRuntime {
       if (anthropicKey) router.register(new AnthropicProvider({ apiKey: anthropicKey }));
       const compatUrl = await db.getSettingAsync('openai_compatible_url');
       if (compatUrl) router.register(new OpenAICompatibleProvider({ baseUrl: compatUrl, apiKey: (await db.getSettingAsync('openai_compatible_key')) ?? '' }));
-    } catch {
-      // Settings not available yet — cloud providers can be added later
+    } catch (err: unknown) {
+      console.error('[agent] Failed to register cloud providers:', err instanceof Error ? err.message : err);
     }
   })();
 
@@ -372,20 +450,6 @@ process.on('unhandledRejection', (reason) => {
 process.on('uncaughtException', (err) => {
   console.error('[main] Uncaught exception:', err);
 });
-
-// Wrap all IPC handlers with error serialization
-const originalHandle = ipcMain.handle.bind(ipcMain);
-ipcMain.handle = ((channel: string, listener: (...args: any[]) => any) => {
-  return originalHandle(channel, async (...args: any[]) => {
-    try {
-      return await (listener as Function)(...args);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      const stack = err instanceof Error ? err.stack : undefined;
-      throw { message, stack, __ipcError: true };
-    }
-  });
-}) as typeof ipcMain.handle;
 
 // --- App lifecycle ---
 import { buildAppMenu } from './menu';
