@@ -323,6 +323,50 @@ ipcMain.handle(IPC.AUTOROUTING_SET, (_e, config: Partial<{ enabled: boolean; loc
   return runtime.autoRouterConfig;
 });
 
+// --- IPC: Multi-Agent ---
+import { MultiAgentOrchestrator } from '../core/agent/multi/orchestrator';
+import type { AgentConfig } from '../core/agent/multi/agent-instance';
+import type { RoutingStrategy } from '../core/agent/multi/orchestrator';
+
+let multiAgent: MultiAgentOrchestrator | null = null;
+
+function getOrCreateMultiAgent(): MultiAgentOrchestrator {
+  if (multiAgent) return multiAgent;
+  const runtime = getOrCreateRuntime();
+  const router = (runtime as unknown as { router: ModelRouter }).router;
+  const tools = (runtime as unknown as { tools: ToolRegistry }).tools;
+  multiAgent = new MultiAgentOrchestrator(router, tools);
+  multiAgent.init();
+  return multiAgent;
+}
+
+ipcMain.handle(IPC.MULTI_AGENT_LIST, () => {
+  const ma = getOrCreateMultiAgent();
+  return ma.registry.list().map((a) => ({ id: a.id, name: a.name, model: a.model }));
+});
+
+ipcMain.handle(IPC.MULTI_AGENT_SPAWN, (_e, config: AgentConfig) => {
+  const ma = getOrCreateMultiAgent();
+  ma.spawnAgent(config);
+  return { id: config.id, name: config.name, model: config.model };
+});
+
+ipcMain.handle(IPC.MULTI_AGENT_KILL, (_e, id: string) => {
+  const ma = getOrCreateMultiAgent();
+  return ma.registry.kill(id);
+});
+
+ipcMain.handle(IPC.MULTI_AGENT_ROUTE, async (_e, message: string, strategy?: RoutingStrategy) => {
+  const ma = getOrCreateMultiAgent();
+  const context = { workspaceId: 'default', activeConnection: null, signal: new AbortController().signal };
+  const events: unknown[] = [];
+  for await (const event of ma.route(message, strategy ?? 'single', context)) {
+    mainWindow?.webContents.send(IPC.AGENT_STREAM, event);
+    events.push(event);
+  }
+  return events;
+});
+
 // --- Error handling ---
 process.on('unhandledRejection', (reason) => {
   console.error('[main] Unhandled rejection:', reason);

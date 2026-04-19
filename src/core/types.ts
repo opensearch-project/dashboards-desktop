@@ -78,6 +78,10 @@ export const IPC = {
   CONVERSATION_BRANCH: 'conversation:branch',
   AUTOROUTING_GET: 'autorouting:get',
   AUTOROUTING_SET: 'autorouting:set',
+  MULTI_AGENT_LIST: 'multi-agent:list',
+  MULTI_AGENT_SPAWN: 'multi-agent:spawn',
+  MULTI_AGENT_KILL: 'multi-agent:kill',
+  MULTI_AGENT_ROUTE: 'multi-agent:route',
   // M3: Admin
   CLUSTER_HEALTH: 'cluster:health',
   CLUSTER_NODES: 'cluster:nodes',
