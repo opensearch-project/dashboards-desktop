@@ -3,7 +3,7 @@ import { join } from 'path';
 import { createHash } from 'crypto';
 import { pipeline } from 'stream/promises';
 import { createReadStream } from 'fs';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { homedir } from 'os';
 import { getArtifact, type OsdArtifact } from './manifest.js';
 
@@ -95,8 +95,10 @@ async function extract(
   mkdirSync(OSD_DIR, { recursive: true });
 
   if (format === 'tar.gz') {
-    execSync(`tar -xzf "${archivePath}" -C "${OSD_DIR}" --strip-components=1`);
+    execFileSync('tar', ['-xzf', archivePath, '-C', OSD_DIR, '--strip-components=1'], {
+      stdio: 'pipe',
+    });
   } else {
-    execSync(`unzip -q "${archivePath}" -d "${OSD_DIR}"`);
+    execFileSync('unzip', ['-q', archivePath, '-d', OSD_DIR], { stdio: 'pipe' });
   }
 }

@@ -102,9 +102,18 @@ export class ConversationManager {
     }>;
 
     const included: ChatMessage[] = [];
-    for (const row of rows) {
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
       const cost = row.token_count ?? estimateTokens(row.content);
-      if (used + cost > budget) break;
+      if (used + cost > budget) {
+        // Don't break in the middle of a tool_call/tool_result pair
+        if (included.length > 0 && included[0].role === 'tool') {
+          // Remove orphaned tool_result at the start
+          const removed = included.shift()!;
+          used -= (rows.find(r => r.tool_call_id === removed.toolCallId)?.token_count ?? estimateTokens(removed.content));
+        }
+        break;
+      }
       const msg: ChatMessage = { role: row.role as ChatMessage['role'], content: row.content };
       if (row.tool_calls) msg.toolCalls = JSON.parse(row.tool_calls);
       if (row.tool_call_id) msg.toolCallId = row.tool_call_id;

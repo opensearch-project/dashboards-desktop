@@ -64,7 +64,9 @@ function settingsList(): void {
   }
   console.log('\nSettings:\n');
   for (const r of rows) {
-    console.log(`  ${r.key} = ${r.value}`);
+    const sensitive = /(_key|_secret|_token|_password|api_key)/i.test(r.key);
+    const display = sensitive ? '***' : r.value;
+    console.log(`  ${r.key} = ${display}`);
   }
   console.log('');
 }

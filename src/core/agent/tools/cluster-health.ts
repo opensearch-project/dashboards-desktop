@@ -43,7 +43,7 @@ export const clusterHealthTool: AgentTool = {
 };
 
 async function getOpenSearchHealth(url: string, detail: string): Promise<ToolResult> {
-  const client = new OpenSearchClient({ node: url });
+  const client = new OpenSearchClient({ node: url, ...(context.activeConnection?.auth_type === "basic" ? { auth: { username: context.activeConnection.username ?? "", password: "" } } : {}) } as any);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const health = await (client.cluster as any).health();
   const result: Record<string, unknown> = { health: health.body };
@@ -57,7 +57,7 @@ async function getOpenSearchHealth(url: string, detail: string): Promise<ToolRes
 }
 
 async function getElasticsearchHealth(url: string, detail: string): Promise<ToolResult> {
-  const client = new ElasticsearchClient({ node: url });
+  const client = new ElasticsearchClient({ node: url, ...(context.activeConnection?.auth_type === "basic" ? { auth: { username: context.activeConnection.username ?? "", password: "" } } : {}) } as any);
   const health = await client.cluster.health();
   const result: Record<string, unknown> = { health };
 

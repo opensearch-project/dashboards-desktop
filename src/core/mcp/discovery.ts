@@ -107,6 +107,7 @@ export class McpDiscovery {
     return new Promise((resolve, reject) => {
       const id = ++this.requestId;
       const request: JsonRpcRequest = { jsonrpc: '2.0', id, method, params };
+      let buffer = '';
 
       const timeout = setTimeout(() => {
         cleanup();
@@ -114,8 +115,12 @@ export class McpDiscovery {
       }, REQUEST_TIMEOUT_MS);
 
       const onData = (chunk: Buffer) => {
-        const lines = chunk.toString().split('\n').filter(Boolean);
+        buffer += chunk.toString();
+        const lines = buffer.split('\n');
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() ?? '';
         for (const line of lines) {
+          if (!line.trim()) continue;
           try {
             const msg = JSON.parse(line) as JsonRpcResponse;
             if (msg.id === id) {
@@ -128,7 +133,7 @@ export class McpDiscovery {
               return;
             }
           } catch {
-            /* not our message */
+            /* incomplete or not our message */
           }
         }
       };

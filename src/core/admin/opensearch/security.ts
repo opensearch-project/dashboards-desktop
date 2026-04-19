@@ -25,15 +25,15 @@ export async function listRoles(url: string) {
 }
 
 export async function getRole(url: string, name: string) {
-  return api(url, 'GET', `/_plugins/_security/api/roles/${name}`);
+  return api(url, 'GET', `/_plugins/_security/api/roles/${encodeURIComponent(name)}`);
 }
 
 export async function createRole(url: string, name: string, body: Record<string, unknown>) {
-  return api(url, 'PUT', `/_plugins/_security/api/roles/${name}`, body);
+  return api(url, 'PUT', `/_plugins/_security/api/roles/${encodeURIComponent(name)}`, body);
 }
 
 export async function deleteRole(url: string, name: string) {
-  return api(url, 'DELETE', `/_plugins/_security/api/roles/${name}`);
+  return api(url, 'DELETE', `/_plugins/_security/api/roles/${encodeURIComponent(name)}`);
 }
 
 export async function listUsers(url: string) {
@@ -41,11 +41,11 @@ export async function listUsers(url: string) {
 }
 
 export async function createUser(url: string, name: string, body: Record<string, unknown>) {
-  return api(url, 'PUT', `/_plugins/_security/api/internalusers/${name}`, body);
+  return api(url, 'PUT', `/_plugins/_security/api/internalusers/${encodeURIComponent(name)}`, body);
 }
 
 export async function deleteUser(url: string, name: string) {
-  return api(url, 'DELETE', `/_plugins/_security/api/internalusers/${name}`);
+  return api(url, 'DELETE', `/_plugins/_security/api/internalusers/${encodeURIComponent(name)}`);
 }
 
 export async function listTenants(url: string) {
@@ -53,9 +53,9 @@ export async function listTenants(url: string) {
 }
 
 export async function createTenant(url: string, name: string, body: Record<string, unknown>) {
-  return api(url, 'PUT', `/_plugins/_security/api/tenants/${name}`, body);
+  return api(url, 'PUT', `/_plugins/_security/api/tenants/${encodeURIComponent(name)}`, body);
 }
 
 export async function deleteTenant(url: string, name: string) {
-  return api(url, 'DELETE', `/_plugins/_security/api/tenants/${name}`);
+  return api(url, 'DELETE', `/_plugins/_security/api/tenants/${encodeURIComponent(name)}`);
 }

@@ -34,7 +34,14 @@ export function installFromArchive(archivePath: string): PluginMeta {
       });
     }
 
+    // Validate no extracted files escape tmpDir (path traversal protection)
+    validateExtractedPaths(tmpDir);
+
     const meta = readMeta(tmpDir);
+    // Validate plugin name doesn't contain path separators
+    if (/[/\\]/.test(meta.name) || meta.name === '..' || meta.name === '.') {
+      throw new Error(`Invalid plugin name: ${meta.name}`);
+    }
     const dest = path.join(PLUGINS_DIR, meta.name);
     if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true });
     fs.renameSync(tmpDir, dest);
@@ -130,4 +137,20 @@ function readMeta(dir: string): PluginMeta {
 
 function writeMeta(dir: string, meta: PluginMeta): void {
   fs.writeFileSync(path.join(dir, META_FILE), JSON.stringify(meta, null, 2));
+}
+
+/** Recursively verify all extracted files are within the target directory */
+function validateExtractedPaths(dir: string): void {
+  const realDir = fs.realpathSync(dir);
+  const walk = (d: string) => {
+    for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
+      const fullPath = path.join(d, entry.name);
+      const realPath = fs.realpathSync(fullPath);
+      if (!realPath.startsWith(realDir + path.sep) && realPath !== realDir) {
+        throw new Error(`Path traversal detected: ${entry.name} resolves outside plugin directory`);
+      }
+      if (entry.isDirectory()) walk(fullPath);
+    }
+  };
+  walk(dir);
 }

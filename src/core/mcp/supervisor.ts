@@ -221,15 +221,23 @@ export class McpSupervisor extends EventEmitter {
   }
 
   private registerCleanup(): void {
-    const cleanup = () => {
+    // Async cleanup on beforeExit (allows event loop to drain)
+    process.on('beforeExit', () => {
       void this.shutdownAll();
-    };
-    process.on('exit', cleanup);
-    process.on('SIGINT', cleanup);
-    process.on('SIGTERM', cleanup);
-    process.on('uncaughtException', (err) => {
-      this.emit('error', 'supervisor', err);
-      cleanup();
+    });
+    // Sync fallback: force-kill any remaining children on exit
+    process.on('exit', () => {
+      for (const state of this.servers.values()) {
+        if (state.process?.pid && state.process.exitCode === null) {
+          try { process.kill(state.process.pid, 'SIGKILL'); } catch { /* already dead */ }
+        }
+      }
+    });
+    process.on('SIGINT', () => {
+      void this.shutdownAll().then(() => process.exit(130));
+    });
+    process.on('SIGTERM', () => {
+      void this.shutdownAll().then(() => process.exit(143));
     });
   }
 }

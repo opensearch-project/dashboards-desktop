@@ -619,8 +619,9 @@ app.whenReady().then(async () => {
       progressWin.loadURL(`data:text/html,<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#1a1a2e;color:#e8e8f0"><div id="m">Downloading OpenSearch Dashboards...</div></body>`);
 
       await downloadAndInstall((p) => {
+        const pct = Number(p.percent).toFixed(0);
         progressWin.webContents.executeJavaScript(
-          `document.getElementById('m').textContent='Downloading: ${p.percent}%'`
+          `document.getElementById('m').textContent='Downloading: ${pct}%'`
         ).catch(() => {});
       });
       progressWin.close();
