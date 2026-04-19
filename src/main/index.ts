@@ -22,7 +22,13 @@ function createWindow(): void {
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  // Load OSD if running, otherwise show local fallback
+  const osdPort = process.env.OSD_PORT ?? '5601';
+  const osdUrl = `http://localhost:${osdPort}`;
+  mainWindow.loadURL(osdUrl).catch(() => {
+    // OSD not ready yet — show loading page
+    mainWindow!.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  });
 }
 
 // --- IPC error serialization (MUST be before all handlers) ---
