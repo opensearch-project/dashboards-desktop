@@ -47,6 +47,7 @@ nsis:
 
 # Linux
 linux:
+  maintainer: "OpenSearch Project <opensearch@amazon.com>"
   category: Development
   target:
     - target: AppImage
