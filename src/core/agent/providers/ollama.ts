@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 /**
  * Ollama provider — local models via HTTP to localhost:11434.
  * Uses Ollama's /api/chat endpoint with streaming.
