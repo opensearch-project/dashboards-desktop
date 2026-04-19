@@ -640,8 +640,15 @@ app.whenReady().then(async () => {
   // 3. Start OSD or connect to external instance
   let osdReady = false;
   if (osdBinPath === '__external__') {
-    // User has OSD running externally — just try to connect
-    osdReady = true;
+    // Check if OSD is actually running
+    const http = await import('http');
+    const osdPort = process.env.OSD_PORT ?? '5601';
+    osdReady = await new Promise<boolean>(resolve => {
+      const req = http.get(`http://localhost:${osdPort}/api/status`, res => resolve(res.statusCode === 200));
+      req.on('error', () => resolve(false));
+      req.setTimeout(3000, () => { req.destroy(); resolve(false); });
+    });
+    if (!osdReady) console.log('[OSD] localhost:5601 not reachable — showing fallback page');
   } else if (osdBinPath) {
     const { OsdLifecycle } = await import('../core/osd/lifecycle.js');
     const { generateDefaultYml } = await import('../core/osd/default-config.js');
