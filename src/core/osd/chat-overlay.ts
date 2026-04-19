@@ -26,6 +26,11 @@ const OVERLAY_CSS = `
   transition: transform 0.2s ease;
 }
 #osd-chat-overlay.open { transform: translateX(0); }
+#osd-chat-overlay .chat-resize {
+  position: absolute; left: -4px; top: 0; width: 8px; height: 100%;
+  cursor: col-resize; z-index: 1;
+}
+#osd-chat-overlay .chat-resize:hover { background: var(--euiColorPrimary, #4da6ff); opacity: 0.3; }
 #osd-chat-overlay .chat-header {
   padding: 12px 16px;
   border-bottom: 1px solid var(--euiColorLightShade, #3a3a5a);
@@ -78,10 +83,32 @@ const OVERLAY_CSS = `
 #osd-chat-overlay .msg.user { color: var(--euiColorPrimary, #4da6ff); }
 #osd-chat-overlay .msg.assistant { color: var(--euiTextColor, #e8e8f0); }
 #osd-chat-overlay .msg code { background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 3px; font-size: 13px; }
-#osd-chat-overlay .msg pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; overflow-x: auto; margin: 8px 0; }
+#osd-chat-overlay .msg pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; overflow-x: auto; margin: 8px 0; position: relative; }
 #osd-chat-overlay .msg pre code { background: none; padding: 0; }
+#osd-chat-overlay .msg pre .copy-btn {
+  position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.1);
+  border: none; color: inherit; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 11px; opacity: 0.6;
+}
+#osd-chat-overlay .msg pre .copy-btn:hover { opacity: 1; }
 #osd-chat-overlay .typing { opacity: 0.6; font-style: italic; }
 #osd-chat-overlay .chat-empty { text-align: center; opacity: 0.5; margin-top: 40%; }
+#osd-chat-overlay .model-switcher {
+  display: flex; align-items: center; gap: 6px; padding: 6px 16px;
+  border-bottom: 1px solid var(--euiColorLightShade, #3a3a5a); font-size: 12px;
+}
+#osd-chat-overlay .model-switcher select {
+  flex: 1; background: var(--euiColorLightestShade, #232340); color: inherit;
+  border: 1px solid var(--euiColorLightShade, #3a3a5a); border-radius: 4px; padding: 4px 8px; font-size: 12px;
+}
+#osd-chat-overlay .conv-list {
+  max-height: 200px; overflow-y: auto; border-bottom: 1px solid var(--euiColorLightShade, #3a3a5a);
+}
+#osd-chat-overlay .conv-item {
+  padding: 8px 16px; cursor: pointer; font-size: 13px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+#osd-chat-overlay .conv-item:hover { background: rgba(255,255,255,0.05); }
+#osd-chat-overlay .conv-item.active { background: rgba(77,166,255,0.15); }
 #osd-chat-toggle {
   position: fixed;
   bottom: 20px;
@@ -106,13 +133,20 @@ const OVERLAY_CSS = `
 
 const OVERLAY_HTML = `
 <div id="osd-chat-overlay" role="complementary" aria-label="Agent Chat">
+  <div class="chat-resize" id="osd-chat-resize" title="Drag to resize"></div>
   <div class="chat-header">
     <span>💬 Agent Chat</span>
     <div class="chat-header-actions">
+      <button onclick="window.__osdChat.toggleConvs()" title="Conversations" aria-label="Toggle conversations">📋</button>
       <button onclick="window.__osdChat.clear()" title="Clear chat" aria-label="Clear chat">🗑</button>
       <button onclick="window.__osdChat.toggle()" title="Close (⌘K)" aria-label="Close chat">✕</button>
     </div>
   </div>
+  <div class="model-switcher">
+    <label for="osd-model-select">Model:</label>
+    <select id="osd-model-select" aria-label="Select model"></select>
+  </div>
+  <div class="conv-list" id="osd-conv-list" style="display:none" role="list" aria-label="Conversations"></div>
   <div class="chat-messages" id="osd-chat-messages" role="log" aria-live="polite">
     <div class="chat-empty">Ask anything about your data.<br/>⌘K to toggle.</div>
   </div>
@@ -138,16 +172,51 @@ const OVERLAY_JS = `
   const input = document.getElementById('osd-chat-input');
   const messages = document.getElementById('osd-chat-messages');
   const sendBtn = document.getElementById('osd-chat-send');
+  const modelSelect = document.getElementById('osd-model-select');
+  const convList = document.getElementById('osd-conv-list');
+  const resizeHandle = document.getElementById('osd-chat-resize');
   let streaming = false;
   let streamEl = null;
+  let convsVisible = false;
+
+  // Resize handle
+  resizeHandle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = overlay.offsetWidth;
+    const onMove = (ev) => {
+      const newW = Math.max(300, Math.min(800, startW + (startX - ev.clientX)));
+      overlay.style.width = newW + 'px';
+    };
+    const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // Load models
+  if (window.osd?.models?.list) {
+    window.osd.models.list().then(models => {
+      modelSelect.innerHTML = models.map(m =>
+        '<option value="' + m.id + '">' + m.name + (m.provider ? ' (' + m.provider + ')' : '') + '</option>'
+      ).join('');
+    }).catch(() => {});
+  }
+  modelSelect.addEventListener('change', () => {
+    if (window.osd?.models?.setActive) window.osd.models.setActive(modelSelect.value).catch(() => {});
+  });
 
   window.__osdChat = {
     toggle() {
       overlay.classList.toggle('open');
       if (overlay.classList.contains('open')) input.focus();
     },
+    toggleConvs() {
+      convsVisible = !convsVisible;
+      convList.style.display = convsVisible ? 'block' : 'none';
+      if (convsVisible) loadConversations();
+    },
     clear() {
-      messages.innerHTML = '<div class="chat-empty">Ask anything about your data.<br/>⌘K to toggle.</div>';
+      messages.innerHTML = '<div class="chat-empty">Ask anything about your data.<br/>\\u2318K to toggle.</div>';
     },
     addMessage(role, content) { addMessage(role, content); },
     startStream() {
@@ -161,7 +230,6 @@ const OVERLAY_JS = `
     },
     appendToken(token) {
       if (streamEl) {
-        if (streamEl.querySelector('.typing')) streamEl.querySelector('.typing').remove();
         streamEl.textContent += token;
         messages.scrollTop = messages.scrollHeight;
       }
@@ -175,13 +243,35 @@ const OVERLAY_JS = `
       input.focus();
     },
     streamError(msg) {
-      if (streamEl) streamEl.textContent = '⚠️ ' + msg;
+      if (streamEl) streamEl.textContent = '\\u26a0\\ufe0f ' + msg;
       streaming = false;
       streamEl = null;
       input.disabled = false;
       sendBtn.disabled = false;
+    },
+    loadConversation(id) {
+      if (window.osd?.conversations?.messages) {
+        window.osd.conversations.messages(id).then(msgs => {
+          messages.innerHTML = '';
+          msgs.forEach(m => { if (m.role === 'user' || m.role === 'assistant') addMessage(m.role, m.content); });
+        }).catch(() => {});
+      }
     }
   };
+
+  function loadConversations() {
+    if (!window.osd?.conversations?.list) return;
+    window.osd.workspaces.list().then(ws => {
+      const wsId = (ws.find(w => w.is_default) || ws[0])?.id;
+      if (!wsId) return;
+      return window.osd.conversations.list(wsId);
+    }).then(convs => {
+      if (!convs) return;
+      convList.innerHTML = convs.slice(0, 20).map(c =>
+        '<div class="conv-item" onclick="window.__osdChat.loadConversation(\\'' + c.id + '\\')">' + escapeHtml(c.title || 'Untitled') + '</div>'
+      ).join('') || '<div class="conv-item">No conversations yet</div>';
+    }).catch(() => {});
+  }
 
   function send() {
     const text = input.value.trim();
@@ -202,7 +292,7 @@ const OVERLAY_JS = `
     if (empty) empty.remove();
     const div = document.createElement('div');
     div.className = 'msg ' + role;
-    div.innerHTML = role === 'user' ? '→ ' + escapeHtml(content) : renderMarkdown(content);
+    div.innerHTML = role === 'user' ? '\\u2192 ' + escapeHtml(content) : renderMarkdown(content);
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
   }
@@ -213,11 +303,13 @@ const OVERLAY_JS = `
 
   function renderMarkdown(text) {
     let html = escapeHtml(text);
-    html = html.replace(/\`\`\`([\\s\\S]*?)\`\`\`/g, '<pre><code>$1</code></pre>');
-    html = html.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
-    html = html.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');
-    html = html.replace(/\\*(.+?)\\*/g, '<em>$1</em>');
-    html = html.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1 ↗</a>');
+    html = html.replace(/\\\`\\\`\\\`([\\\\s\\\\S]*?)\\\`\\\`\\\`/g, function(_, code) {
+      return '<pre><code>' + code + '</code><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">Copy</button></pre>';
+    });
+    html = html.replace(/\\\`([^\\\`]+)\\\`/g, '<code>$1</code>');
+    html = html.replace(/\\\\*\\\\*(.+?)\\\\*\\\\*/g, '<strong>$1</strong>');
+    html = html.replace(/\\\\*(.+?)\\\\*/g, '<em>$1</em>');
+    html = html.replace(/\\\\[([^\\\\]]+)\\\\]\\\\(([^)]+)\\\\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1 \\u2197</a>');
     return html;
   }
 })();
