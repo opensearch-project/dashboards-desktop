@@ -644,6 +644,18 @@ app.whenReady().then(async () => {
     osdReady = true;
   } else if (osdBinPath) {
     const { OsdLifecycle } = await import('../core/osd/lifecycle.js');
+    const { generateDefaultYml } = await import('../core/osd/default-config.js');
+    const { writeFileSync, existsSync, mkdirSync } = await import('fs');
+
+    // Write opensearch_dashboards.yml with desktop defaults
+    const osdDir = path.dirname(path.dirname(osdBinPath));
+    const configDir = path.join(osdDir, 'config');
+    if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true });
+    const ymlPath = path.join(configDir, 'opensearch_dashboards.yml');
+    const yml = generateDefaultYml();
+    writeFileSync(ymlPath, yml, 'utf-8');
+    console.log(`[OSD] Config written to ${ymlPath}`);
+
     const osd = new OsdLifecycle({ binPath: osdBinPath, port: Number(process.env.OSD_PORT ?? 5601) });
     osd.on('status', (s: string) => console.log(`[OSD] ${s}`));
     osd.on('log', (msg: string) => process.stdout.write(`[OSD] ${msg}`));
