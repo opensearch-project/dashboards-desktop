@@ -81,7 +81,20 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
     >
       {/* Resize handle */}
       {!fullScreen && (
-        <div className="chat-resize-handle" onMouseDown={onResizeStart} role="separator" aria-orientation="vertical" aria-label="Resize chat panel" tabIndex={0} />
+        <div
+          className="chat-resize-handle"
+          onMouseDown={onResizeStart}
+          onKeyDown={e => {
+            if (e.key === 'ArrowLeft') { e.preventDefault(); setWidth(w => Math.min(window.innerWidth * MAX_WIDTH_RATIO, w + 20)); }
+            if (e.key === 'ArrowRight') { e.preventDefault(); setWidth(w => Math.max(MIN_WIDTH, w - 20)); }
+          }}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize chat panel"
+          aria-valuenow={width}
+          aria-valuemin={MIN_WIDTH}
+          tabIndex={0}
+        />
       )}
 
       {/* Header */}
