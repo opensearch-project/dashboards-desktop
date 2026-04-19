@@ -36,3 +36,4 @@ coverage/
 *.msi
 *.nupkg
 .cache/
+.cache/

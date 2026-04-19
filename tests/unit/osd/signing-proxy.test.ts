@@ -1,50 +1,97 @@
-/**
- * Request signing proxy tests.
- * Tests SigV4 injection, auth header passthrough, multi-cluster switching.
- *
- * STUB: Blocked on sde M3 — signing proxy implementation.
- * Expected source: src/core/proxy/signing-proxy.ts (or similar)
- *
- * Test plan:
- * - SigV4: intercepts requests to cluster, adds AWS SigV4 headers
- * - Basic auth: passes username/password to upstream
- * - API key: passes apikey header to upstream
- * - Multi-cluster: switches target URL when active connection changes
- * - Error handling: returns meaningful error when signing fails
- * - Passthrough: non-cluster requests pass through unmodified
- */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-describe('Signing Proxy: SigV4', () => {
-  it.skip('adds Authorization and x-amz-* headers to requests', async () => {
-    // TODO: import SigningProxy from src/core/proxy/signing-proxy
+const { mockOnBeforeSendHeaders, mockSign } = vi.hoisted(() => {
+  const mockSign = vi.fn();
+  return { mockOnBeforeSendHeaders: vi.fn(), mockSign };
+});
+
+vi.mock('electron', () => ({
+  session: { defaultSession: { webRequest: { onBeforeSendHeaders: mockOnBeforeSendHeaders } } },
+}));
+vi.mock('@smithy/signature-v4', () => {
+  return { SignatureV4: class { sign = mockSign; } };
+});
+vi.mock('@smithy/protocol-http', () => ({ HttpRequest: vi.fn((opts: any) => opts) }));
+vi.mock('@aws-crypto/sha256-js', () => ({ Sha256: vi.fn() }));
+
+import { registerSigningProxy, clearSigningProxy, type ProxyAuth } from '../../../src/core/osd/signing-proxy';
+
+beforeEach(() => {
+  mockOnBeforeSendHeaders.mockReset();
+  mockSign.mockReset();
+  mockSign.mockResolvedValue({ headers: { Authorization: 'AWS4-HMAC-SHA256 ...', 'x-amz-date': '20260419T000000Z', 'x-amz-security-token': 'tok' } });
+});
+
+describe('Signing Proxy: registration', () => {
+  it('registers interceptor with cluster URL filter', () => {
+    registerSigningProxy('https://cluster:9200', { type: 'none' });
+    expect(mockOnBeforeSendHeaders).toHaveBeenCalledWith({ urls: ['https://cluster:9200/*'] }, expect.any(Function));
   });
 
-  it.skip('refreshes credentials when expired', async () => {});
-
-  it.skip('includes x-amz-security-token for session credentials', async () => {});
+  it('clearSigningProxy removes interceptor', () => {
+    clearSigningProxy();
+    expect(mockOnBeforeSendHeaders).toHaveBeenCalledWith(null);
+  });
 });
 
-describe('Signing Proxy: auth passthrough', () => {
-  it.skip('passes basic auth credentials', async () => {});
-
-  it.skip('passes API key in Authorization header', async () => {});
-
-  it.skip('passes no auth for connections with auth_type=none', async () => {});
+describe('Signing Proxy: basic auth', () => {
+  it('adds Basic Authorization header', async () => {
+    registerSigningProxy('https://cluster:9200', { type: 'basic', username: 'admin', password: 'secret' });
+    const handler = mockOnBeforeSendHeaders.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ url: 'https://cluster:9200/_cat/health', method: 'GET', requestHeaders: {} }, cb);
+    expect(cb).toHaveBeenCalledWith({
+      requestHeaders: expect.objectContaining({ Authorization: `Basic ${Buffer.from('admin:secret').toString('base64')}` }),
+    });
+  });
 });
 
-describe('Signing Proxy: multi-cluster', () => {
-  it.skip('routes to active connection URL', async () => {});
-
-  it.skip('switches target when active connection changes', async () => {});
-
-  it.skip('rejects requests when no active connection', async () => {});
+describe('Signing Proxy: API key', () => {
+  it('adds ApiKey header', async () => {
+    registerSigningProxy('https://cluster:9200', { type: 'apikey', apiKey: 'my-key' });
+    const handler = mockOnBeforeSendHeaders.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ url: 'https://cluster:9200/_search', method: 'POST', requestHeaders: {} }, cb);
+    expect(cb).toHaveBeenCalledWith({ requestHeaders: expect.objectContaining({ Authorization: 'ApiKey my-key' }) });
+  });
 });
 
-describe('Signing Proxy: error handling', () => {
-  it.skip('returns 502 when upstream is unreachable', async () => {});
+describe('Signing Proxy: SigV4', () => {
+  it('signs request with AWS credentials', async () => {
+    const auth: ProxyAuth = { type: 'sigv4', region: 'us-east-1', accessKeyId: 'AKIA', secretAccessKey: 'secret', sessionToken: 'tok' };
+    registerSigningProxy('https://cluster:9200', auth);
+    const handler = mockOnBeforeSendHeaders.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ url: 'https://cluster:9200/_search', method: 'GET', requestHeaders: {} }, cb);
+    expect(mockSign).toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({ requestHeaders: expect.objectContaining({ Authorization: 'AWS4-HMAC-SHA256 ...' }) });
+  });
 
-  it.skip('returns 401 when credential resolution fails', async () => {});
+  it('includes x-amz-security-token', async () => {
+    const auth: ProxyAuth = { type: 'sigv4', region: 'us-west-2', accessKeyId: 'AK', secretAccessKey: 'SK', sessionToken: 'st' };
+    registerSigningProxy('https://cluster:9200', auth);
+    const handler = mockOnBeforeSendHeaders.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ url: 'https://cluster:9200/idx/_doc/1', method: 'PUT', requestHeaders: {} }, cb);
+    expect(cb).toHaveBeenCalledWith({ requestHeaders: expect.objectContaining({ 'x-amz-security-token': 'tok' }) });
+  });
 
-  it.skip('logs proxy errors without crashing', async () => {});
+  it('skips signing when credentials missing', async () => {
+    registerSigningProxy('https://cluster:9200', { type: 'sigv4', region: 'us-east-1' });
+    const handler = mockOnBeforeSendHeaders.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ url: 'https://cluster:9200/_search', method: 'GET', requestHeaders: { existing: 'h' } }, cb);
+    expect(mockSign).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({ requestHeaders: { existing: 'h' } });
+  });
+});
+
+describe('Signing Proxy: no auth', () => {
+  it('passes headers unmodified', async () => {
+    registerSigningProxy('https://cluster:9200', { type: 'none' });
+    const handler = mockOnBeforeSendHeaders.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ url: 'https://cluster:9200/_cat/health', method: 'GET', requestHeaders: { 'X-Custom': 'val' } }, cb);
+    expect(cb).toHaveBeenCalledWith({ requestHeaders: { 'X-Custom': 'val' } });
+  });
 });

@@ -1,52 +1,137 @@
-/**
- * OSD lifecycle manager tests.
- * Tests spawn, health check, stop, crash recovery for the local OSD instance.
- *
- * STUB: Blocked on sde M3 — OSD lifecycle manager implementation.
- * Expected source: src/core/osd/lifecycle.ts (or similar)
- *
- * Test plan:
- * - spawn: starts OSD process, emits 'ready' when health check passes
- * - health: polls localhost:5601/api/status until green
- * - stop: sends SIGTERM, waits for exit, cleans up
- * - crash recovery: detects unexpected exit, restarts up to N times
- * - port conflict: fails gracefully if 5601 is occupied
- * - timeout: emits error if OSD doesn't become healthy within timeout
- */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { EventEmitter } from 'events';
 
-describe('OSD Lifecycle: spawn', () => {
-  it.skip('starts OSD process and resolves when healthy', async () => {
-    // TODO: import OsdLifecycle from src/core/osd/lifecycle
-  });
+const mockChild = () => {
+  const child = new EventEmitter() as any;
+  child.pid = 9999;
+  child.stdout = new EventEmitter();
+  child.stderr = new EventEmitter();
+  child.kill = vi.fn();
+  return child;
+};
 
-  it.skip('emits ready event with OSD version', async () => {});
-
-  it.skip('rejects if OSD binary not found', async () => {});
-
-  it.skip('rejects if port 5601 is already in use', async () => {});
+const { spawnMock, setHealth } = vi.hoisted(() => {
+  const spawnMock = vi.fn();
+  let health = 200;
+  return { spawnMock, setHealth: (code: number) => { health = code; }, getHealth: () => health };
 });
 
-describe('OSD Lifecycle: health check', () => {
-  it.skip('polls /api/status until green', async () => {});
+vi.mock('child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('child_process')>();
+  return { ...actual, default: actual, spawn: (...args: any[]) => spawnMock(...args) };
+});
 
-  it.skip('times out after configurable duration', async () => {});
+vi.mock('http', async (importOriginal) => {
+  const { getHealth } = await vi.importMock<{ getHealth: () => number }>('../../../tests/unit/osd/lifecycle.test.ts');
+  const actual = await importOriginal<typeof import('http')>();
+  return {
+    ...actual, default: actual,
+    get: (_url: string, cb: (res: { statusCode: number }) => void) => {
+      const req = new EventEmitter() as any;
+      req.setTimeout = vi.fn(); req.destroy = vi.fn();
+      setTimeout(() => cb({ statusCode: 200 }), 5);
+      return req;
+    },
+  };
+});
 
-  it.skip('retries on connection refused', async () => {});
+import { OsdLifecycle } from '../../../src/core/osd/lifecycle';
+
+const config = { binPath: '/opt/osd/bin/opensearch-dashboards', port: 5601 };
+
+beforeEach(() => { spawnMock.mockReset(); spawnMock.mockReturnValue(mockChild()); });
+
+describe('OSD Lifecycle: spawn', () => {
+  it('starts OSD and resolves when healthy', async () => {
+    const osd = new OsdLifecycle(config);
+    await osd.start();
+    expect(osd.status).toBe('running');
+    expect(spawnMock).toHaveBeenCalledWith(config.binPath, expect.arrayContaining(['--server.port', '5601']), expect.any(Object));
+    osd.stop();
+  });
+
+  it('emits status events', async () => {
+    const osd = new OsdLifecycle(config);
+    const statuses: string[] = [];
+    osd.on('status', (s: string) => statuses.push(s));
+    await osd.start();
+    expect(statuses).toContain('starting');
+    expect(statuses).toContain('running');
+    osd.stop();
+  });
+
+  it('passes opensearchUrl arg', async () => {
+    const osd = new OsdLifecycle({ ...config, opensearchUrl: 'https://cluster:9200' });
+    await osd.start();
+    expect(spawnMock).toHaveBeenCalledWith(config.binPath, expect.arrayContaining(['--opensearch.hosts', 'https://cluster:9200']), expect.any(Object));
+    osd.stop();
+  });
+
+  it('no-op if already running', async () => {
+    const osd = new OsdLifecycle(config);
+    await osd.start();
+    await osd.start();
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    osd.stop();
+  });
+
+  it('defaults to port 5601', () => {
+    const osd = new OsdLifecycle({ binPath: '/bin/osd' });
+    expect(osd.port).toBe(5601);
+    expect(osd.url).toBe('http://localhost:5601');
+  });
 });
 
 describe('OSD Lifecycle: stop', () => {
-  it.skip('sends SIGTERM and waits for exit', async () => {});
+  it('sends SIGTERM', async () => {
+    const child = mockChild();
+    spawnMock.mockReturnValue(child);
+    const osd = new OsdLifecycle(config);
+    await osd.start();
+    osd.stop();
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+  });
 
-  it.skip('force kills after timeout', async () => {});
-
-  it.skip('cleans up PID file on stop', async () => {});
+  it('sets status to stopped', async () => {
+    const osd = new OsdLifecycle(config);
+    await osd.start();
+    osd.stop();
+    expect(osd.status).toBe('stopped');
+  });
 });
 
-describe('OSD Lifecycle: crash recovery', () => {
-  it.skip('restarts on unexpected exit', async () => {});
+describe('OSD Lifecycle: crash', () => {
+  it('emits error on unexpected exit', async () => {
+    const child = mockChild();
+    spawnMock.mockReturnValue(child);
+    const osd = new OsdLifecycle(config);
+    await osd.start();
+    const statuses: string[] = [];
+    osd.on('status', (s: string) => statuses.push(s));
+    child.emit('exit', 1);
+    expect(statuses).toContain('error');
+  });
 
-  it.skip('emits max-restarts after exceeding limit', async () => {});
+  it('emits stopped on clean exit', async () => {
+    const child = mockChild();
+    spawnMock.mockReturnValue(child);
+    const osd = new OsdLifecycle(config);
+    await osd.start();
+    const statuses: string[] = [];
+    osd.on('status', (s: string) => statuses.push(s));
+    child.emit('exit', 0);
+    expect(statuses).toContain('stopped');
+  });
 
-  it.skip('does not restart on intentional stop', async () => {});
+  it('emits log from stdout', async () => {
+    const child = mockChild();
+    spawnMock.mockReturnValue(child);
+    const osd = new OsdLifecycle(config);
+    const logs: string[] = [];
+    osd.on('log', (msg: string) => logs.push(msg));
+    await osd.start();
+    child.stdout.emit('data', Buffer.from('OSD started'));
+    expect(logs).toContain('OSD started');
+    osd.stop();
+  });
 });
