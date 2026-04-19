@@ -14,7 +14,10 @@ interface GoogleAuthResult {
   user: { id: string; name: string; email: string; picture: string };
 }
 
-export async function loginGoogle(clientId: string, redirectUri: string): Promise<GoogleAuthResult> {
+export async function loginGoogle(
+  clientId: string,
+  redirectUri: string,
+): Promise<GoogleAuthResult> {
   const { verifier, challenge } = generatePKCE();
   const state = crypto.randomBytes(16).toString('hex');
 
@@ -46,15 +49,28 @@ export async function loginGoogle(clientId: string, redirectUri: string): Promis
 
 function openAuthWindow(url: string, redirectUri: string, expectedState: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const win = new BrowserWindow({ width: 600, height: 700, show: true, webPreferences: { nodeIntegration: false } });
+    const win = new BrowserWindow({
+      width: 600,
+      height: 700,
+      show: true,
+      webPreferences: { nodeIntegration: false },
+    });
 
     win.webContents.on('will-redirect', (_e, navUrl) => {
       if (!navUrl.startsWith(redirectUri)) return;
       const params = new URL(navUrl).searchParams;
       const code = params.get('code');
       const state = params.get('state');
-      if (state !== expectedState) { win.close(); reject(new Error('State mismatch')); return; }
-      if (!code) { win.close(); reject(new Error('No code in redirect')); return; }
+      if (state !== expectedState) {
+        win.close();
+        reject(new Error('State mismatch'));
+        return;
+      }
+      if (!code) {
+        win.close();
+        reject(new Error('No code in redirect'));
+        return;
+      }
       win.close();
       resolve(code);
     });

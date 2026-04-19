@@ -55,7 +55,7 @@ export class ToolRegistry {
     name: string,
     input: Record<string, unknown>,
     context: ToolContext,
-    timeoutMs = 30_000
+    timeoutMs = 30_000,
   ): Promise<ToolResult> {
     const tool = this.tools.get(name);
     if (!tool) return { content: `Tool not found: ${name}`, isError: true };
@@ -74,9 +74,13 @@ export class ToolRegistry {
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      return { content: timeoutController.signal.aborted && !context.signal.aborted
-        ? `Tool timed out after ${timeoutMs}ms`
-        : `Tool execution failed: ${msg}`, isError: true };
+      return {
+        content:
+          timeoutController.signal.aborted && !context.signal.aborted
+            ? `Tool timed out after ${timeoutMs}ms`
+            : `Tool execution failed: ${msg}`,
+        isError: true,
+      };
     } finally {
       clearTimeout(timer);
     }

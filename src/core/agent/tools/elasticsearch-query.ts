@@ -8,7 +8,8 @@ import type { AgentTool, ToolContext, ToolResult } from '../types';
 export const elasticsearchQueryTool: AgentTool = {
   definition: {
     name: 'elasticsearch-query',
-    description: 'Run a query against the active Elasticsearch connection. Supports full query DSL.',
+    description:
+      'Run a query against the active Elasticsearch connection. Supports full query DSL.',
     source: 'builtin',
     inputSchema: {
       type: 'object',
@@ -38,7 +39,10 @@ export const elasticsearchQueryTool: AgentTool = {
       });
       return { content: JSON.stringify(res, null, 2), isError: false };
     } catch (err: unknown) {
-      return { content: `Query failed: ${err instanceof Error ? err.message : err}`, isError: true };
+      return {
+        content: `Query failed: ${err instanceof Error ? err.message : err}`,
+        isError: true,
+      };
     }
   },
 };

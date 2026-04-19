@@ -22,19 +22,33 @@ const HEALTH: Record<string, { label: string; className: string }> = {
 
 // Placeholder recent items — will come from SQLite in M2
 const RECENT_PLACEHOLDER = [
-  { id: '1', title: 'No recent items yet', subtitle: 'Start a conversation or connect a data source' },
+  {
+    id: '1',
+    title: 'No recent items yet',
+    subtitle: 'Start a conversation or connect a data source',
+  },
 ];
 
 export const HomePage: React.FC<Props> = ({
-  workspaces, activeWorkspace, connections,
-  onSwitchWorkspace, onCreateWorkspace, onOpenChat, onAddConnection, onEditConnection, onRefresh,
+  workspaces,
+  activeWorkspace,
+  connections,
+  onSwitchWorkspace,
+  onCreateWorkspace,
+  onOpenChat,
+  onAddConnection,
+  onEditConnection,
+  onRefresh,
 }) => {
   const [newWsName, setNewWsName] = useState('');
   const [creatingWs, setCreatingWs] = useState(false);
 
   const handleCreateWorkspace = () => {
     if (creatingWs) {
-      if (newWsName.trim()) { onCreateWorkspace(newWsName.trim()); setNewWsName(''); }
+      if (newWsName.trim()) {
+        onCreateWorkspace(newWsName.trim());
+        setNewWsName('');
+      }
       setCreatingWs(false);
     } else {
       setCreatingWs(true);
@@ -46,13 +60,17 @@ export const HomePage: React.FC<Props> = ({
       {/* Header */}
       <header className="homepage-header">
         <h1>OpenSearch Dashboards Desktop</h1>
-        <button className="btn-icon" onClick={onRefresh} aria-label="Refresh">↻</button>
+        <button className="btn-icon" onClick={onRefresh} aria-label="Refresh">
+          ↻
+        </button>
       </header>
 
       {/* Chat entry */}
       <section className="homepage-chat-entry" aria-label="Start a conversation">
         <button className="chat-entry-btn" onClick={onOpenChat}>
-          <span className="chat-entry-icon" aria-hidden="true">💬</span>
+          <span className="chat-entry-icon" aria-hidden="true">
+            💬
+          </span>
           <span className="chat-entry-text">Ask anything…</span>
           <kbd aria-label="Command K">⌘K</kbd>
         </button>
@@ -62,7 +80,7 @@ export const HomePage: React.FC<Props> = ({
       <section className="homepage-section" aria-label="Workspaces">
         <h2>Workspaces</h2>
         <div className="card-grid" role="list">
-          {workspaces.map(ws => (
+          {workspaces.map((ws) => (
             <button
               key={ws.id}
               role="listitem"
@@ -77,20 +95,36 @@ export const HomePage: React.FC<Props> = ({
           ))}
           <div className="workspace-card workspace-card-new" role="listitem">
             {creatingWs ? (
-              <form onSubmit={e => { e.preventDefault(); handleCreateWorkspace(); }} className="new-ws-form">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleCreateWorkspace();
+                }}
+                className="new-ws-form"
+              >
                 <input
                   autoFocus
                   value={newWsName}
-                  onChange={e => setNewWsName(e.target.value)}
+                  onChange={(e) => setNewWsName(e.target.value)}
                   placeholder="Workspace name"
                   aria-label="New workspace name"
-                  onKeyDown={e => { if (e.key === 'Escape') setCreatingWs(false); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setCreatingWs(false);
+                  }}
                 />
-                <button type="submit" aria-label="Create workspace">✓</button>
-                <button type="button" onClick={() => setCreatingWs(false)} aria-label="Cancel">✕</button>
+                <button type="submit" aria-label="Create workspace">
+                  ✓
+                </button>
+                <button type="button" onClick={() => setCreatingWs(false)} aria-label="Cancel">
+                  ✕
+                </button>
               </form>
             ) : (
-              <button onClick={handleCreateWorkspace} className="new-ws-btn" aria-label="Create new workspace">
+              <button
+                onClick={handleCreateWorkspace}
+                className="new-ws-btn"
+                aria-label="Create new workspace"
+              >
                 + New
               </button>
             )}
@@ -102,23 +136,33 @@ export const HomePage: React.FC<Props> = ({
       <section className="homepage-section" aria-label="Data source connections">
         <div className="section-header">
           <h2>Connected Data Sources</h2>
-          <button className="btn-sm" onClick={onAddConnection}>+ Add</button>
+          <button className="btn-sm" onClick={onAddConnection}>
+            + Add
+          </button>
         </div>
         {connections.length === 0 ? (
           <div className="empty-state" role="status">
             <p>No connections yet.</p>
-            <button className="btn-primary" onClick={onAddConnection}>Add your first connection</button>
+            <button className="btn-primary" onClick={onAddConnection}>
+              Add your first connection
+            </button>
           </div>
         ) : (
           <ul className="connection-list" role="list">
-            {connections.map(conn => {
+            {connections.map((conn) => {
               const health = HEALTH.unknown; // Real health checks come in M2
               return (
                 <li key={conn.id} className="connection-item" role="listitem">
-                  <button className="connection-btn" onClick={() => onEditConnection(conn)} aria-label={`Edit ${conn.name}`}>
+                  <button
+                    className="connection-btn"
+                    onClick={() => onEditConnection(conn)}
+                    aria-label={`Edit ${conn.name}`}
+                  >
                     <span className={`health-dot ${health.className}`} aria-label={health.label} />
                     <span className="connection-name">{conn.name}</span>
-                    <span className="connection-meta">{conn.type} · {conn.url}</span>
+                    <span className="connection-meta">
+                      {conn.type} · {conn.url}
+                    </span>
                   </button>
                 </li>
               );
@@ -137,8 +181,11 @@ export const HomePage: React.FC<Props> = ({
           </div>
         ) : (
           <ul className="recent-list" role="list">
-            {RECENT_PLACEHOLDER.map(item => (
-              <li key={item.id} role="listitem">{item.title}<span className="recent-sub">{item.subtitle}</span></li>
+            {RECENT_PLACEHOLDER.map((item) => (
+              <li key={item.id} role="listitem">
+                {item.title}
+                <span className="recent-sub">{item.subtitle}</span>
+              </li>
             ))}
           </ul>
         )}

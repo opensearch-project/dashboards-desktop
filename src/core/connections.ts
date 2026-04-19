@@ -35,7 +35,7 @@ const DEFAULT_TIMEOUT_MS = 10000;
 
 export async function testConnection(
   input: ConnectionInput,
-  options?: TestOptions
+  options?: TestOptions,
 ): Promise<ConnectionTestResult> {
   const opts = { timeoutMs: DEFAULT_TIMEOUT_MS, ...options };
   try {
@@ -51,7 +51,7 @@ export async function testConnection(
 
 async function testOpenSearch(
   input: ConnectionInput,
-  options?: TestOptions
+  options?: TestOptions,
 ): Promise<ConnectionTestResult> {
   const opts: Record<string, unknown> = { node: input.url };
 
@@ -61,7 +61,10 @@ async function testOpenSearch(
     opts.headers = { Authorization: `ApiKey ${input.api_key}` };
   } else if (input.auth_type === 'aws-sigv4' && input.region) {
     const { defaultProvider } = await import('@aws-sdk/credential-provider-node');
-    Object.assign(opts, AwsSigv4Signer({ region: input.region, getCredentials: defaultProvider() }));
+    Object.assign(
+      opts,
+      AwsSigv4Signer({ region: input.region, getCredentials: defaultProvider() }),
+    );
   }
   opts.requestTimeout = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
@@ -77,7 +80,7 @@ async function testOpenSearch(
 
 async function testElasticsearch(
   input: ConnectionInput,
-  options?: TestOptions
+  options?: TestOptions,
 ): Promise<ConnectionTestResult> {
   const opts: Record<string, unknown> = { node: input.url };
 
@@ -88,7 +91,9 @@ async function testElasticsearch(
   }
   opts.requestTimeout = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-  const client = new ElasticsearchClient(opts as ConstructorParameters<typeof ElasticsearchClient>[0]);
+  const client = new ElasticsearchClient(
+    opts as ConstructorParameters<typeof ElasticsearchClient>[0],
+  );
   const info = await client.info();
   return {
     success: true,

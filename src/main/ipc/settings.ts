@@ -21,9 +21,14 @@ export function registerSettingsIPC(): void {
     // StorageProxy doesn't have getAllSettings yet — use known keys
     const db = getStorageProxy();
     const keys = [
-      'activeModel', 'autoRouting', 'updateChannel', 'theme',
-      'modelConfig.ollama.baseUrl', 'modelConfig.openai.apiKey',
-      'modelConfig.anthropic.apiKey', 'modelConfig.bedrock.region',
+      'activeModel',
+      'autoRouting',
+      'updateChannel',
+      'theme',
+      'modelConfig.ollama.baseUrl',
+      'modelConfig.openai.apiKey',
+      'modelConfig.anthropic.apiKey',
+      'modelConfig.bedrock.region',
     ];
     const result: Record<string, string | null> = {};
     for (const k of keys) {

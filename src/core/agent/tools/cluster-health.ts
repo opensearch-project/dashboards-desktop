@@ -34,7 +34,10 @@ export const clusterHealthTool: AgentTool = {
         return await getElasticsearchHealth(conn.url, detail);
       }
     } catch (err: unknown) {
-      return { content: `Health check failed: ${err instanceof Error ? err.message : err}`, isError: true };
+      return {
+        content: `Health check failed: ${err instanceof Error ? err.message : err}`,
+        isError: true,
+      };
     }
   },
 };

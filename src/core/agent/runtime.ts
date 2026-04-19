@@ -7,7 +7,11 @@ import type { StreamEvent, ToolCall, ToolContext } from './types';
 import type { ModelRouter } from './model-router';
 import type { ToolRegistry } from './tool-registry';
 import type { ConversationManager } from './conversation';
-import { selectModel, type AutoRouterConfig, DEFAULT_CONFIG as DEFAULT_AUTOROUTER } from './auto-router';
+import {
+  selectModel,
+  type AutoRouterConfig,
+  DEFAULT_CONFIG as DEFAULT_AUTOROUTER,
+} from './auto-router';
 
 const MAX_TOOL_ROUNDS = 10;
 
@@ -22,7 +26,12 @@ export class AgentRuntime {
     private conversations: ConversationManager,
     private activeModel: string,
     private workspaceId: string,
-    private getActiveConnection: () => { id: string; url: string; type: string; auth_type: string } | null
+    private getActiveConnection: () => {
+      id: string;
+      url: string;
+      type: string;
+      auth_type: string;
+    } | null,
   ) {}
 
   setModel(specifier: string): void {
@@ -55,7 +64,7 @@ export class AgentRuntime {
   async chat(
     conversationId: string,
     userMessage: string,
-    emit: (event: StreamEvent) => void
+    emit: (event: StreamEvent) => void,
   ): Promise<void> {
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
@@ -77,29 +86,38 @@ export class AgentRuntime {
   private async runLoop(
     conversationId: string,
     signal: AbortSignal,
-    emit: (event: StreamEvent) => void
+    emit: (event: StreamEvent) => void,
   ): Promise<void> {
     const { provider, model } = this.router.resolve(this.activeModel);
-    const modelInfo = (await provider.listModels()).find((m) => m.id === model)
-      ?? { id: model, displayName: model, contextWindow: 8192, supportsTools: true, local: false };
+    const modelInfo = (await provider.listModels()).find((m) => m.id === model) ?? {
+      id: model,
+      displayName: model,
+      contextWindow: 8192,
+      supportsTools: true,
+      local: false,
+    };
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       if (signal.aborted) return;
 
       const messages = this.conversations.buildContext(
-        conversationId, modelInfo, this.tools.listForModel(), this.workspaceId
+        conversationId,
+        modelInfo,
+        this.tools.listForModel(),
+        this.workspaceId,
       );
 
       // Auto-route on first round only (use same model for tool follow-ups)
-      const effectiveModel = round === 0
-        ? selectModel(
-            messages.find((m) => m.role === 'user')?.content ?? '',
-            messages,
-            this.tools.listForModel(),
-            this.autoRouterConfig,
-            this.manualModelOverride,
-          )
-        : this.activeModel;
+      const effectiveModel =
+        round === 0
+          ? selectModel(
+              messages.find((m) => m.role === 'user')?.content ?? '',
+              messages,
+              this.tools.listForModel(),
+              this.autoRouterConfig,
+              this.manualModelOverride,
+            )
+          : this.activeModel;
 
       // Collect the full response
       let textContent = '';
@@ -108,7 +126,12 @@ export class AgentRuntime {
       let inputBuffer = '';
       let totalUsage = { inputTokens: 0, outputTokens: 0 };
 
-      for await (const chunk of this.router.chat(effectiveModel, messages, this.tools.listForModel(), signal)) {
+      for await (const chunk of this.router.chat(
+        effectiveModel,
+        messages,
+        this.tools.listForModel(),
+        signal,
+      )) {
         if (signal.aborted) return;
 
         switch (chunk.type) {
@@ -120,7 +143,11 @@ export class AgentRuntime {
           case 'tool_call_start':
             currentToolCall = { id: chunk.toolCall?.id, name: chunk.toolCall?.name };
             inputBuffer = '';
-            emit({ type: 'tool_call_start', name: chunk.toolCall?.name ?? '', id: chunk.toolCall?.id ?? '' });
+            emit({
+              type: 'tool_call_start',
+              name: chunk.toolCall?.name ?? '',
+              id: chunk.toolCall?.id ?? '',
+            });
             break;
 
           case 'tool_call_delta':
@@ -131,8 +158,14 @@ export class AgentRuntime {
           case 'tool_call_end':
             if (currentToolCall?.name) {
               let parsedInput: Record<string, unknown> = {};
-              try { parsedInput = JSON.parse(inputBuffer); } catch {
-                emit({ type: 'error', message: `Malformed tool input for ${currentToolCall.name}: ${inputBuffer.slice(0, 200)}`, code: 'TOOL_INPUT_PARSE' });
+              try {
+                parsedInput = JSON.parse(inputBuffer);
+              } catch {
+                emit({
+                  type: 'error',
+                  message: `Malformed tool input for ${currentToolCall.name}: ${inputBuffer.slice(0, 200)}`,
+                  code: 'TOOL_INPUT_PARSE',
+                });
               }
               const tc: ToolCall = {
                 id: currentToolCall.id ?? currentToolCall.name,
@@ -154,8 +187,10 @@ export class AgentRuntime {
 
       // Store assistant message
       this.conversations.addMessage(
-        conversationId, 'assistant', textContent,
-        toolCalls.length ? JSON.stringify(toolCalls) : undefined
+        conversationId,
+        'assistant',
+        textContent,
+        toolCalls.length ? JSON.stringify(toolCalls) : undefined,
       );
 
       // If no tool calls, we're done

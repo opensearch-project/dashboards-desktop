@@ -12,7 +12,8 @@ import * as ingest from '../../admin/opensearch/ingest';
 export const adminOpenSearchTool: AgentTool = {
   definition: {
     name: 'admin-opensearch',
-    description: 'Manage OpenSearch cluster: security (roles/users/tenants), alerting (monitors/destinations), ISM policies, snapshots, ingest pipelines.',
+    description:
+      'Manage OpenSearch cluster: security (roles/users/tenants), alerting (monitors/destinations), ISM policies, snapshots, ingest pipelines.',
     source: 'builtin',
     inputSchema: {
       type: 'object',
@@ -49,60 +50,105 @@ export const adminOpenSearchTool: AgentTool = {
           res = await execAlerting(url, action, name, body);
           break;
         case 'ism':
-          res = action === 'list' ? await ism.listPolicies(url)
-            : action === 'get' ? await ism.getPolicy(url, name)
-            : action === 'create' ? await ism.createPolicy(url, name, body)
-            : action === 'delete' ? await ism.deletePolicy(url, name)
-            : `Unknown ISM action: ${action}`;
+          res =
+            action === 'list'
+              ? await ism.listPolicies(url)
+              : action === 'get'
+                ? await ism.getPolicy(url, name)
+                : action === 'create'
+                  ? await ism.createPolicy(url, name, body)
+                  : action === 'delete'
+                    ? await ism.deletePolicy(url, name)
+                    : `Unknown ISM action: ${action}`;
           break;
         case 'snapshots':
           res = await execSnapshots(url, action, name, repo, body);
           break;
         case 'ingest':
-          res = action === 'list' ? await ingest.listPipelines(url)
-            : action === 'get' ? await ingest.getPipeline(url, name)
-            : action === 'create' ? await ingest.createPipeline(url, name, body)
-            : action === 'delete' ? await ingest.deletePipeline(url, name)
-            : `Unknown ingest action: ${action}`;
+          res =
+            action === 'list'
+              ? await ingest.listPipelines(url)
+              : action === 'get'
+                ? await ingest.getPipeline(url, name)
+                : action === 'create'
+                  ? await ingest.createPipeline(url, name, body)
+                  : action === 'delete'
+                    ? await ingest.deletePipeline(url, name)
+                    : `Unknown ingest action: ${action}`;
           break;
         default:
           return { content: `Unknown domain: ${input.domain}`, isError: true };
       }
       return { content: JSON.stringify(res, null, 2), isError: false };
     } catch (err: unknown) {
-      return { content: `admin-opensearch failed: ${err instanceof Error ? err.message : err}`, isError: true };
+      return {
+        content: `admin-opensearch failed: ${err instanceof Error ? err.message : err}`,
+        isError: true,
+      };
     }
   },
 };
 
-async function execSecurity(url: string, action: string, name: string, body: Record<string, unknown>) {
+async function execSecurity(
+  url: string,
+  action: string,
+  name: string,
+  body: Record<string, unknown>,
+) {
   switch (action) {
-    case 'list': return security.listRoles(url);
-    case 'get': return security.getRole(url, name);
-    case 'create': return security.createRole(url, name, body);
-    case 'delete': return security.deleteRole(url, name);
-    default: return `Unknown security action: ${action}`;
+    case 'list':
+      return security.listRoles(url);
+    case 'get':
+      return security.getRole(url, name);
+    case 'create':
+      return security.createRole(url, name, body);
+    case 'delete':
+      return security.deleteRole(url, name);
+    default:
+      return `Unknown security action: ${action}`;
   }
 }
 
-async function execAlerting(url: string, action: string, name: string, body: Record<string, unknown>) {
+async function execAlerting(
+  url: string,
+  action: string,
+  name: string,
+  body: Record<string, unknown>,
+) {
   switch (action) {
-    case 'list': return alerting.listMonitors(url);
-    case 'get': return alerting.getMonitor(url, name);
-    case 'create': return alerting.createMonitor(url, body);
-    case 'update': return alerting.updateMonitor(url, name, body);
-    case 'delete': return alerting.deleteMonitor(url, name);
-    default: return `Unknown alerting action: ${action}`;
+    case 'list':
+      return alerting.listMonitors(url);
+    case 'get':
+      return alerting.getMonitor(url, name);
+    case 'create':
+      return alerting.createMonitor(url, body);
+    case 'update':
+      return alerting.updateMonitor(url, name, body);
+    case 'delete':
+      return alerting.deleteMonitor(url, name);
+    default:
+      return `Unknown alerting action: ${action}`;
   }
 }
 
-async function execSnapshots(url: string, action: string, name: string, repo: string, body?: Record<string, unknown>) {
+async function execSnapshots(
+  url: string,
+  action: string,
+  name: string,
+  repo: string,
+  body?: Record<string, unknown>,
+) {
   switch (action) {
-    case 'list': return repo ? snapshots.listSnapshots(url, repo) : snapshots.listRepos(url);
-    case 'create': return snapshots.createSnapshot(url, repo, name, body);
-    case 'restore': return snapshots.restoreSnapshot(url, repo, name, body);
-    case 'delete': return snapshots.deleteSnapshot(url, repo, name);
-    default: return `Unknown snapshot action: ${action}`;
+    case 'list':
+      return repo ? snapshots.listSnapshots(url, repo) : snapshots.listRepos(url);
+    case 'create':
+      return snapshots.createSnapshot(url, repo, name, body);
+    case 'restore':
+      return snapshots.restoreSnapshot(url, repo, name, body);
+    case 'delete':
+      return snapshots.deleteSnapshot(url, repo, name);
+    default:
+      return `Unknown snapshot action: ${action}`;
   }
 }
 

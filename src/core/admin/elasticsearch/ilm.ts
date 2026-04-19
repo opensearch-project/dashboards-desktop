@@ -4,7 +4,9 @@
 
 import { Client } from '@elastic/elasticsearch';
 
-function client(url: string): Client { return new Client({ node: url }); }
+function client(url: string): Client {
+  return new Client({ node: url });
+}
 
 export async function listPolicies(url: string) {
   return client(url).ilm.getLifecycle();

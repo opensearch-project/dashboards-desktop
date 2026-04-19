@@ -16,7 +16,7 @@ export interface SkillDefinition {
   version: string;
   tools: AgentTool[];
   systemPrompt?: string;
-  modelPreference?: string;  // e.g. "ollama:llama3" or "anthropic:claude-sonnet-4-20250514"
+  modelPreference?: string; // e.g. "ollama:llama3" or "anthropic:claude-sonnet-4-20250514"
 }
 
 export interface LoadedSkill {
@@ -97,7 +97,8 @@ export class SkillLoader {
     const destDir = path.join(SKILLS_DIR, loaded.definition.name);
 
     // Defense-in-depth: ensure destDir is inside SKILLS_DIR
-    if (!destDir.startsWith(SKILLS_DIR)) throw new Error('Invalid skill name: path traversal detected');
+    if (!destDir.startsWith(SKILLS_DIR))
+      throw new Error('Invalid skill name: path traversal detected');
 
     fs.mkdirSync(SKILLS_DIR, { recursive: true });
     fs.cpSync(abs, destDir, { recursive: true });
@@ -130,8 +131,13 @@ function resolveEntry(dir: string): string | null {
 }
 
 function validate(def: SkillDefinition, skillPath: string): void {
-  if (!def.name || typeof def.name !== 'string') throw new Error(`Invalid skill at ${skillPath}: missing name`);
-  if (!/^[a-zA-Z0-9_-]+$/.test(def.name)) throw new Error(`Invalid skill name "${def.name}": must be alphanumeric, hyphens, underscores only`);
+  if (!def.name || typeof def.name !== 'string')
+    throw new Error(`Invalid skill at ${skillPath}: missing name`);
+  if (!/^[a-zA-Z0-9_-]+$/.test(def.name))
+    throw new Error(
+      `Invalid skill name "${def.name}": must be alphanumeric, hyphens, underscores only`,
+    );
   if (!def.description) throw new Error(`Invalid skill "${def.name}": missing description`);
-  if (!Array.isArray(def.tools)) throw new Error(`Invalid skill "${def.name}": tools must be an array`);
+  if (!Array.isArray(def.tools))
+    throw new Error(`Invalid skill "${def.name}": tools must be an array`);
 }

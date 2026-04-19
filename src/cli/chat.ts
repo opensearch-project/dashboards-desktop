@@ -35,7 +35,12 @@ export async function runChatCLI(options: ChatCLIOptions): Promise<void> {
   router.register(new AnthropicProvider({ apiKey: process.env.ANTHROPIC_API_KEY ?? '' }));
   router.register(new BedrockProvider(process.env.AWS_REGION ?? 'us-east-1'));
   if (options.baseUrl) {
-    router.register(new OpenAICompatibleProvider({ baseUrl: options.baseUrl, apiKey: process.env.OSD_API_KEY ?? '' }));
+    router.register(
+      new OpenAICompatibleProvider({
+        baseUrl: options.baseUrl,
+        apiKey: process.env.OSD_API_KEY ?? '',
+      }),
+    );
   }
 
   const registry = new ToolRegistry();
@@ -62,42 +67,46 @@ export async function runChatCLI(options: ChatCLIOptions): Promise<void> {
   console.log(`\nosd chat — model: ${modelSpecifier}`);
   console.log('Type /model <specifier> to switch, /clear to reset, /quit to exit.\n');
 
-  const prompt = () => rl.question('> ', async (input) => {
-    const trimmed = input.trim();
-    if (!trimmed) { prompt(); return; }
-
-    if (trimmed === '/quit' || trimmed === '/exit') {
-      rl.close();
-      return;
-    }
-
-    if (trimmed === '/clear') {
-      orchestrator = createOrchestrator(router, registry, modelSpecifier);
-      console.log('Conversation cleared.\n');
-      prompt();
-      return;
-    }
-
-    if (trimmed.startsWith('/model ')) {
-      const newModel = trimmed.slice(7).trim();
-      try {
-        router.resolve(newModel);
-        modelSpecifier = newModel;
-        orchestrator = createOrchestrator(router, registry, modelSpecifier);
-        console.log(`Switched to ${modelSpecifier}\n`);
-      } catch (err: unknown) {
-        console.error(`${err instanceof Error ? err.message : err}\n`);
+  const prompt = () =>
+    rl.question('> ', async (input) => {
+      const trimmed = input.trim();
+      if (!trimmed) {
+        prompt();
+        return;
       }
-      prompt();
-      return;
-    }
 
-    // Send message and stream response
-    process.stdout.write('\n');
-    await orchestrator.send(trimmed, toolContext);
-    process.stdout.write('\n\n');
-    prompt();
-  });
+      if (trimmed === '/quit' || trimmed === '/exit') {
+        rl.close();
+        return;
+      }
+
+      if (trimmed === '/clear') {
+        orchestrator = createOrchestrator(router, registry, modelSpecifier);
+        console.log('Conversation cleared.\n');
+        prompt();
+        return;
+      }
+
+      if (trimmed.startsWith('/model ')) {
+        const newModel = trimmed.slice(7).trim();
+        try {
+          router.resolve(newModel);
+          modelSpecifier = newModel;
+          orchestrator = createOrchestrator(router, registry, modelSpecifier);
+          console.log(`Switched to ${modelSpecifier}\n`);
+        } catch (err: unknown) {
+          console.error(`${err instanceof Error ? err.message : err}\n`);
+        }
+        prompt();
+        return;
+      }
+
+      // Send message and stream response
+      process.stdout.write('\n');
+      await orchestrator.send(trimmed, toolContext);
+      process.stdout.write('\n\n');
+      prompt();
+    });
 
   prompt();
 }

@@ -37,7 +37,8 @@ async function doUpdate(channel: Channel): Promise<void> {
   }
 
   console.log(`Downloading ${release.version}...`);
-  const platform = process.platform === 'darwin' ? 'macos' : process.platform === 'win32' ? 'windows' : 'linux';
+  const platform =
+    process.platform === 'darwin' ? 'macos' : process.platform === 'win32' ? 'windows' : 'linux';
   const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
   const assetName = `osd-bundle-${platform}-${arch}.tar.gz`;
 
@@ -108,12 +109,24 @@ function parseFlags(args: string[]): Flags {
   const flags: Flags = { check: false, channel: 'stable', fromSource: false, rollback: false };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
-      case '--check': flags.check = true; break;
-      case '--channel': flags.channel = (args[++i] as Channel) ?? 'stable'; break;
-      case '--from-source': flags.fromSource = true; break;
-      case '--rollback': flags.rollback = true; break;
-      case '--branch': flags.branch = args[++i]; break;
-      case '--tag': flags.tag = args[++i]; break;
+      case '--check':
+        flags.check = true;
+        break;
+      case '--channel':
+        flags.channel = (args[++i] as Channel) ?? 'stable';
+        break;
+      case '--from-source':
+        flags.fromSource = true;
+        break;
+      case '--rollback':
+        flags.rollback = true;
+        break;
+      case '--branch':
+        flags.branch = args[++i];
+        break;
+      case '--tag':
+        flags.tag = args[++i];
+        break;
     }
   }
   return flags;

@@ -65,11 +65,7 @@ export function getServer(name: string): McpServerConfig | undefined {
 }
 
 /** Set a config key on an existing server */
-export function setServerOption(
-  name: string,
-  key: string,
-  value: string,
-): McpConfig {
+export function setServerOption(name: string, key: string, value: string): McpConfig {
   const config = loadConfig();
   const server = config.mcpServers[name];
   if (!server) throw new Error(`MCP server '${name}' not found`);

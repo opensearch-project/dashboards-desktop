@@ -13,7 +13,10 @@ interface McpServerInfo {
 
 interface McpSupervisor {
   list(): McpServerInfo[];
-  install(name: string, config: { command: string; args: string[]; env?: Record<string, string> }): Promise<void>;
+  install(
+    name: string,
+    config: { command: string; args: string[]; env?: Record<string, string> },
+  ): Promise<void>;
   start(name: string): Promise<void>;
   stop(name: string): Promise<void>;
   restart(name: string): Promise<void>;
@@ -35,12 +38,17 @@ function mcp(): McpSupervisor {
 
 export function registerMcpIPC(): void {
   ipcMain.handle(IPC.MCP_LIST, () => mcp().list());
-  ipcMain.handle(IPC.MCP_INSTALL, (_e, name: string, config: { command: string; args: string[]; env?: Record<string, string> }) =>
-    mcp().install(name, config));
+  ipcMain.handle(
+    IPC.MCP_INSTALL,
+    (_e, name: string, config: { command: string; args: string[]; env?: Record<string, string> }) =>
+      mcp().install(name, config),
+  );
   ipcMain.handle(IPC.MCP_START, (_e, name: string) => mcp().start(name));
   ipcMain.handle(IPC.MCP_STOP, (_e, name: string) => mcp().stop(name));
   ipcMain.handle(IPC.MCP_RESTART, (_e, name: string) => mcp().restart(name));
   ipcMain.handle(IPC.MCP_CONFIG_GET, (_e, name: string) => mcp().getConfig(name));
-  ipcMain.handle(IPC.MCP_CONFIG_SET, (_e, name: string, config: Record<string, unknown>) => mcp().setConfig(name, config));
+  ipcMain.handle(IPC.MCP_CONFIG_SET, (_e, name: string, config: Record<string, unknown>) =>
+    mcp().setConfig(name, config),
+  );
   ipcMain.handle(IPC.MCP_TOOLS, (_e, name: string) => mcp().listTools(name));
 }

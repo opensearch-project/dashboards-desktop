@@ -12,10 +12,14 @@ const DB_PATH = path.join(os.homedir(), '.osd', 'osd.db');
 export async function handleConnectCommand(args: string[]): Promise<void> {
   const sub = args[0];
   switch (sub) {
-    case 'add': return connectAdd(args.slice(1));
-    case 'list': return connectList();
-    case 'test': return connectTest(args.slice(1));
-    case 'remove': return connectRemove(args[1]);
+    case 'add':
+      return connectAdd(args.slice(1));
+    case 'list':
+      return connectList();
+    case 'test':
+      return connectTest(args.slice(1));
+    case 'remove':
+      return connectRemove(args[1]);
     default:
       console.log('Usage: osd connect <add|list|test|remove>');
       console.log('  osd connect add --name prod --url https://... --type opensearch --auth basic');
@@ -53,10 +57,19 @@ function connectAdd(args: string[]): void {
 
 function connectList(): void {
   const db = initDatabase(DB_PATH);
-  const conns = listConnections(db) as Array<{ name: string; url: string; type: string; auth_type: string; workspace_id: string }>;
+  const conns = listConnections(db) as Array<{
+    name: string;
+    url: string;
+    type: string;
+    auth_type: string;
+    workspace_id: string;
+  }>;
   db.close();
 
-  if (conns.length === 0) { console.log('No connections saved.'); return; }
+  if (conns.length === 0) {
+    console.log('No connections saved.');
+    return;
+  }
   console.log('\nConnections:\n');
   for (const c of conns) {
     console.log(`  ${c.name} — ${c.url} (${c.type}, ${c.auth_type})`);
@@ -66,17 +79,34 @@ function connectList(): void {
 
 async function connectTest(args: string[]): Promise<void> {
   const name = args[0];
-  if (!name) { console.error('Usage: osd connect test <name>'); process.exit(1); }
+  if (!name) {
+    console.error('Usage: osd connect test <name>');
+    process.exit(1);
+  }
 
   const db = initDatabase(DB_PATH);
-  const conns = listConnections(db) as Array<{ name: string; url: string; type: string; auth_type: string; workspace_id: string }>;
+  const conns = listConnections(db) as Array<{
+    name: string;
+    url: string;
+    type: string;
+    auth_type: string;
+    workspace_id: string;
+  }>;
   db.close();
 
   const conn = conns.find((c) => c.name === name);
-  if (!conn) { console.error(`Connection "${name}" not found.`); process.exit(1); }
+  if (!conn) {
+    console.error(`Connection "${name}" not found.`);
+    process.exit(1);
+  }
 
   console.log(`Testing ${conn.name} (${conn.url})...`);
-  const result = await testConnection({ ...conn, workspace_id: conn.workspace_id ?? '', type: conn.type as 'opensearch' | 'elasticsearch', auth_type: conn.auth_type as 'basic' | 'apikey' | 'aws-sigv4' | 'none' });
+  const result = await testConnection({
+    ...conn,
+    workspace_id: conn.workspace_id ?? '',
+    type: conn.type as 'opensearch' | 'elasticsearch',
+    auth_type: conn.auth_type as 'basic' | 'apikey' | 'aws-sigv4' | 'none',
+  });
 
   if (result.success) {
     console.log(`✅ Connected — ${result.cluster_name} v${result.version}`);
@@ -87,12 +117,19 @@ async function connectTest(args: string[]): Promise<void> {
 }
 
 function connectRemove(name: string): void {
-  if (!name) { console.error('Usage: osd connect remove <name>'); process.exit(1); }
+  if (!name) {
+    console.error('Usage: osd connect remove <name>');
+    process.exit(1);
+  }
 
   const db = initDatabase(DB_PATH);
   const conns = listConnections(db) as Array<{ id: string; name: string }>;
   const conn = conns.find((c) => c.name === name);
-  if (!conn) { db.close(); console.error(`Connection "${name}" not found.`); process.exit(1); }
+  if (!conn) {
+    db.close();
+    console.error(`Connection "${name}" not found.`);
+    process.exit(1);
+  }
 
   deleteConnection(db, conn.id);
   db.close();

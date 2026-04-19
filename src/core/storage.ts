@@ -134,7 +134,9 @@ export function initDatabase(dbPath: string): DB {
 
 export function getSchemaVersion(db: DB): number {
   try {
-    const row = db.prepare('SELECT version FROM schema_version').get() as { version: number } | undefined;
+    const row = db.prepare('SELECT version FROM schema_version').get() as
+      | { version: number }
+      | undefined;
     return row?.version ?? 0;
   } catch {
     return 0;
@@ -154,7 +156,10 @@ function runMigrations(db: DB): void {
 function ensureDefaultWorkspace(db: DB): void {
   const existing = db.prepare('SELECT id FROM workspaces WHERE is_default = 1').get();
   if (!existing) {
-    db.prepare('INSERT INTO workspaces (id, name, is_default) VALUES (?, ?, 1)').run(crypto.randomUUID(), 'Default');
+    db.prepare('INSERT INTO workspaces (id, name, is_default) VALUES (?, ?, 1)').run(
+      crypto.randomUUID(),
+      'Default',
+    );
   }
 }
 
@@ -174,8 +179,17 @@ export function addConnection(db: DB, input: ConnectionInput): string {
   const id = crypto.randomUUID();
   db.prepare(
     `INSERT INTO connections (id, name, url, type, auth_type, workspace_id, username, region)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, input.name, input.url, input.type, input.auth_type, input.workspace_id, input.username ?? null, input.region ?? null);
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    input.name,
+    input.url,
+    input.type,
+    input.auth_type,
+    input.workspace_id,
+    input.username ?? null,
+    input.region ?? null,
+  );
   return id;
 }
 
@@ -185,12 +199,22 @@ export function getConnection(db: DB, id: string): unknown {
 
 export function listConnections(db: DB, workspaceId?: string): unknown[] {
   if (workspaceId) {
-    return db.prepare('SELECT * FROM connections WHERE workspace_id = ? ORDER BY name').all(workspaceId);
+    return db
+      .prepare('SELECT * FROM connections WHERE workspace_id = ? ORDER BY name')
+      .all(workspaceId);
   }
   return db.prepare('SELECT * FROM connections ORDER BY name').all();
 }
 
-const ALLOWED_CONNECTION_COLUMNS = new Set(['name', 'url', 'type', 'auth_type', 'workspace_id', 'username', 'region']);
+const ALLOWED_CONNECTION_COLUMNS = new Set([
+  'name',
+  'url',
+  'type',
+  'auth_type',
+  'workspace_id',
+  'username',
+  'region',
+]);
 
 export function updateConnection(db: DB, id: string, fields: Record<string, unknown>): void {
   const safeFields = Object.entries(fields).filter(([k]) => ALLOWED_CONNECTION_COLUMNS.has(k));
@@ -219,7 +243,9 @@ export function createWorkspace(db: DB, name: string): string {
 // --- Settings ---
 
 export function getSetting(db: DB, key: string): string | undefined {
-  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
+    | { value: string }
+    | undefined;
   return row?.value;
 }
 
@@ -231,12 +257,14 @@ export function setSetting(db: DB, key: string, value: string): void {
 
 export function saveCredential(db: DB, connectionId: string, encryptedBlob: Buffer): void {
   db.prepare(
-    `INSERT OR REPLACE INTO credentials (connection_id, encrypted_blob, updated_at) VALUES (?, ?, datetime('now'))`
+    `INSERT OR REPLACE INTO credentials (connection_id, encrypted_blob, updated_at) VALUES (?, ?, datetime('now'))`,
   ).run(connectionId, encryptedBlob);
 }
 
 export function loadCredential(db: DB, connectionId: string): Buffer | undefined {
-  const row = db.prepare('SELECT encrypted_blob FROM credentials WHERE connection_id = ?').get(connectionId) as { encrypted_blob: Buffer } | undefined;
+  const row = db
+    .prepare('SELECT encrypted_blob FROM credentials WHERE connection_id = ?')
+    .get(connectionId) as { encrypted_blob: Buffer } | undefined;
   return row?.encrypted_blob;
 }
 
@@ -246,34 +274,56 @@ export function deleteCredential(db: DB, connectionId: string): void {
 
 // --- Conversations ---
 
-export function createConversation(db: DB, workspaceId: string, model: string, title?: string): string {
+export function createConversation(
+  db: DB,
+  workspaceId: string,
+  model: string,
+  title?: string,
+): string {
   const id = crypto.randomUUID();
   db.prepare(
-    "INSERT INTO conversations (id, workspace_id, title, model, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))"
+    "INSERT INTO conversations (id, workspace_id, title, model, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))",
   ).run(id, workspaceId, title ?? 'New conversation', model);
   return id;
 }
 
 export function listConversations(db: DB, workspaceId: string): unknown[] {
-  return db.prepare('SELECT id, title, model, updated_at FROM conversations WHERE workspace_id = ? ORDER BY updated_at DESC').all(workspaceId);
+  return db
+    .prepare(
+      'SELECT id, title, model, updated_at FROM conversations WHERE workspace_id = ? ORDER BY updated_at DESC',
+    )
+    .all(workspaceId);
 }
 
 export function deleteConversation(db: DB, id: string): void {
   db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
 }
 
-export function addMessage(db: DB, conversationId: string, role: string, content: string, toolCalls?: string, toolCallId?: string): string {
+export function addMessage(
+  db: DB,
+  conversationId: string,
+  role: string,
+  content: string,
+  toolCalls?: string,
+  toolCallId?: string,
+): string {
   const id = crypto.randomUUID();
   const tokenCount = Math.ceil(content.length / 4);
   db.prepare(
-    "INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id, token_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))"
+    "INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id, token_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))",
   ).run(id, conversationId, role, content, toolCalls ?? null, toolCallId ?? null, tokenCount);
-  db.prepare("UPDATE conversations SET updated_at = datetime('now') WHERE id = ?").run(conversationId);
+  db.prepare("UPDATE conversations SET updated_at = datetime('now') WHERE id = ?").run(
+    conversationId,
+  );
   return id;
 }
 
 export function getMessages(db: DB, conversationId: string): unknown[] {
-  return db.prepare('SELECT id, role, content, tool_calls, tool_call_id, token_count, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at ASC').all(conversationId);
+  return db
+    .prepare(
+      'SELECT id, role, content, tool_calls, tool_call_id, token_count, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at ASC',
+    )
+    .all(conversationId);
 }
 
 export function deleteWorkspace(db: DB, id: string): void {
@@ -283,7 +333,10 @@ export function deleteWorkspace(db: DB, id: string): void {
 // --- Conversation extras ---
 
 export function renameConversation(db: DB, id: string, title: string): void {
-  db.prepare("UPDATE conversations SET title = ?, updated_at = datetime('now') WHERE id = ?").run(title, id);
+  db.prepare("UPDATE conversations SET title = ?, updated_at = datetime('now') WHERE id = ?").run(
+    title,
+    id,
+  );
 }
 
 export function pinMessage(db: DB, messageId: string): void {
@@ -295,7 +348,11 @@ export function unpinMessage(db: DB, messageId: string): void {
 }
 
 export function listPinnedMessages(db: DB, conversationId: string): unknown[] {
-  return db.prepare('SELECT id, role, content, created_at FROM messages WHERE conversation_id = ? AND pinned = 1 ORDER BY created_at ASC').all(conversationId);
+  return db
+    .prepare(
+      'SELECT id, role, content, created_at FROM messages WHERE conversation_id = ? AND pinned = 1 ORDER BY created_at ASC',
+    )
+    .all(conversationId);
 }
 
 // ---------------------------------------------------------------------------
@@ -310,37 +367,105 @@ if (!isMainThread && parentPort) {
     try {
       let result: unknown;
       switch (req.method) {
-        case 'addConnection': result = addConnection(db, req.args[0] as ConnectionInput); break;
-        case 'getConnection': result = getConnection(db, req.args[0] as string); break;
-        case 'listConnections': result = listConnections(db, req.args[0] as string | undefined); break;
-        case 'updateConnection': result = updateConnection(db, req.args[0] as string, req.args[1] as Record<string, unknown>); break;
-        case 'deleteConnection': result = deleteConnection(db, req.args[0] as string); break;
-        case 'listWorkspaces': result = listWorkspaces(db); break;
-        case 'createWorkspace': result = createWorkspace(db, req.args[0] as string); break;
-        case 'getSetting': result = getSetting(db, req.args[0] as string); break;
-        case 'setSetting': result = setSetting(db, req.args[0] as string, req.args[1] as string); break;
-        case 'saveCredential': result = saveCredential(db, req.args[0] as string, Buffer.from(req.args[1] as ArrayBuffer)); break;
+        case 'addConnection':
+          result = addConnection(db, req.args[0] as ConnectionInput);
+          break;
+        case 'getConnection':
+          result = getConnection(db, req.args[0] as string);
+          break;
+        case 'listConnections':
+          result = listConnections(db, req.args[0] as string | undefined);
+          break;
+        case 'updateConnection':
+          result = updateConnection(
+            db,
+            req.args[0] as string,
+            req.args[1] as Record<string, unknown>,
+          );
+          break;
+        case 'deleteConnection':
+          result = deleteConnection(db, req.args[0] as string);
+          break;
+        case 'listWorkspaces':
+          result = listWorkspaces(db);
+          break;
+        case 'createWorkspace':
+          result = createWorkspace(db, req.args[0] as string);
+          break;
+        case 'getSetting':
+          result = getSetting(db, req.args[0] as string);
+          break;
+        case 'setSetting':
+          result = setSetting(db, req.args[0] as string, req.args[1] as string);
+          break;
+        case 'saveCredential':
+          result = saveCredential(
+            db,
+            req.args[0] as string,
+            Buffer.from(req.args[1] as ArrayBuffer),
+          );
+          break;
         case 'loadCredential': {
           const buf = loadCredential(db, req.args[0] as string);
-          result = buf ? buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) : undefined;
+          result = buf
+            ? buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+            : undefined;
           break;
         }
-        case 'deleteCredential': result = deleteCredential(db, req.args[0] as string); break;
-        case 'createConversation': result = createConversation(db, req.args[0] as string, req.args[1] as string, req.args[2] as string | undefined); break;
-        case 'listConversations': result = listConversations(db, req.args[0] as string); break;
-        case 'deleteConversation': result = deleteConversation(db, req.args[0] as string); break;
-        case 'addMessage': result = addMessage(db, req.args[0] as string, req.args[1] as string, req.args[2] as string, req.args[3] as string | undefined, req.args[4] as string | undefined); break;
-        case 'getMessages': result = getMessages(db, req.args[0] as string); break;
-        case 'deleteWorkspace': result = deleteWorkspace(db, req.args[0] as string); break;
-        case 'renameConversation': result = renameConversation(db, req.args[0] as string, req.args[1] as string); break;
-        case 'pinMessage': result = pinMessage(db, req.args[0] as string); break;
-        case 'unpinMessage': result = unpinMessage(db, req.args[0] as string); break;
-        case 'listPinnedMessages': result = listPinnedMessages(db, req.args[0] as string); break;
-        default: throw new Error(`Unknown method: ${req.method}`);
+        case 'deleteCredential':
+          result = deleteCredential(db, req.args[0] as string);
+          break;
+        case 'createConversation':
+          result = createConversation(
+            db,
+            req.args[0] as string,
+            req.args[1] as string,
+            req.args[2] as string | undefined,
+          );
+          break;
+        case 'listConversations':
+          result = listConversations(db, req.args[0] as string);
+          break;
+        case 'deleteConversation':
+          result = deleteConversation(db, req.args[0] as string);
+          break;
+        case 'addMessage':
+          result = addMessage(
+            db,
+            req.args[0] as string,
+            req.args[1] as string,
+            req.args[2] as string,
+            req.args[3] as string | undefined,
+            req.args[4] as string | undefined,
+          );
+          break;
+        case 'getMessages':
+          result = getMessages(db, req.args[0] as string);
+          break;
+        case 'deleteWorkspace':
+          result = deleteWorkspace(db, req.args[0] as string);
+          break;
+        case 'renameConversation':
+          result = renameConversation(db, req.args[0] as string, req.args[1] as string);
+          break;
+        case 'pinMessage':
+          result = pinMessage(db, req.args[0] as string);
+          break;
+        case 'unpinMessage':
+          result = unpinMessage(db, req.args[0] as string);
+          break;
+        case 'listPinnedMessages':
+          result = listPinnedMessages(db, req.args[0] as string);
+          break;
+        default:
+          throw new Error(`Unknown method: ${req.method}`);
       }
       parentPort!.postMessage({ id: req.id, result });
     } catch (err: unknown) {
-      parentPort!.postMessage({ id: req.id, error: err instanceof Error ? err.message : String(err) });
+      parentPort!.postMessage({
+        id: req.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   });
 }
@@ -352,7 +477,10 @@ if (!isMainThread && parentPort) {
 export class StorageProxy {
   private worker: Worker;
   private nextId = 0;
-  private pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+  private pending = new Map<
+    number,
+    { resolve: (v: unknown) => void; reject: (e: Error) => void }
+  >();
 
   constructor(dbPath: string) {
     this.worker = new Worker(__filename, { workerData: { dbPath } });
@@ -364,7 +492,9 @@ export class StorageProxy {
       else p.resolve(resp.result);
     });
     // Fix #1: reject all pending on worker crash/exit
-    this.worker.on('error', (err) => this.rejectAll(err instanceof Error ? err : new Error(String(err))));
+    this.worker.on('error', (err) =>
+      this.rejectAll(err instanceof Error ? err : new Error(String(err))),
+    );
     this.worker.on('exit', (code) => {
       if (code !== 0) this.rejectAll(new Error(`Storage worker exited with code ${code}`));
     });
@@ -385,33 +515,88 @@ export class StorageProxy {
     });
   }
 
-  addConnectionAsync(input: Record<string, unknown>) { return this.call('addConnection', input) as Promise<string>; }
-  getConnectionAsync(id: string) { return this.call('getConnection', id); }
-  listConnectionsAsync(workspaceId?: string) { return this.call('listConnections', workspaceId) as Promise<unknown[]>; }
-  updateConnectionAsync(id: string, fields: Record<string, unknown>) { return this.call('updateConnection', id, fields); }
-  deleteConnectionAsync(id: string) { return this.call('deleteConnection', id); }
-  listWorkspacesAsync() { return this.call('listWorkspaces') as Promise<unknown[]>; }
-  createWorkspaceAsync(name: string) { return this.call('createWorkspace', name) as Promise<string>; }
-  getSettingAsync(key: string) { return this.call('getSetting', key) as Promise<string | undefined>; }
-  setSettingAsync(key: string, value: string) { return this.call('setSetting', key, value); }
-  saveCredentialAsync(connectionId: string, encryptedBlob: Buffer) { return this.call('saveCredential', connectionId, encryptedBlob); }
+  addConnectionAsync(input: Record<string, unknown>) {
+    return this.call('addConnection', input) as Promise<string>;
+  }
+  getConnectionAsync(id: string) {
+    return this.call('getConnection', id);
+  }
+  listConnectionsAsync(workspaceId?: string) {
+    return this.call('listConnections', workspaceId) as Promise<unknown[]>;
+  }
+  updateConnectionAsync(id: string, fields: Record<string, unknown>) {
+    return this.call('updateConnection', id, fields);
+  }
+  deleteConnectionAsync(id: string) {
+    return this.call('deleteConnection', id);
+  }
+  listWorkspacesAsync() {
+    return this.call('listWorkspaces') as Promise<unknown[]>;
+  }
+  createWorkspaceAsync(name: string) {
+    return this.call('createWorkspace', name) as Promise<string>;
+  }
+  getSettingAsync(key: string) {
+    return this.call('getSetting', key) as Promise<string | undefined>;
+  }
+  setSettingAsync(key: string, value: string) {
+    return this.call('setSetting', key, value);
+  }
+  saveCredentialAsync(connectionId: string, encryptedBlob: Buffer) {
+    return this.call('saveCredential', connectionId, encryptedBlob);
+  }
   async loadCredentialAsync(connectionId: string): Promise<Buffer | undefined> {
-    const ab = await this.call('loadCredential', connectionId) as ArrayBuffer | undefined;
+    const ab = (await this.call('loadCredential', connectionId)) as ArrayBuffer | undefined;
     return ab ? Buffer.from(ab) : undefined;
   }
-  deleteCredentialAsync(connectionId: string) { return this.call('deleteCredential', connectionId); }
+  deleteCredentialAsync(connectionId: string) {
+    return this.call('deleteCredential', connectionId);
+  }
 
   // Conversations
-  createConversationAsync(workspaceId: string, model: string, title?: string) { return this.call('createConversation', workspaceId, model, title) as Promise<string>; }
-  listConversationsAsync(workspaceId: string) { return this.call('listConversations', workspaceId) as Promise<unknown[]>; }
-  deleteConversationAsync(id: string) { return this.call('deleteConversation', id); }
-  addMessageAsync(conversationId: string, role: string, content: string, toolCalls?: string, toolCallId?: string) { return this.call('addMessage', conversationId, role, content, toolCalls, toolCallId) as Promise<string>; }
-  getMessagesAsync(conversationId: string) { return this.call('getMessages', conversationId) as Promise<unknown[]>; }
-  deleteWorkspaceAsync(id: string) { return this.call('deleteWorkspace', id); }
-  renameConversationAsync(id: string, title: string) { return this.call('renameConversation', id, title); }
-  pinMessageAsync(messageId: string) { return this.call('pinMessage', messageId); }
-  unpinMessageAsync(messageId: string) { return this.call('unpinMessage', messageId); }
-  listPinnedMessagesAsync(conversationId: string) { return this.call('listPinnedMessages', conversationId) as Promise<unknown[]>; }
+  createConversationAsync(workspaceId: string, model: string, title?: string) {
+    return this.call('createConversation', workspaceId, model, title) as Promise<string>;
+  }
+  listConversationsAsync(workspaceId: string) {
+    return this.call('listConversations', workspaceId) as Promise<unknown[]>;
+  }
+  deleteConversationAsync(id: string) {
+    return this.call('deleteConversation', id);
+  }
+  addMessageAsync(
+    conversationId: string,
+    role: string,
+    content: string,
+    toolCalls?: string,
+    toolCallId?: string,
+  ) {
+    return this.call(
+      'addMessage',
+      conversationId,
+      role,
+      content,
+      toolCalls,
+      toolCallId,
+    ) as Promise<string>;
+  }
+  getMessagesAsync(conversationId: string) {
+    return this.call('getMessages', conversationId) as Promise<unknown[]>;
+  }
+  deleteWorkspaceAsync(id: string) {
+    return this.call('deleteWorkspace', id);
+  }
+  renameConversationAsync(id: string, title: string) {
+    return this.call('renameConversation', id, title);
+  }
+  pinMessageAsync(messageId: string) {
+    return this.call('pinMessage', messageId);
+  }
+  unpinMessageAsync(messageId: string) {
+    return this.call('unpinMessage', messageId);
+  }
+  listPinnedMessagesAsync(conversationId: string) {
+    return this.call('listPinnedMessages', conversationId) as Promise<unknown[]>;
+  }
 
   // Fix #2: drain pending promises before terminating
   async close(): Promise<void> {

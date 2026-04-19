@@ -7,9 +7,12 @@ import { listPersonas, switchPersona, getActivePersona } from '../core/skills/pe
 export async function handleAgentCommand(args: string[]): Promise<void> {
   const sub = args[0];
   switch (sub) {
-    case 'list': return agentList();
-    case 'switch': return agentSwitch(args[1]);
-    case 'current': return agentCurrent();
+    case 'list':
+      return agentList();
+    case 'switch':
+      return agentSwitch(args[1]);
+    case 'current':
+      return agentCurrent();
     default:
       console.log('Usage: osd agent <list|switch|current>');
       console.log('  osd agent list             List available personas');
@@ -33,7 +36,10 @@ function agentList(): void {
 }
 
 function agentSwitch(name: string): void {
-  if (!name) { console.error('Usage: osd agent switch <name>'); process.exit(1); }
+  if (!name) {
+    console.error('Usage: osd agent switch <name>');
+    process.exit(1);
+  }
   try {
     const persona = switchPersona(name);
     console.log(`✅ Switched to "${persona.name}" — ${persona.description}`);

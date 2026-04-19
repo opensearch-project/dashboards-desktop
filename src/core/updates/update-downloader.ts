@@ -50,18 +50,26 @@ function downloadFile(
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(dest);
     const get = (u: string) => {
-      https.get(u, { headers: { 'User-Agent': 'osd-updater' } }, (res) => {
-        if (res.statusCode === 302 || res.statusCode === 301) {
-          return get(res.headers.location!);
-        }
-        let downloaded = 0;
-        res.on('data', (chunk: Buffer) => {
-          downloaded += chunk.length;
-          if (onProgress && totalSize > 0) onProgress(Math.round((downloaded / totalSize) * 100));
+      https
+        .get(u, { headers: { 'User-Agent': 'osd-updater' } }, (res) => {
+          if (res.statusCode === 302 || res.statusCode === 301) {
+            return get(res.headers.location!);
+          }
+          let downloaded = 0;
+          res.on('data', (chunk: Buffer) => {
+            downloaded += chunk.length;
+            if (onProgress && totalSize > 0) onProgress(Math.round((downloaded / totalSize) * 100));
+          });
+          res.pipe(file);
+          file.on('finish', () => {
+            file.close();
+            resolve();
+          });
+        })
+        .on('error', (e) => {
+          fs.unlinkSync(dest);
+          reject(e);
         });
-        res.pipe(file);
-        file.on('finish', () => { file.close(); resolve(); });
-      }).on('error', (e) => { fs.unlinkSync(dest); reject(e); });
     };
     get(url);
   });

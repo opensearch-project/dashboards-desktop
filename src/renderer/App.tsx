@@ -38,7 +38,8 @@ export function App(): React.ReactElement {
     try {
       const ws = await window.osd.workspaces.list();
       setWorkspaces(ws);
-      if (!activeWorkspace && ws.length) setActiveWorkspace(ws.find((w: Workspace) => w.is_default) ?? ws[0]);
+      if (!activeWorkspace && ws.length)
+        setActiveWorkspace(ws.find((w: Workspace) => w.is_default) ?? ws[0]);
       const conns = await window.osd.connections.list(activeWorkspace?.id);
       setConnections(conns);
       if (!activeConnection && conns.length) setActiveConnection(conns[0]);
@@ -47,68 +48,113 @@ export function App(): React.ReactElement {
     }
   }, [activeWorkspace, activeConnection]);
 
-  useEffect(() => { if (onboarded) refresh(); }, [onboarded, refresh]);
+  useEffect(() => {
+    if (onboarded) refresh();
+  }, [onboarded, refresh]);
 
   // Global keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key === 'k') { e.preventDefault(); setChatOpen(true); setPage('chat'); }
-      if (mod && e.key === 'm') { e.preventDefault(); setPaletteOpen(o => !o); }
-      if (mod && e.shiftKey && e.key === 'Enter') { e.preventDefault(); setChatFullScreen(f => !f); setChatOpen(true); }
+      if (mod && e.key === 'k') {
+        e.preventDefault();
+        setChatOpen(true);
+        setPage('chat');
+      }
+      if (mod && e.key === 'm') {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+      if (mod && e.shiftKey && e.key === 'Enter') {
+        e.preventDefault();
+        setChatFullScreen((f) => !f);
+        setChatOpen(true);
+      }
       if (e.key === 'Escape' && chatFullScreen) setChatFullScreen(false);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [chatFullScreen]);
 
-  const handleOnboardingComplete = useCallback(async (initialPrompt?: string) => {
-    await window.osd.settings.set('onboarded', '1');
-    setOnboarded(true);
-    await refresh();
-    if (initialPrompt) {
-      setChatOpen(true);
-      setPage('chat');
-      // Send prompt after chat panel mounts
-      setTimeout(() => window.osd.agent.send(initialPrompt).catch(() => {}), 100);
-    }
-  }, [refresh]);
+  const handleOnboardingComplete = useCallback(
+    async (initialPrompt?: string) => {
+      await window.osd.settings.set('onboarded', '1');
+      setOnboarded(true);
+      await refresh();
+      if (initialPrompt) {
+        setChatOpen(true);
+        setPage('chat');
+        // Send prompt after chat panel mounts
+        setTimeout(() => window.osd.agent.send(initialPrompt).catch(() => {}), 100);
+      }
+    },
+    [refresh],
+  );
 
   const handleNavigate = useCallback((p: Page) => {
-    if (p === 'chat') { setChatOpen(true); }
+    if (p === 'chat') {
+      setChatOpen(true);
+    }
     setPage(p);
   }, []);
 
-  if (onboarded === null) return <div className="app-loading" role="status" aria-label="Loading">Loading…</div>;
+  if (onboarded === null)
+    return (
+      <div className="app-loading" role="status" aria-label="Loading">
+        Loading…
+      </div>
+    );
   if (!onboarded) return <Onboarding onComplete={handleOnboardingComplete} />;
 
   const renderPage = () => {
     switch (page) {
-      case 'cluster': return <ClusterPage />;
-      case 'indices': return <IndicesPage />;
-      case 'security': return <SecurityPage />;
-      case 'plugins': return <PluginsPage />;
-      case 'skills': return <SkillsPage />;
-      case 'mcp': return <McpPage />;
-      case 'settings': return <SettingsPage />;
-      default: return (
-        <HomePage
-          workspaces={workspaces}
-          activeWorkspace={activeWorkspace}
-          connections={connections}
-          onSwitchWorkspace={setActiveWorkspace}
-          onCreateWorkspace={async (name) => { await window.osd.workspaces.create(name); refresh(); }}
-          onOpenChat={() => { setChatOpen(true); setPage('chat'); }}
-          onAddConnection={() => { setEditingConnection(null); setConnectionDialogOpen(true); }}
-          onEditConnection={(conn) => { setEditingConnection(conn); setConnectionDialogOpen(true); }}
-          onRefresh={refresh}
-        />
-      );
+      case 'cluster':
+        return <ClusterPage />;
+      case 'indices':
+        return <IndicesPage />;
+      case 'security':
+        return <SecurityPage />;
+      case 'plugins':
+        return <PluginsPage />;
+      case 'skills':
+        return <SkillsPage />;
+      case 'mcp':
+        return <McpPage />;
+      case 'settings':
+        return <SettingsPage />;
+      default:
+        return (
+          <HomePage
+            workspaces={workspaces}
+            activeWorkspace={activeWorkspace}
+            connections={connections}
+            onSwitchWorkspace={setActiveWorkspace}
+            onCreateWorkspace={async (name) => {
+              await window.osd.workspaces.create(name);
+              refresh();
+            }}
+            onOpenChat={() => {
+              setChatOpen(true);
+              setPage('chat');
+            }}
+            onAddConnection={() => {
+              setEditingConnection(null);
+              setConnectionDialogOpen(true);
+            }}
+            onEditConnection={(conn) => {
+              setEditingConnection(conn);
+              setConnectionDialogOpen(true);
+            }}
+            onRefresh={refresh}
+          />
+        );
     }
   };
 
   return (
-    <div className={`app-shell ${chatOpen ? 'chat-open' : ''} ${chatFullScreen ? 'chat-fullscreen' : ''}`}>
+    <div
+      className={`app-shell ${chatOpen ? 'chat-open' : ''} ${chatFullScreen ? 'chat-fullscreen' : ''}`}
+    >
       <Sidebar
         activePage={page}
         onNavigate={handleNavigate}
@@ -124,8 +170,11 @@ export function App(): React.ReactElement {
       {chatOpen && (
         <ChatPanel
           fullScreen={chatFullScreen}
-          onClose={() => { setChatOpen(false); setChatFullScreen(false); }}
-          onToggleFullScreen={() => setChatFullScreen(f => !f)}
+          onClose={() => {
+            setChatOpen(false);
+            setChatFullScreen(false);
+          }}
+          onToggleFullScreen={() => setChatFullScreen((f) => !f)}
           workspaceId={activeWorkspace?.id}
         />
       )}
@@ -134,15 +183,24 @@ export function App(): React.ReactElement {
         <ConnectionDialog
           connection={editingConnection}
           workspaceId={activeWorkspace?.id ?? ''}
-          onClose={() => { setConnectionDialogOpen(false); setEditingConnection(null); }}
-          onSaved={() => { setConnectionDialogOpen(false); setEditingConnection(null); refresh(); }}
+          onClose={() => {
+            setConnectionDialogOpen(false);
+            setEditingConnection(null);
+          }}
+          onSaved={() => {
+            setConnectionDialogOpen(false);
+            setEditingConnection(null);
+            refresh();
+          }}
         />
       )}
 
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
-        onSelect={async (id) => { await window.osd.models.switch(id); }}
+        onSelect={async (id) => {
+          await window.osd.models.switch(id);
+        }}
       />
     </div>
   );

@@ -14,7 +14,10 @@ interface GitHubAuthResult {
   user: { login: string; name: string; avatar_url: string; email: string };
 }
 
-export async function loginGithub(clientId: string, redirectUri: string): Promise<GitHubAuthResult> {
+export async function loginGithub(
+  clientId: string,
+  redirectUri: string,
+): Promise<GitHubAuthResult> {
   const { verifier, challenge } = generatePKCE();
   const state = crypto.randomBytes(16).toString('hex');
 
@@ -45,15 +48,28 @@ export async function loginGithub(clientId: string, redirectUri: string): Promis
 
 function openAuthWindow(url: string, redirectUri: string, expectedState: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const win = new BrowserWindow({ width: 600, height: 700, show: true, webPreferences: { nodeIntegration: false } });
+    const win = new BrowserWindow({
+      width: 600,
+      height: 700,
+      show: true,
+      webPreferences: { nodeIntegration: false },
+    });
 
     win.webContents.on('will-redirect', (_e, navUrl) => {
       if (!navUrl.startsWith(redirectUri)) return;
       const params = new URL(navUrl).searchParams;
       const code = params.get('code');
       const state = params.get('state');
-      if (state !== expectedState) { win.close(); reject(new Error('State mismatch')); return; }
-      if (!code) { win.close(); reject(new Error('No code in redirect')); return; }
+      if (state !== expectedState) {
+        win.close();
+        reject(new Error('State mismatch'));
+        return;
+      }
+      if (!code) {
+        win.close();
+        reject(new Error('No code in redirect'));
+        return;
+      }
       win.close();
       resolve(code);
     });

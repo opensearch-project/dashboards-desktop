@@ -8,7 +8,10 @@ export const OAuthLogin: React.FC = () => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    window.osd.auth.currentUser().then(setUser).catch(() => {});
+    window.osd.auth
+      .currentUser()
+      .then(setUser)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -23,11 +26,14 @@ export const OAuthLogin: React.FC = () => {
   const login = async (provider: 'github' | 'google') => {
     setLoggingIn(true);
     try {
-      const u = provider === 'github'
-        ? await window.osd.auth.loginGithub()
-        : await window.osd.auth.loginGoogle();
+      const u =
+        provider === 'github'
+          ? await window.osd.auth.loginGithub()
+          : await window.osd.auth.loginGoogle();
       setUser(u);
-    } catch { /* user cancelled or error */ }
+    } catch {
+      /* user cancelled or error */
+    }
     setLoggingIn(false);
   };
 
@@ -40,10 +46,20 @@ export const OAuthLogin: React.FC = () => {
   if (!user) {
     return (
       <div className="oauth-login">
-        <button className="oauth-btn oauth-github" onClick={() => login('github')} disabled={loggingIn} aria-label="Sign in with GitHub">
+        <button
+          className="oauth-btn oauth-github"
+          onClick={() => login('github')}
+          disabled={loggingIn}
+          aria-label="Sign in with GitHub"
+        >
           <span aria-hidden="true">⬡</span> GitHub
         </button>
-        <button className="oauth-btn oauth-google" onClick={() => login('google')} disabled={loggingIn} aria-label="Sign in with Google">
+        <button
+          className="oauth-btn oauth-google"
+          onClick={() => login('google')}
+          disabled={loggingIn}
+          aria-label="Sign in with Google"
+        >
           <span aria-hidden="true">◉</span> Google
         </button>
       </div>
@@ -52,11 +68,18 @@ export const OAuthLogin: React.FC = () => {
 
   return (
     <div className="oauth-user" ref={ref}>
-      <button className="oauth-avatar-btn" onClick={() => setMenuOpen(o => !o)} aria-haspopup="menu" aria-expanded={menuOpen} aria-label={`${user.name}, account menu`}>
-        {user.avatar_url
-          ? <img src={user.avatar_url} alt="" className="oauth-avatar" />
-          : <span className="oauth-avatar-placeholder">{user.name.charAt(0)}</span>
-        }
+      <button
+        className="oauth-avatar-btn"
+        onClick={() => setMenuOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-label={`${user.name}, account menu`}
+      >
+        {user.avatar_url ? (
+          <img src={user.avatar_url} alt="" className="oauth-avatar" />
+        ) : (
+          <span className="oauth-avatar-placeholder">{user.name.charAt(0)}</span>
+        )}
       </button>
       {menuOpen && (
         <div className="oauth-menu" role="menu">
@@ -65,7 +88,9 @@ export const OAuthLogin: React.FC = () => {
             <span className="oauth-email">{user.email}</span>
             <span className="oauth-provider">{user.provider}</span>
           </div>
-          <button className="oauth-menu-item" role="menuitem" onClick={logout}>Sign out</button>
+          <button className="oauth-menu-item" role="menuitem" onClick={logout}>
+            Sign out
+          </button>
         </div>
       )}
     </div>

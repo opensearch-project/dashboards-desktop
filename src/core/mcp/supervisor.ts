@@ -39,15 +39,22 @@ export class McpSupervisor extends EventEmitter {
       const files = fs.readdirSync(PID_DIR).filter((f) => f.endsWith('.pid'));
       for (const file of files) {
         const pid = parseInt(fs.readFileSync(path.join(PID_DIR, file), 'utf8').trim(), 10);
-        if (!pid || isNaN(pid)) { this.removePidFile(file); continue; }
+        if (!pid || isNaN(pid)) {
+          this.removePidFile(file);
+          continue;
+        }
         try {
           process.kill(pid, 0); // check alive
           process.kill(pid, 'SIGTERM');
           this.emit('orphan-killed', file.replace('.pid', ''), pid);
-        } catch { /* already dead */ }
+        } catch {
+          /* already dead */
+        }
         this.removePidFile(file);
       }
-    } catch { /* PID dir may not exist yet */ }
+    } catch {
+      /* PID dir may not exist yet */
+    }
   }
 
   private writePidFile(name: string, pid: number): void {
@@ -56,7 +63,11 @@ export class McpSupervisor extends EventEmitter {
 
   private removePidFile(name: string): void {
     const file = name.endsWith('.pid') ? name : `${name}.pid`;
-    try { fs.unlinkSync(path.join(PID_DIR, file)); } catch { /* ok */ }
+    try {
+      fs.unlinkSync(path.join(PID_DIR, file));
+    } catch {
+      /* ok */
+    }
   }
 
   /** Spawn an MCP server child process */
@@ -64,8 +75,12 @@ export class McpSupervisor extends EventEmitter {
     if (this.servers.get(name)?.status === 'running') return;
 
     const state: ServerState = this.servers.get(name) ?? {
-      config, process: null, status: 'stopped',
-      restarts: 0, lastCrash: null, memoryMB: 0,
+      config,
+      process: null,
+      status: 'stopped',
+      restarts: 0,
+      lastCrash: null,
+      memoryMB: 0,
     };
     state.config = config;
     state.status = 'starting';
@@ -124,7 +139,11 @@ export class McpSupervisor extends EventEmitter {
     if (this.healthTimer) clearInterval(this.healthTimer);
     for (const [name, state] of this.servers) {
       if (state.process?.pid) {
-        try { process.kill(state.process.pid, 'SIGKILL'); } catch { /* ok */ }
+        try {
+          process.kill(state.process.pid, 'SIGKILL');
+        } catch {
+          /* ok */
+        }
       }
       this.removePidFile(name);
     }
@@ -199,11 +218,23 @@ export class McpSupervisor extends EventEmitter {
     }
     return new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
-        try { child.kill('SIGKILL'); } catch { /* already dead */ }
+        try {
+          child.kill('SIGKILL');
+        } catch {
+          /* already dead */
+        }
         resolve();
       }, SHUTDOWN_TIMEOUT_MS);
-      child.once('exit', () => { clearTimeout(timeout); state.process = null; resolve(); });
-      try { child.kill('SIGTERM'); } catch { resolve(); }
+      child.once('exit', () => {
+        clearTimeout(timeout);
+        state.process = null;
+        resolve();
+      });
+      try {
+        child.kill('SIGTERM');
+      } catch {
+        resolve();
+      }
     });
   }
 
@@ -235,14 +266,18 @@ export class McpSupervisor extends EventEmitter {
           this.emit('memory-warning', name, state.memoryMB);
         }
       }
-    } catch { /* process may have exited */ }
+    } catch {
+      /* process may have exited */
+    }
   }
 
   private registerCleanup(): void {
     // Sync handler for 'exit' — cannot await, use SIGKILL
     process.on('exit', () => this.shutdownSync());
     // Async handlers for signals — can await graceful shutdown
-    const asyncCleanup = () => { void this.shutdownAll().then(() => process.exit(0)); };
+    const asyncCleanup = () => {
+      void this.shutdownAll().then(() => process.exit(0));
+    };
     process.on('SIGINT', asyncCleanup);
     process.on('SIGTERM', asyncCleanup);
     process.on('uncaughtException', (err) => {

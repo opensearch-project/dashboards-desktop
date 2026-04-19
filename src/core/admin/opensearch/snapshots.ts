@@ -7,7 +7,9 @@ import { Client } from '@opensearch-project/opensearch';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type C = any;
 
-function client(url: string): C { return new Client({ node: url }); }
+function client(url: string): C {
+  return new Client({ node: url });
+}
 
 export async function listRepos(url: string) {
   const res = await client(url).snapshot.getRepository({ repository: '_all' });
@@ -19,12 +21,22 @@ export async function listSnapshots(url: string, repo: string) {
   return res.body;
 }
 
-export async function createSnapshot(url: string, repo: string, name: string, body?: Record<string, unknown>) {
+export async function createSnapshot(
+  url: string,
+  repo: string,
+  name: string,
+  body?: Record<string, unknown>,
+) {
   const res = await client(url).snapshot.create({ repository: repo, snapshot: name, body });
   return res.body;
 }
 
-export async function restoreSnapshot(url: string, repo: string, name: string, body?: Record<string, unknown>) {
+export async function restoreSnapshot(
+  url: string,
+  repo: string,
+  name: string,
+  body?: Record<string, unknown>,
+) {
   const res = await client(url).snapshot.restore({ repository: repo, snapshot: name, body });
   return res.body;
 }

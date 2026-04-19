@@ -11,23 +11,34 @@ import { search } from '../core/plugins/registry';
 export async function handlePluginCommand(args: string[]): Promise<void> {
   const sub = args[0];
   switch (sub) {
-    case 'install': return pluginInstall(args[1]);
-    case 'remove': return pluginRemove(args[1]);
-    case 'list': return pluginList();
-    case 'enable': return pluginEnable(args[1]);
-    case 'disable': return pluginDisable(args[1]);
-    case 'search': return pluginSearch(args.slice(1).join(' '));
-    default: printUsage();
+    case 'install':
+      return pluginInstall(args[1]);
+    case 'remove':
+      return pluginRemove(args[1]);
+    case 'list':
+      return pluginList();
+    case 'enable':
+      return pluginEnable(args[1]);
+    case 'disable':
+      return pluginDisable(args[1]);
+    case 'search':
+      return pluginSearch(args.slice(1).join(' '));
+    default:
+      printUsage();
   }
 }
 
 function pluginInstall(target: string): void {
-  if (!target) { console.error('Usage: osd plugin install <path|package>'); process.exit(1); }
+  if (!target) {
+    console.error('Usage: osd plugin install <path|package>');
+    process.exit(1);
+  }
 
   try {
-    const meta = target.endsWith('.zip') || target.endsWith('.tar.gz')
-      ? installFromArchive(target)
-      : installFromNpm(target);
+    const meta =
+      target.endsWith('.zip') || target.endsWith('.tar.gz')
+        ? installFromArchive(target)
+        : installFromNpm(target);
     console.log(`✅ Installed plugin: ${meta.name} (${meta.version})`);
   } catch (err) {
     console.error(`❌ Install failed: ${err instanceof Error ? err.message : err}`);
@@ -36,7 +47,10 @@ function pluginInstall(target: string): void {
 }
 
 function pluginRemove(name: string): void {
-  if (!name) { console.error('Usage: osd plugin remove <name>'); process.exit(1); }
+  if (!name) {
+    console.error('Usage: osd plugin remove <name>');
+    process.exit(1);
+  }
   try {
     uninstall(name);
     console.log(`Removed plugin: ${name}`);
@@ -61,13 +75,19 @@ function pluginList(): void {
 }
 
 function pluginEnable(name: string): void {
-  if (!name) { console.error('Usage: osd plugin enable <name>'); process.exit(1); }
+  if (!name) {
+    console.error('Usage: osd plugin enable <name>');
+    process.exit(1);
+  }
   enable(name);
   console.log(`Enabled plugin: ${name}`);
 }
 
 function pluginDisable(name: string): void {
-  if (!name) { console.error('Usage: osd plugin disable <name>'); process.exit(1); }
+  if (!name) {
+    console.error('Usage: osd plugin disable <name>');
+    process.exit(1);
+  }
   disable(name);
   console.log(`Disabled plugin: ${name}`);
 }

@@ -3,7 +3,14 @@
  * Uses Ollama's /api/chat endpoint with streaming.
  */
 
-import type { ModelProvider, ModelInfo, ChatMessage, StreamChunk, ToolDefinition, ChatParams } from '../types';
+import type {
+  ModelProvider,
+  ModelInfo,
+  ChatMessage,
+  StreamChunk,
+  ToolDefinition,
+  ChatParams,
+} from '../types';
 
 const DEFAULT_BASE_URL = 'http://localhost:11434';
 
@@ -21,10 +28,14 @@ export class OllamaProvider implements ModelProvider {
     try {
       res = await fetch(`${this.baseUrl}/api/tags`, { signal: AbortSignal.timeout(5000) });
     } catch (_err: unknown) {
-      throw new Error(`Cannot connect to Ollama at ${this.baseUrl}. Is Ollama running? (ollama serve)`);
+      throw new Error(
+        `Cannot connect to Ollama at ${this.baseUrl}. Is Ollama running? (ollama serve)`,
+      );
     }
     if (!res.ok) throw new Error(`Ollama unavailable: ${res.status}`);
-    const data = (await res.json()) as { models: Array<{ name: string; details?: { parameter_size?: string } }> };
+    const data = (await res.json()) as {
+      models: Array<{ name: string; details?: { parameter_size?: string } }>;
+    };
     return (data.models || []).map((m) => ({
       id: m.name,
       displayName: m.name,
@@ -54,7 +65,9 @@ export class OllamaProvider implements ModelProvider {
       });
     } catch (err: unknown) {
       if (params.signal?.aborted) throw err;
-      throw new Error(`Cannot connect to Ollama at ${this.baseUrl}. Is Ollama running? (ollama serve)`);
+      throw new Error(
+        `Cannot connect to Ollama at ${this.baseUrl}. Is Ollama running? (ollama serve)`,
+      );
     }
     if (!res.ok) {
       const text = await res.text().catch(() => '');
@@ -83,7 +96,10 @@ export class OllamaProvider implements ModelProvider {
 
         if (chunk.message?.tool_calls) {
           for (const tc of chunk.message.tool_calls) {
-            yield { type: 'tool_call_start', toolCall: { id: tc.function.name, name: tc.function.name } };
+            yield {
+              type: 'tool_call_start',
+              toolCall: { id: tc.function.name, name: tc.function.name },
+            };
             yield { type: 'tool_call_delta', content: JSON.stringify(tc.function.arguments) };
             yield { type: 'tool_call_end', toolCall: { id: tc.function.name } };
           }
@@ -108,7 +124,11 @@ export class OllamaProvider implements ModelProvider {
 // --- Ollama format helpers ---
 
 interface OllamaStreamChunk {
-  message?: { role: string; content: string; tool_calls?: Array<{ function: { name: string; arguments: Record<string, unknown> } }> };
+  message?: {
+    role: string;
+    content: string;
+    tool_calls?: Array<{ function: { name: string; arguments: Record<string, unknown> } }>;
+  };
   done: boolean;
   prompt_eval_count?: number;
   eval_count?: number;
