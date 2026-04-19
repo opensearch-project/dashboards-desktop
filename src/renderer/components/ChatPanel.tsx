@@ -120,7 +120,6 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
       });
       setStreaming(false);
     }
-    }
   }, [input, streaming, activeConv]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
