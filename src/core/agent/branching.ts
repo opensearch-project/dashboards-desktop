@@ -35,15 +35,6 @@ export function branchConversation(
      VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`
   ).run(newId, workspaceId, `${source.title} (branch)`, source.model);
 
-  // Copy messages up to and including the target message
-  db.prepare(
-    `INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id, token_count, created_at)
-     SELECT ?, ?, role, content, tool_calls, tool_call_id, token_count, created_at
-     FROM messages
-     WHERE conversation_id = ? AND created_at <= ?
-     ORDER BY created_at ASC`
-  );
-
   // Use a transaction for atomicity
   const copyMessages = db.transaction(() => {
     const rows = db.prepare(

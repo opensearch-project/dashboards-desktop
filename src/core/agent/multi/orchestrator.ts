@@ -141,7 +141,7 @@ export class MultiAgentOrchestrator {
 
     // If there were tool calls, do a follow-up turn
     if (pendingToolCalls.length > 0) {
-      for await (const chunk of agent.chat('', signal)) {
+      for await (const chunk of agent.chat('Continue based on the tool results above.', signal)) {
         if (chunk.type === 'text') yield { type: 'token', content: chunk.content ?? '' };
       }
     }
@@ -156,16 +156,17 @@ export class MultiAgentOrchestrator {
     signal?: AbortSignal,
   ): AsyncIterable<StreamEvent> {
     const agents = this.registry.list();
-    const results: string[] = [];
 
-    for (const agent of agents) {
+    // Run all agents in parallel
+    const promises = agents.map(async (agent) => {
       let text = '';
       for await (const chunk of agent.chat(userMessage, signal)) {
         if (chunk.type === 'text') text += chunk.content ?? '';
       }
-      if (text) results.push(`**${agent.name}**: ${text}`);
-    }
+      return text ? `**${agent.name}**: ${text}` : null;
+    });
 
+    const results = (await Promise.all(promises)).filter(Boolean);
     const merged = results.join('\n\n');
     yield { type: 'token', content: merged };
     yield { type: 'done', usage: { inputTokens: 0, outputTokens: 0 } };

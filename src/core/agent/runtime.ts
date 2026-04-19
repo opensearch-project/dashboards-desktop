@@ -3,7 +3,7 @@
  * Emits StreamEvents for the renderer via a callback.
  */
 
-import type { ChatMessage, StreamChunk, StreamEvent, ToolCall, ToolContext } from './types';
+import type { StreamEvent, ToolCall, ToolContext } from './types';
 import type { ModelRouter } from './model-router';
 import type { ToolRegistry } from './tool-registry';
 import type { ConversationManager } from './conversation';
@@ -37,6 +37,14 @@ export class AgentRuntime {
 
   getModel(): string {
     return this.activeModel;
+  }
+
+  getRouter(): ModelRouter {
+    return this.router;
+  }
+
+  getTools(): ToolRegistry {
+    return this.tools;
   }
 
   cancel(): void {
@@ -98,7 +106,7 @@ export class AgentRuntime {
       let inputBuffer = '';
       let totalUsage = { inputTokens: 0, outputTokens: 0 };
 
-      for await (const chunk of this.router.chat(this.activeModel, messages, this.tools.listForModel(), signal)) {
+      for await (const chunk of this.router.chat(effectiveModel, messages, this.tools.listForModel(), signal)) {
         if (signal.aborted) return;
 
         switch (chunk.type) {

@@ -293,8 +293,7 @@ ipcMain.handle(IPC.MODEL_SWITCH, (_e, specifier: string) => {
 
 ipcMain.handle(IPC.MODEL_LIST, async () => {
   const runtime = getOrCreateRuntime();
-  const router = (runtime as unknown as { router: ModelRouter }).router;
-  return router.listAllModels();
+  return runtime.getRouter().listAllModels();
 });
 
 ipcMain.handle(IPC.MODEL_CURRENT, () => {
@@ -333,9 +332,7 @@ let multiAgent: MultiAgentOrchestrator | null = null;
 function getOrCreateMultiAgent(): MultiAgentOrchestrator {
   if (multiAgent) return multiAgent;
   const runtime = getOrCreateRuntime();
-  const router = (runtime as unknown as { router: ModelRouter }).router;
-  const tools = (runtime as unknown as { tools: ToolRegistry }).tools;
-  multiAgent = new MultiAgentOrchestrator(router, tools);
+  multiAgent = new MultiAgentOrchestrator(runtime.getRouter(), runtime.getTools());
   multiAgent.init();
   return multiAgent;
 }
