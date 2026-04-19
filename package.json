@@ -20,6 +20,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:renderer": "vitest run --config vitest.config.renderer.ts",
+    "test:integration": "vitest run --include 'tests/integration/**/*.test.ts'",
     "test:e2e": "playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
