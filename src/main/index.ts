@@ -431,14 +431,30 @@ async function initMcpServers(supervisor: McpSupervisor): Promise<void> {
 ipcMain.handle(IPC.AGENT_SEND, async (_e, message: string, conversationId?: string) => {
   const runtime = getOrCreateRuntime();
   const convId = conversationId ?? 'default';
-  const emit = (event: StreamEvent) => {
-    // Broadcast to main window + all attached BrowserViews (chat overlay)
-    mainWindow?.webContents.send(IPC.AGENT_STREAM, event);
+
+  const broadcast = (channel: string, ...args: unknown[]) => {
+    mainWindow?.webContents.send(channel, ...args);
     for (const view of mainWindow?.getBrowserViews() ?? []) {
-      view.webContents.send(IPC.AGENT_STREAM, event);
+      view.webContents.send(channel, ...args);
     }
   };
-  await runtime.chat(convId, message, emit);
+
+  // Signal stream start to overlay
+  broadcast('chat-overlay:stream-start');
+
+  const emit = (event: StreamEvent) => {
+    broadcast(IPC.AGENT_STREAM, event);
+    // Feed fee's overlay streaming API
+    if (event.type === 'token') {
+      broadcast('chat-overlay:stream-token', event.content);
+    }
+  };
+
+  try {
+    await runtime.chat(convId, message, emit);
+  } finally {
+    broadcast('chat-overlay:stream-end');
+  }
 });
 
 ipcMain.handle(IPC.AGENT_CANCEL, () => {
