@@ -13,10 +13,6 @@ export interface OsdArtifact {
 
 const ARTIFACTS_BASE =
   'https://artifacts.opensearch.org/releases/core/opensearch-dashboards';
-const BUNDLE_BASE =
-  'https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards';
-const GITHUB_RELEASE_BASE =
-  'https://github.com/opensearch-project/dashboards-desktop/releases/download';
 
 const MANIFEST: Record<string, OsdArtifact> = {
   'linux-x64': {
@@ -32,19 +28,19 @@ const MANIFEST: Record<string, OsdArtifact> = {
     format: 'tar.gz',
   },
   'win32-x64': {
-    url: `${BUNDLE_BASE}/${OSD_VERSION}/opensearch-dashboards-${OSD_VERSION}-windows-x64.zip`,
+    url: `${ARTIFACTS_BASE}/${OSD_VERSION}/opensearch-dashboards-min-${OSD_VERSION}-windows-x64.zip`,
     sha256: '',
-    size: 533712897,
+    size: 0,
     format: 'zip',
   },
   'darwin-x64': {
-    url: `${GITHUB_RELEASE_BASE}/osd-${OSD_VERSION}-darwin/opensearch-dashboards-${OSD_VERSION}-darwin-x64.tar.gz`,
+    url: `${ARTIFACTS_BASE}/${OSD_VERSION}/opensearch-dashboards-min-${OSD_VERSION}-darwin-x64.tar.gz`,
     sha256: '',
     size: 0,
     format: 'tar.gz',
   },
   'darwin-arm64': {
-    url: `${GITHUB_RELEASE_BASE}/osd-${OSD_VERSION}-darwin/opensearch-dashboards-${OSD_VERSION}-darwin-arm64.tar.gz`,
+    url: `${ARTIFACTS_BASE}/${OSD_VERSION}/opensearch-dashboards-min-${OSD_VERSION}-darwin-arm64.tar.gz`,
     sha256: '',
     size: 0,
     format: 'tar.gz',
