@@ -455,10 +455,12 @@ import { buildAppMenu } from './menu';
 import { registerAllM4IPC, setPluginManager, setMcpSupervisor, setUpdateManager } from './ipc';
 
 app.whenReady().then(async () => {
-  // 1. Critical path: storage + window (fast)
-  await initStorage();
+  // 1. Menu first (instant), then window + storage in parallel
   buildAppMenu();
-  createWindow();
+  const [/* storage */] = await Promise.all([
+    initStorage(),
+    (createWindow(), Promise.resolve()),
+  ]);
 
   // 2. Register M4 IPC bridges
   registerAllM4IPC();
