@@ -27,10 +27,11 @@ function createWindow(): void {
 
 // --- IPC error serialization (MUST be before all handlers) ---
 const originalHandle = ipcMain.handle.bind(ipcMain);
-ipcMain.handle = ((channel: string, listener: (...args: any[]) => any) => {
-  return originalHandle(channel, async (...args: any[]) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ipcMain.handle = ((channel: string, listener: (event: Electron.IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>) => {
+  return originalHandle(channel, async (event: Electron.IpcMainInvokeEvent, ...args: unknown[]) => {
     try {
-      return await (listener as (...a: any[]) => any)(...args);
+      return await listener(event, ...args);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       const stack = err instanceof Error ? err.stack : undefined;
@@ -551,6 +552,7 @@ app.whenReady().then(async () => {
   // 3. Wire devops backends when available (setter injection)
   try {
     const pluginMgr = await import('../core/plugins/manager.js');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setPluginManager(pluginMgr as any);
   } catch {
     /* not yet landed */
@@ -558,6 +560,7 @@ app.whenReady().then(async () => {
 
   try {
     const { McpSupervisor } = await import('../core/mcp/supervisor.js');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setMcpSupervisor(new McpSupervisor() as any);
   } catch {
     /* not yet landed */
@@ -565,6 +568,7 @@ app.whenReady().then(async () => {
 
   try {
     const updateMgr = await import('../core/updates/update-checker.js');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setUpdateManager(updateMgr as any);
   } catch {
     /* not yet landed */
