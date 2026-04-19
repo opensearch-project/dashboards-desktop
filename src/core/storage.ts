@@ -19,7 +19,7 @@ import { v4 as uuidv4 } from 'uuid';
 // Schema
 // ---------------------------------------------------------------------------
 
-export const LATEST_SCHEMA_VERSION = 1;
+export const LATEST_SCHEMA_VERSION = 2;
 
 interface Migration {
   version: number;
@@ -78,6 +78,18 @@ const MIGRATIONS: Migration[] = [
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
       );
+    `,
+  },
+  {
+    version: 2,
+    up: `
+      CREATE TABLE IF NOT EXISTS credentials (
+        connection_id TEXT PRIMARY KEY,
+        encrypted_blob BLOB NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
+      );
+      UPDATE schema_version SET version = 2;
     `,
   },
 ];
@@ -191,6 +203,23 @@ export function setSetting(db: DB, key: string, value: string): void {
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value);
 }
 
+// --- Credentials ---
+
+export function saveCredential(db: DB, connectionId: string, encryptedBlob: Buffer): void {
+  db.prepare(
+    `INSERT OR REPLACE INTO credentials (connection_id, encrypted_blob, updated_at) VALUES (?, ?, datetime('now'))`
+  ).run(connectionId, encryptedBlob);
+}
+
+export function loadCredential(db: DB, connectionId: string): Buffer | undefined {
+  const row = db.prepare('SELECT encrypted_blob FROM credentials WHERE connection_id = ?').get(connectionId) as { encrypted_blob: Buffer } | undefined;
+  return row?.encrypted_blob;
+}
+
+export function deleteCredential(db: DB, connectionId: string): void {
+  db.prepare('DELETE FROM credentials WHERE connection_id = ?').run(connectionId);
+}
+
 // ---------------------------------------------------------------------------
 // Worker thread: handles messages from StorageProxy
 // ---------------------------------------------------------------------------
@@ -212,6 +241,13 @@ if (!isMainThread && parentPort) {
         case 'createWorkspace': result = createWorkspace(db, req.args[0] as string); break;
         case 'getSetting': result = getSetting(db, req.args[0] as string); break;
         case 'setSetting': result = setSetting(db, req.args[0] as string, req.args[1] as string); break;
+        case 'saveCredential': result = saveCredential(db, req.args[0] as string, Buffer.from(req.args[1] as ArrayBuffer)); break;
+        case 'loadCredential': {
+          const buf = loadCredential(db, req.args[0] as string);
+          result = buf ? buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) : undefined;
+          break;
+        }
+        case 'deleteCredential': result = deleteCredential(db, req.args[0] as string); break;
         default: throw new Error(`Unknown method: ${req.method}`);
       }
       parentPort!.postMessage({ id: req.id, result });
@@ -258,6 +294,12 @@ export class StorageProxy {
   createWorkspaceAsync(name: string) { return this.call('createWorkspace', name) as Promise<string>; }
   getSettingAsync(key: string) { return this.call('getSetting', key) as Promise<string | undefined>; }
   setSettingAsync(key: string, value: string) { return this.call('setSetting', key, value); }
+  saveCredentialAsync(connectionId: string, encryptedBlob: Buffer) { return this.call('saveCredential', connectionId, encryptedBlob); }
+  async loadCredentialAsync(connectionId: string): Promise<Buffer | undefined> {
+    const ab = await this.call('loadCredential', connectionId) as ArrayBuffer | undefined;
+    return ab ? Buffer.from(ab) : undefined;
+  }
+  deleteCredentialAsync(connectionId: string) { return this.call('deleteCredential', connectionId); }
 
   async close(): Promise<void> {
     await this.worker.terminate();

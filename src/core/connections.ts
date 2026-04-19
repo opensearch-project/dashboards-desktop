@@ -7,6 +7,7 @@
 
 import { safeStorage } from 'electron';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
+import { AwsSigv4Signer } from '@opensearch-project/opensearch/aws';
 import { Client as ElasticsearchClient } from '@elastic/elasticsearch';
 import type { ConnectionInput, ConnectionTestResult } from './types';
 
@@ -53,6 +54,9 @@ async function testOpenSearch(
 
   if (input.auth_type === 'basic' && input.username && input.password) {
     opts.auth = { username: input.username, password: input.password };
+  } else if (input.auth_type === 'aws-sigv4' && input.region) {
+    const { defaultProvider } = await import('@aws-sdk/credential-provider-node');
+    Object.assign(opts, AwsSigv4Signer({ region: input.region, getCredentials: defaultProvider() }));
   }
   if (options?.timeoutMs) {
     opts.requestTimeout = options.timeoutMs;
