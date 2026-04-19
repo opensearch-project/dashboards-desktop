@@ -674,23 +674,25 @@ app.whenReady().then(async () => {
 
   // 4. Create window — loads OSD if ready, fallback otherwise
   createWindow();
+  const win = BrowserWindow.getAllWindows()[0]!;
+
+  // Sidebar (left panel — always visible)
+  const { setupSidebar, registerSidebarIPC } = await import('./sidebar.js');
+  setupSidebar(win);
+  if (osdBinPath && osdBinPath !== '__external__') {
+    registerSidebarIPC(osdBinPath);
+  }
+
+  // Chat overlay (right panel — always available via Cmd+K)
+  const chatOverlay = await import('./chat-overlay.js');
+  const { setupChatOverlay } = chatOverlay;
+  destroyChatOverlay = chatOverlay.destroyChatOverlay;
+  setupChatOverlay(win);
+
+  // Load OSD if ready
   if (osdReady) {
     const osdPort = process.env.OSD_PORT ?? '5601';
-    const win = BrowserWindow.getAllWindows()[0]!;
     win.loadURL(`http://localhost:${osdPort}`);
-
-    // Sidebar (left panel — desktop management)
-    const { setupSidebar, registerSidebarIPC } = await import('./sidebar.js');
-    setupSidebar(win);
-    if (osdBinPath && osdBinPath !== '__external__') {
-      registerSidebarIPC(osdBinPath);
-    }
-
-    // Chat overlay (right panel — agent chat)
-    const chatOverlay = await import('./chat-overlay.js');
-    const { setupChatOverlay } = chatOverlay;
-    destroyChatOverlay = chatOverlay.destroyChatOverlay;
-    setupChatOverlay(win);
   }
 
   // 5. Register M4 IPC bridges
