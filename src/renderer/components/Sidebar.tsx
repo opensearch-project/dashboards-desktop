@@ -2,7 +2,7 @@ import React from 'react';
 import type { Connection } from '../../core/types';
 import { OAuthLogin } from './OAuthLogin';
 
-export type Page = 'home' | 'chat' | 'cluster' | 'indices' | 'security' | 'settings';
+export type Page = 'home' | 'chat' | 'cluster' | 'indices' | 'security' | 'plugins' | 'skills' | 'mcp' | 'settings';
 
 const NAV_ITEMS: { id: Page; label: string; icon: string }[] = [
   { id: 'home', label: 'Home', icon: '🏠' },
@@ -10,6 +10,9 @@ const NAV_ITEMS: { id: Page; label: string; icon: string }[] = [
   { id: 'cluster', label: 'Cluster', icon: '🖥' },
   { id: 'indices', label: 'Indices', icon: '📑' },
   { id: 'security', label: 'Security', icon: '🔒' },
+  { id: 'plugins', label: 'Plugins', icon: '🧩' },
+  { id: 'skills', label: 'Skills', icon: '🎯' },
+  { id: 'mcp', label: 'MCP', icon: '🔌' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
 ];
 

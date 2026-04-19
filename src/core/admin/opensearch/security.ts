@@ -12,7 +12,7 @@ function client(url: string): Client { return new Client({ node: url }); }
 
 async function api(url: string, method: string, path: string, body?: unknown): Promise<ApiResult> {
   const c = client(url);
-  const res = await c.transport.request({ method, path, body } as Record<string, unknown>);
+  const res = await c.transport.request({ method, path, body } as Parameters<typeof c.transport.request>[0]);
   return (res as ApiResult).body ?? res;
 }
 

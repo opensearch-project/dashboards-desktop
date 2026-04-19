@@ -32,7 +32,7 @@ export async function runChatCLI(options: ChatCLIOptions): Promise<void> {
   const router = new ModelRouter();
   router.register(new OllamaProvider());
   router.register(new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY ?? '' }));
-  router.register(new AnthropicProvider(process.env.ANTHROPIC_API_KEY ?? ''));
+  router.register(new AnthropicProvider({ apiKey: process.env.ANTHROPIC_API_KEY ?? '' }));
   router.register(new BedrockProvider(process.env.AWS_REGION ?? 'us-east-1'));
   if (options.baseUrl) {
     router.register(new OpenAICompatibleProvider({ baseUrl: options.baseUrl, apiKey: process.env.OSD_API_KEY ?? '' }));

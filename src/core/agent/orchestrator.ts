@@ -7,10 +7,7 @@ import type { ChatMessage, StreamChunk, ToolDefinition } from './types';
 
 export class AgentOrchestrator {
   constructor(
-    _opts: {
-      modelRouter: unknown;
-      toolRegistry: unknown;
-    },
+    _opts: Record<string, unknown>,
   ) {}
 
   async *chat(
@@ -18,7 +15,13 @@ export class AgentOrchestrator {
     _opts?: { model?: string; signal?: AbortSignal },
   ): AsyncIterable<StreamChunk> {
     yield { type: 'text', content: 'Agent orchestrator not yet implemented.' };
-    yield { type: 'done', usage: { inputTokens: 0, outputTokens: 0 } };
+  }
+
+  async *send(
+    _message: string,
+    _opts?: { signal?: AbortSignal },
+  ): AsyncIterable<StreamChunk> {
+    yield { type: 'text', content: 'Agent orchestrator not yet implemented.' };
   }
 
   getAvailableTools(): ToolDefinition[] {

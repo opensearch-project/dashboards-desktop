@@ -4,6 +4,10 @@ import { HomePage } from './pages/HomePage';
 import { ClusterPage } from './pages/ClusterPage';
 import { IndicesPage } from './pages/IndicesPage';
 import { SecurityPage } from './pages/SecurityPage';
+import { PluginsPage } from './pages/PluginsPage';
+import { SkillsPage } from './pages/SkillsPage';
+import { McpPage } from './pages/McpPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { ChatPanel } from './components/ChatPanel';
 import { Onboarding } from './components/Onboarding';
 import { ConnectionDialog } from './components/ConnectionDialog';
@@ -70,7 +74,10 @@ export function App(): React.ReactElement {
       case 'cluster': return <ClusterPage />;
       case 'indices': return <IndicesPage />;
       case 'security': return <SecurityPage />;
-      case 'settings': return <div className="page-placeholder"><h1>Settings</h1><p>Coming in M4.</p></div>;
+      case 'plugins': return <PluginsPage />;
+      case 'skills': return <SkillsPage />;
+      case 'mcp': return <McpPage />;
+      case 'settings': return <SettingsPage />;
       default: return (
         <HomePage
           workspaces={workspaces}

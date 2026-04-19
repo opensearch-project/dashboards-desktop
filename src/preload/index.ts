@@ -25,6 +25,7 @@ const api = {
   settings: {
     get: (key: string) => ipcRenderer.invoke(IPC.SETTINGS_GET, key),
     set: (key: string, value: string) => ipcRenderer.invoke(IPC.SETTINGS_SET, key, value),
+    getAll: () => ipcRenderer.invoke(IPC.SETTINGS_GET_ALL),
   },
   agent: {
     send: (message: string, conversationId?: string) =>
