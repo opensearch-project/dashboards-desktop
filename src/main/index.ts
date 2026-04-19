@@ -603,22 +603,55 @@ app.whenReady().then(async () => {
   let osdBinPath = await db.getSettingAsync('osd_bin_path') as string | null;
 
   if (!osdBinPath && !isOsdInstalled()) {
-    const { dialog, shell } = await import('electron');
+    const { dialog, BrowserWindow: BW } = await import('electron');
+    const { getArtifact, getPlatformKey, OSD_VERSION } = await import('../core/osd/manifest.js');
+    const { downloadAndInstall } = await import('../core/osd/downloader.js');
+
+    const platformKey = getPlatformKey();
+    const artifact = getArtifact();
+    const hasDownload = !!artifact.url;
+
+    const buttons = hasDownload
+      ? [`Download OSD ${OSD_VERSION} (${platformKey})`, 'Browse for local install...', 'Connect to localhost:5601', 'Cancel']
+      : ['Browse for local install...', 'Connect to localhost:5601', 'Cancel'];
+
+    const detail = hasDownload
+      ? `OpenSearch Dashboards ${OSD_VERSION} will be downloaded (~${Math.round((artifact.size || 200_000_000) / 1_000_000)}MB) and installed to ~/.osd-desktop/osd/`
+      : `No pre-built OSD available for ${platformKey}. Please install OSD manually or use a running instance.`;
+
     const choice = await dialog.showMessageBox({
       type: 'question',
-      title: 'Configure OpenSearch Dashboards',
-      message: 'How would you like to connect to OpenSearch Dashboards?',
-      detail: 'Options:\n\n• Connect to running instance — if OSD is already running on localhost:5601\n• Browse for local install — select your opensearch-dashboards binary\n• Download from opensearch.org — opens browser to download page',
-      buttons: ['Connect to localhost:5601', 'Browse for local install...', 'Download from opensearch.org', 'Cancel'],
+      title: 'Setup OpenSearch Dashboards',
+      message: 'How would you like to set up OpenSearch Dashboards?',
+      detail,
+      buttons,
       defaultId: 0,
     });
 
-    if (choice.response === 0) {
-      // Use existing running instance — no binary needed
-      osdBinPath = '__external__';
-      await db.setSettingAsync('osd_bin_path', osdBinPath);
-    } else if (choice.response === 1) {
-      // Browse for local binary or source checkout
+    const action = hasDownload
+      ? ['download', 'browse', 'external', 'cancel'][choice.response]
+      : ['browse', 'external', 'cancel'][choice.response];
+
+    if (action === 'download') {
+      // In-app download with progress
+      const progressWin = new BW({ width: 450, height: 140, frame: false, resizable: false, alwaysOnTop: true, show: true });
+      progressWin.loadURL(`data:text/html,<body style="font-family:system-ui;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#1a1a2e;color:#e8e8f0"><h3 style="margin:0 0 8px">Downloading OSD ${OSD_VERSION}</h3><div id="m" style="color:#a0a0c0">Starting...</div><div style="width:80%;height:6px;background:#333;border-radius:3px;margin-top:12px"><div id="bar" style="height:100%;background:#4da6ff;border-radius:3px;width:0%;transition:width 0.3s"></div></div></body>`);
+
+      try {
+        await downloadAndInstall((p) => {
+          const pct = Number(p.percent).toFixed(0);
+          progressWin.webContents.executeJavaScript(
+            `document.getElementById('m').textContent='${pct}% — ${Math.round(p.bytesDownloaded/1_000_000)}MB downloaded';document.getElementById('bar').style.width='${pct}%'`
+          ).catch(() => {});
+        });
+        progressWin.close();
+        osdBinPath = path.join(OSD_DIR, 'bin', 'opensearch-dashboards');
+        await db.setSettingAsync('osd_bin_path', osdBinPath);
+      } catch (err: unknown) {
+        if (!progressWin.isDestroyed()) progressWin.close();
+        await dialog.showMessageBox({ type: 'error', title: 'Download Failed', message: `${(err as Error).message}` });
+      }
+    } else if (action === 'browse') {
       const result = await dialog.showOpenDialog({
         title: 'Select opensearch-dashboards startup script',
         message: 'Select bin/opensearch-dashboards from your install or source checkout',
@@ -628,9 +661,9 @@ app.whenReady().then(async () => {
         osdBinPath = result.filePaths[0];
         await db.setSettingAsync('osd_bin_path', osdBinPath);
       }
-    } else if (choice.response === 2) {
-      // Open download page in browser
-      shell.openExternal('https://opensearch.org/downloads.html');
+    } else if (action === 'external') {
+      osdBinPath = '__external__';
+      await db.setSettingAsync('osd_bin_path', osdBinPath);
     }
   } else if (!osdBinPath && isOsdInstalled()) {
     osdBinPath = path.join(OSD_DIR, 'bin', 'opensearch-dashboards');
