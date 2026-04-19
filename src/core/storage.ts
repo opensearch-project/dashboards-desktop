@@ -287,10 +287,22 @@ export class StorageProxy {
       if (resp.error) p.reject(new Error(resp.error));
       else p.resolve(resp.result);
     });
+    // Fix #1: reject all pending on worker crash/exit
+    this.worker.on('error', (err) => this.rejectAll(err));
+    this.worker.on('exit', (code) => {
+      if (code !== 0) this.rejectAll(new Error(`Storage worker exited with code ${code}`));
+    });
+  }
+
+  private rejectAll(err: Error): void {
+    for (const p of this.pending.values()) p.reject(err);
+    this.pending.clear();
   }
 
   private call(method: string, ...args: unknown[]): Promise<unknown> {
-    const id = this.nextId++;
+    // Fix #3: modular arithmetic to prevent overflow
+    this.nextId = (this.nextId + 1) % Number.MAX_SAFE_INTEGER;
+    const id = this.nextId;
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
       this.worker.postMessage({ id, method, args });
@@ -313,7 +325,9 @@ export class StorageProxy {
   }
   deleteCredentialAsync(connectionId: string) { return this.call('deleteCredential', connectionId); }
 
+  // Fix #2: drain pending promises before terminating
   async close(): Promise<void> {
+    this.rejectAll(new Error('Storage proxy closed'));
     await this.worker.terminate();
   }
 }
