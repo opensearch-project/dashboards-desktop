@@ -52,7 +52,7 @@ export class OllamaProvider implements ModelProvider {
         body: JSON.stringify(body),
         signal: params.signal,
       });
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
       if (params.signal?.aborted) throw err;
       throw new Error(`Cannot connect to Ollama at ${this.baseUrl}. Is Ollama running? (ollama serve)`);
     }
