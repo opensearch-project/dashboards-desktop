@@ -46,7 +46,7 @@ nsis:
 
 # Linux
 linux:
-  maintainer: "OpenSearch Project <opensearch@amazon.com>"
+  maintainer: "Seraph Jiang <seraphjiang@gmail.com>"
   category: Development
   target:
     - target: AppImage
