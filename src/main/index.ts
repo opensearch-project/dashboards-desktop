@@ -83,17 +83,7 @@ ipcMain.handle(IPC.WORKSPACE_CREATE, async (_e, name: string) => {
   return db.createWorkspaceAsync(name);
 });
 
-// --- IPC: Settings ---
-ipcMain.handle(IPC.SETTINGS_GET, async (_e, key: string) => {
-  const db = getStorageProxy();
-  return db.getSettingAsync(key);
-});
-
-ipcMain.handle(IPC.SETTINGS_SET, async (_e, key: string, value: string) => {
-  const db = getStorageProxy();
-  await db.setSettingAsync(key, value);
-  return true;
-});
+// --- IPC: Settings moved to main/ipc/settings.ts ---
 
 // --- IPC: Admin — Cluster, Indices, Security ---
 import { Client as OSClient } from '@opensearch-project/opensearch';
