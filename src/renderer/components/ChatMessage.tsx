@@ -33,7 +33,7 @@ function renderMarkdown(src: string): string {
   // Italic
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
   // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1 <span aria-label="external link">↗</span></a>');
   // Simple tables
   html = html.replace(/^(\|.+\|)\n(\|[-| :]+\|)\n((?:\|.+\|\n?)+)/gm, (_m, header, _sep, body) => {
     const ths = header.split('|').filter(Boolean).map((c: string) => `<th>${c.trim()}</th>`).join('');

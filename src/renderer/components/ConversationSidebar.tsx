@@ -11,14 +11,20 @@ interface Props {
 export const ConversationSidebar: React.FC<Props> = ({ workspaceId, activeId, onSelect, onNew }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [search, setSearch] = useState('');
+  const [error, setError] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const renameRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     if (!workspaceId) return;
-    const list = await window.osd.conversations.list(workspaceId);
-    setConversations(list);
+    setError('');
+    try {
+      const list = await window.osd.conversations.list(workspaceId);
+      setConversations(list);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to load conversations');
+    }
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,7 +63,9 @@ export const ConversationSidebar: React.FC<Props> = ({ workspaceId, activeId, on
         <button className="btn-sm" onClick={onNew} aria-label="New conversation">+ New</button>
       </div>
 
-      {filtered.length === 0 ? (
+      {error && <p className="conv-empty" role="alert" style={{ color: 'var(--danger)' }}>{error} <button className="btn-link" onClick={load}>Retry</button></p>}
+
+      {!error && filtered.length === 0 ? (
         <p className="conv-empty" role="status">{search ? 'No matches' : 'No conversations yet'}</p>
       ) : (
         <ul className="conv-list" role="list">

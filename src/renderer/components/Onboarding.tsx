@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { AuthType } from '../../core/types';
 
-interface Props { onComplete: () => void; }
+interface Props { onComplete: (initialPrompt?: string) => void; }
 
 const STEPS = ['Welcome', 'Connection', 'Workspace', 'Ready'] as const;
 
@@ -141,11 +141,11 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
             <h2 id="ready-heading" ref={headingRef} tabIndex={-1}>You&apos;re All Set!</h2>
             <p>Try one of these to get started:</p>
             <ul className="prompt-suggestions" role="list">
-              <li><button className="suggestion-btn" onClick={onComplete}>Show me cluster health</button></li>
-              <li><button className="suggestion-btn" onClick={onComplete}>What can you do?</button></li>
-              <li><button className="suggestion-btn" onClick={onComplete}>List my indices</button></li>
+              <li><button className="suggestion-btn" onClick={() => onComplete('Show me cluster health')}>Show me cluster health</button></li>
+              <li><button className="suggestion-btn" onClick={() => onComplete('What can you do?')}>What can you do?</button></li>
+              <li><button className="suggestion-btn" onClick={() => onComplete('List my indices')}>List my indices</button></li>
             </ul>
-            <button className="btn-primary" onClick={onComplete}>Go to Homepage</button>
+            <button className="btn-primary" onClick={() => onComplete()}>Go to Homepage</button>
           </section>
         )}
       </div>

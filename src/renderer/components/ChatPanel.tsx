@@ -111,13 +111,15 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
     try {
       const convId = await window.osd.agent.send(msg, activeConv ?? undefined);
       if (!activeConv && convId) setActiveConv(convId);
-    } catch {
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : 'Failed to send message.';
       setMessages(prev => {
         const last = prev[prev.length - 1];
-        if (last?.streaming) return [...prev.slice(0, -1), { ...last, content: 'Failed to send message.', streaming: false }];
+        if (last?.streaming) return [...prev.slice(0, -1), { ...last, content: errMsg, streaming: false }];
         return prev;
       });
       setStreaming(false);
+    }
     }
   }, [input, streaming, activeConv]);
 
@@ -174,6 +176,7 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
           aria-label="Resize chat panel"
           aria-valuenow={width}
           aria-valuemin={MIN_WIDTH}
+          aria-valuemax={Math.round(window.innerWidth * MAX_WIDTH_RATIO)}
           tabIndex={0}
         />
       )}

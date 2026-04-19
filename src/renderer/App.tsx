@@ -35,12 +35,16 @@ export function App(): React.ReactElement {
   }, []);
 
   const refresh = useCallback(async () => {
-    const ws = await window.osd.workspaces.list();
-    setWorkspaces(ws);
-    if (!activeWorkspace && ws.length) setActiveWorkspace(ws.find((w: Workspace) => w.is_default) ?? ws[0]);
-    const conns = await window.osd.connections.list(activeWorkspace?.id);
-    setConnections(conns);
-    if (!activeConnection && conns.length) setActiveConnection(conns[0]);
+    try {
+      const ws = await window.osd.workspaces.list();
+      setWorkspaces(ws);
+      if (!activeWorkspace && ws.length) setActiveWorkspace(ws.find((w: Workspace) => w.is_default) ?? ws[0]);
+      const conns = await window.osd.connections.list(activeWorkspace?.id);
+      setConnections(conns);
+      if (!activeConnection && conns.length) setActiveConnection(conns[0]);
+    } catch (e: unknown) {
+      console.error('[App] refresh failed:', e);
+    }
   }, [activeWorkspace, activeConnection]);
 
   useEffect(() => { if (onboarded) refresh(); }, [onboarded, refresh]);
@@ -58,10 +62,16 @@ export function App(): React.ReactElement {
     return () => window.removeEventListener('keydown', handler);
   }, [chatFullScreen]);
 
-  const handleOnboardingComplete = useCallback(async () => {
+  const handleOnboardingComplete = useCallback(async (initialPrompt?: string) => {
     await window.osd.settings.set('onboarded', '1');
     setOnboarded(true);
-    refresh();
+    await refresh();
+    if (initialPrompt) {
+      setChatOpen(true);
+      setPage('chat');
+      // Send prompt after chat panel mounts
+      setTimeout(() => window.osd.agent.send(initialPrompt).catch(() => {}), 100);
+    }
   }, [refresh]);
 
   const handleNavigate = useCallback((p: Page) => {
