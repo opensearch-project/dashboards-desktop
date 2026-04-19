@@ -26,6 +26,9 @@ export async function downloadAndInstall(
   onProgress?: ProgressCallback,
 ): Promise<void> {
   const artifact = getArtifact();
+  if (!artifact.url) {
+    throw new Error('No OSD download available for this platform. Please install OpenSearch Dashboards manually and use "Browse for existing..." to select it.');
+  }
   mkdirSync(OSD_HOME, { recursive: true });
 
   const tmpFile = join(OSD_HOME, `osd-download.${artifact.format}`);

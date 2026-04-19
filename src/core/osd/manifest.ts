@@ -34,13 +34,13 @@ const MANIFEST: Record<string, OsdArtifact> = {
     format: 'zip',
   },
   'darwin-x64': {
-    url: `${ARTIFACTS_BASE}/${OSD_VERSION}/opensearch-dashboards-min-${OSD_VERSION}-darwin-x64.tar.gz`,
+    url: '', // No official macOS min build — use Browse to select local OSD
     sha256: '',
     size: 0,
     format: 'tar.gz',
   },
   'darwin-arm64': {
-    url: `${ARTIFACTS_BASE}/${OSD_VERSION}/opensearch-dashboards-min-${OSD_VERSION}-darwin-arm64.tar.gz`,
+    url: '', // No official macOS min build — use Browse to select local OSD
     sha256: '',
     size: 0,
     format: 'tar.gz',
