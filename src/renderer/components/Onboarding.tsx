@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { AuthType } from '@core/types';
+import type { AuthType } from '../../core/types';
 
 interface Props { onComplete: () => void; }
 
@@ -22,7 +22,7 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
     setTesting(true);
     setTestResult(null);
     try {
-      const result = await window.osd?.connection?.test({ name: connName, url: connUrl, type: connType, auth_type: authType });
+      const result = await window.osd.connections.test({ name: connName, url: connUrl, type: connType, auth_type: authType });
       setTestResult(result ?? { success: false, error: 'IPC unavailable' });
     } catch (e: any) {
       setTestResult({ success: false, error: e.message });
@@ -32,13 +32,13 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
 
   const saveConnection = async () => {
     if (connName && connUrl) {
-      await window.osd?.connection?.add({ name: connName, url: connUrl, type: connType, auth_type: authType });
+      await window.osd.connections.add({ name: connName, url: connUrl, type: connType, auth_type: authType });
     }
     next();
   };
 
   const saveWorkspace = async () => {
-    if (wsName.trim()) await window.osd?.workspace?.create(wsName.trim());
+    if (wsName.trim()) await window.osd.workspaces.create(wsName.trim());
     next();
   };
 

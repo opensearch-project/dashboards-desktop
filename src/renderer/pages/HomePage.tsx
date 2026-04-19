@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Workspace, Connection } from '@core/types';
+import type { Workspace, Connection } from '../../core/types';
 
 interface Props {
   workspaces: Workspace[];

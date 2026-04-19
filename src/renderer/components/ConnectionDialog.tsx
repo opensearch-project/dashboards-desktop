@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Connection, AuthType, ConnectionTestResult } from '@core/types';
+import type { Connection, AuthType, ConnectionTestResult } from '../../core/types';
 
 interface Props {
   connection: Connection | null; // null = add mode
@@ -59,7 +59,7 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
   const testConnection = async () => {
     setTesting(true); setTestResult(null); setError('');
     try {
-      const result = await window.osd?.connection?.test(buildInput());
+      const result = await window.osd.connections.test(buildInput());
       setTestResult(result ?? { success: false, error: 'IPC unavailable' });
     } catch (e: any) { setTestResult({ success: false, error: e.message }); }
     setTesting(false);
@@ -69,8 +69,8 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
     if (!testResult?.success) { setError('Please test the connection before saving.'); return; }
     setSaving(true); setError('');
     try {
-      if (isEdit) await window.osd?.connection?.update(connection!.id, buildInput());
-      else await window.osd?.connection?.add(buildInput());
+      if (isEdit) await window.osd.connections.update(connection!.id, buildInput());
+      else await window.osd.connections.add(buildInput());
       onSaved();
     } catch (e: any) { setError(e.message); }
     setSaving(false);
@@ -78,7 +78,7 @@ export const ConnectionDialog: React.FC<Props> = ({ connection, workspaceId, onC
 
   const handleDelete = async () => {
     if (!connection) return;
-    await window.osd?.connection?.delete(connection.id);
+    await window.osd.connections.delete(connection.id);
     onSaved();
   };
 
