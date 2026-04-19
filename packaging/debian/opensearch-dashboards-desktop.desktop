@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=OpenSearch Dashboards Desktop
+Comment=Agent-first desktop app for OpenSearch and Elasticsearch
+Exec=/usr/bin/opensearch-dashboards-desktop %U
+Icon=opensearch-dashboards-desktop
+Type=Application
+Categories=Development;Utility;
+MimeType=x-scheme-handler/osd;
+StartupWMClass=opensearch-dashboards-desktop
