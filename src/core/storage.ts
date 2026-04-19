@@ -19,7 +19,7 @@ import * as crypto from 'crypto';
 // Schema
 // ---------------------------------------------------------------------------
 
-export const LATEST_SCHEMA_VERSION = 3;
+export const LATEST_SCHEMA_VERSION = 4;
 
 interface Migration {
   version: number;
@@ -102,6 +102,14 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_conversations_workspace ON conversations(workspace_id, updated_at DESC);
       CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at ASC);
       UPDATE schema_version SET version = 3;
+    `,
+  },
+  {
+    version: 4,
+    up: `
+      ALTER TABLE messages ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;
+      CREATE INDEX IF NOT EXISTS idx_messages_pinned ON messages(conversation_id, pinned) WHERE pinned = 1;
+      UPDATE schema_version SET version = 4;
     `,
   },
 ];
@@ -272,6 +280,24 @@ export function deleteWorkspace(db: DB, id: string): void {
   db.prepare('DELETE FROM workspaces WHERE id = ?').run(id);
 }
 
+// --- Conversation extras ---
+
+export function renameConversation(db: DB, id: string, title: string): void {
+  db.prepare("UPDATE conversations SET title = ?, updated_at = datetime('now') WHERE id = ?").run(title, id);
+}
+
+export function pinMessage(db: DB, messageId: string): void {
+  db.prepare('UPDATE messages SET pinned = 1 WHERE id = ?').run(messageId);
+}
+
+export function unpinMessage(db: DB, messageId: string): void {
+  db.prepare('UPDATE messages SET pinned = 0 WHERE id = ?').run(messageId);
+}
+
+export function listPinnedMessages(db: DB, conversationId: string): unknown[] {
+  return db.prepare('SELECT id, role, content, created_at FROM messages WHERE conversation_id = ? AND pinned = 1 ORDER BY created_at ASC').all(conversationId);
+}
+
 // ---------------------------------------------------------------------------
 // Worker thread: handles messages from StorageProxy
 // ---------------------------------------------------------------------------
@@ -306,6 +332,10 @@ if (!isMainThread && parentPort) {
         case 'addMessage': result = addMessage(db, req.args[0] as string, req.args[1] as string, req.args[2] as string, req.args[3] as string | undefined, req.args[4] as string | undefined); break;
         case 'getMessages': result = getMessages(db, req.args[0] as string); break;
         case 'deleteWorkspace': result = deleteWorkspace(db, req.args[0] as string); break;
+        case 'renameConversation': result = renameConversation(db, req.args[0] as string, req.args[1] as string); break;
+        case 'pinMessage': result = pinMessage(db, req.args[0] as string); break;
+        case 'unpinMessage': result = unpinMessage(db, req.args[0] as string); break;
+        case 'listPinnedMessages': result = listPinnedMessages(db, req.args[0] as string); break;
         default: throw new Error(`Unknown method: ${req.method}`);
       }
       parentPort!.postMessage({ id: req.id, result });
@@ -378,6 +408,10 @@ export class StorageProxy {
   addMessageAsync(conversationId: string, role: string, content: string, toolCalls?: string, toolCallId?: string) { return this.call('addMessage', conversationId, role, content, toolCalls, toolCallId) as Promise<string>; }
   getMessagesAsync(conversationId: string) { return this.call('getMessages', conversationId) as Promise<unknown[]>; }
   deleteWorkspaceAsync(id: string) { return this.call('deleteWorkspace', id); }
+  renameConversationAsync(id: string, title: string) { return this.call('renameConversation', id, title); }
+  pinMessageAsync(messageId: string) { return this.call('pinMessage', messageId); }
+  unpinMessageAsync(messageId: string) { return this.call('unpinMessage', messageId); }
+  listPinnedMessagesAsync(conversationId: string) { return this.call('listPinnedMessages', conversationId) as Promise<unknown[]>; }
 
   // Fix #2: drain pending promises before terminating
   async close(): Promise<void> {

@@ -227,8 +227,7 @@ ipcMain.handle(IPC.CONVERSATION_MESSAGES, async (_e, conversationId: string) => 
   return getStorageProxy().getMessagesAsync(conversationId);
 });
 ipcMain.handle(IPC.CONVERSATION_RENAME, async (_e, id: string, title: string) => {
-  // Update title via generic update — conversations table
-  return 'ok'; // TODO: add renameConversation to storage
+  return getStorageProxy().renameConversationAsync(id, title);
 });
 
 // --- IPC: OAuth ---
@@ -249,13 +248,13 @@ ipcMain.handle(IPC.AGENT_ACTIVE_PERSONA, () => getActivePersona());
 
 // --- IPC: Message Pinning ---
 ipcMain.handle(IPC.MESSAGE_PIN, async (_e, messageId: string) => {
-  return 'ok'; // TODO: add pin column to messages table
+  return getStorageProxy().pinMessageAsync(messageId);
 });
 ipcMain.handle(IPC.MESSAGE_UNPIN, async (_e, messageId: string) => {
-  return 'ok'; // TODO: add pin column to messages table
+  return getStorageProxy().unpinMessageAsync(messageId);
 });
 ipcMain.handle(IPC.MESSAGE_LIST_PINNED, async (_e, conversationId: string) => {
-  return []; // TODO: query pinned messages
+  return getStorageProxy().listPinnedMessagesAsync(conversationId);
 });
 
 // --- Agent Runtime ---
