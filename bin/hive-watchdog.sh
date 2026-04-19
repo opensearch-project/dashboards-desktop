@@ -6,8 +6,8 @@
 INTERVAL_MIN=${1:-20}
 INTERVAL_SEC=$((INTERVAL_MIN * 60))
 SESSION="${KIRO_HIVE_SESSION:-desktop}"
-AGENTS=("sde" "fee" "devops" "test")
-PANES=("%0" "%1" "%2" "%3")
+AGENTS=("sde" "fee" "devops" "test" "aieng" "product")
+PANES=("%0" "%1" "%2" "%3" "%103" "%4")
 LOG="/tmp/kiro-hive-watchdog.log"
 
 echo "[watchdog] Started at $(date -Iseconds), interval=${INTERVAL_MIN}m, session=${SESSION}" | tee -a "$LOG"

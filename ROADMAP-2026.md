@@ -53,8 +53,8 @@ src/
 **Chat Panel Shell (UI only, no agent runtime)**
 > ⚠️ M1 chat panel is a **non-functional UI shell** — layout, chrome, and keyboard shortcuts only. Agent runtime, model integration, and message handling ship in M2.
 - [ ] Resizable right side panel (~40% width default)
-- [ ] Cmd+K to open/focus chat from anywhere
-- [ ] Cmd+Shift+Enter for full-screen chat mode
+- [ ] Cmd+K / Ctrl+K to open/focus chat from anywhere
+- [ ] Cmd+Shift+Enter / Ctrl+Shift+Enter for full-screen chat mode
 - [ ] Conversation history sidebar (searchable, workspace-scoped)
 - [ ] Static placeholder state ("Connect a model to start chatting" empty state)
 
@@ -72,6 +72,11 @@ src/
 - [ ] WCAG 2.1 AA compliance target
 - [ ] Keyboard navigation, focus management, screen reader support
 - [ ] Minimum window size handling, panel collapse behavior
+
+**Theming**
+- [ ] System-preference theme detection (light/dark follows OS setting)
+- [ ] CSS custom properties for all color tokens from day one (no hardcoded colors)
+- [ ] Manual override: system / light / dark in settings
 
 ---
 
