@@ -2,7 +2,7 @@
  * Orchestrator — routes user messages to agents, coordinates multi-agent workflows.
  */
 
-import type { _StreamChunk, StreamEvent, ToolContext } from '../types';
+import type { StreamEvent, ToolContext } from '../types';
 import type { AgentConfig } from './agent-instance';
 import { AgentRegistry } from './registry';
 import { MessageBus } from './message-bus';
@@ -98,7 +98,6 @@ export class MultiAgentOrchestrator {
 
     yield { type: 'token', content: '' }; // signal start
 
-    let _text = '';
     const pendingToolCalls: Array<{ id: string; name: string; input: string }> = [];
     let currentId = '';
     let currentName = '';
