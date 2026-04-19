@@ -104,6 +104,8 @@ import { opensearchQueryTool } from '../core/agent/tools/opensearch-query';
 import { elasticsearchQueryTool } from '../core/agent/tools/elasticsearch-query';
 import { clusterHealthTool } from '../core/agent/tools/cluster-health';
 import { indexManageTool } from '../core/agent/tools/index-manage';
+import { adminOpenSearchTool } from '../core/agent/tools/admin-opensearch';
+import { adminElasticsearchTool } from '../core/agent/tools/admin-elasticsearch';
 import { osSecurityTool, osAlertingTool, osIsmTool, osSnapshotTool, osIngestTool } from '../core/agent/tools/admin-opensearch';
 import { esIlmTool, esWatcherTool, esSnapshotTool, esIngestTool, esSecurityTool } from '../core/agent/tools/admin-elasticsearch';
 import type { StreamEvent } from '../core/agent/types';
@@ -127,6 +129,8 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(elasticsearchQueryTool);
   tools.register(clusterHealthTool);
   tools.register(indexManageTool);
+  tools.register(adminOpenSearchTool);
+  tools.register(adminElasticsearchTool);
 
   // M3: OpenSearch admin tools
   tools.register(osSecurityTool);
