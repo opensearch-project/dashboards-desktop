@@ -309,6 +309,15 @@ ipcMain.handle(IPC.MODEL_CURRENT, () => {
   return agentRuntime?.getModel() ?? 'ollama:llama3';
 });
 
+// --- IPC: Conversation branching ---
+import { branchConversation } from '../core/agent/branching';
+
+ipcMain.handle(IPC.CONVERSATION_BRANCH, (_e, conversationId: string, messageId: string, workspaceId: string) => {
+  const dbPath = path.join(require('os').homedir(), '.osd', 'osd.db');
+  const db = initDatabase(dbPath);
+  return branchConversation(db, conversationId, messageId, workspaceId);
+});
+
 // --- App lifecycle ---
 app.whenReady().then(async () => {
   await initStorage();
