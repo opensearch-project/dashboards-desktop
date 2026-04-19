@@ -4,6 +4,31 @@ Get up and running in under 10 minutes.
 
 ---
 
+## Prerequisites
+
+OSD Desktop wraps a local OpenSearch Dashboards instance. You need:
+
+1. **OSD Desktop app** — the Electron shell (download below)
+2. **OpenSearch Dashboards** — the OSD binary that runs locally
+
+### Installing OpenSearch Dashboards
+
+Download the OSD tarball for your platform from [opensearch.org/downloads](https://opensearch.org/downloads.html):
+
+```bash
+# macOS / Linux
+tar -xzf opensearch-dashboards-2.x.x.tar.gz
+export OSD_HOME=~/opensearch-dashboards-2.x.x
+
+# Or set the path in OSD Desktop settings after first launch
+```
+
+OSD Desktop will manage the OSD process automatically — you don't need to start it manually. Just tell the app where the OSD binary lives.
+
+> **Note:** You do NOT need a local OpenSearch cluster. OSD Desktop connects to remote clusters. The local OSD instance provides the admin UI only.
+
+---
+
 ## Installation
 
 ### macOS
@@ -48,7 +73,15 @@ osd --version
 
 ## First Launch & Onboarding
 
-When you launch OSD Desktop for the first time, a setup wizard walks you through three steps.
+When you launch OSD Desktop for the first time, a setup wizard walks you through initial configuration.
+
+### Step 0: OSD Binary Location
+
+On first launch, the app checks for a local OpenSearch Dashboards installation:
+- If found in a standard location (`/usr/share/opensearch-dashboards`, `~/opensearch-dashboards-*`), it's auto-detected
+- If not found, you'll be prompted to set the path or download OSD
+
+Once configured, the app spawns OSD automatically on launch (localhost:5601). You'll see the real OSD UI inside the Electron window, with the agent chat panel as an overlay.
 
 ### Step 1: Choose a Model
 

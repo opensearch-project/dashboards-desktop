@@ -118,21 +118,23 @@ osd chat --model ollama:llama3
 
 ## Architecture
 
+Electron wraps a local OpenSearch Dashboards instance — the real OSD UI, not a reimplementation. The desktop app adds agent chat, auth proxy, and native menus on top.
+
 ```
 ┌──────────────────────────────────────────────────┐
 │                 osd (CLI entry)                   │
 │          --tui → TUI  │  default → GUI            │
 ├──────────────────┬───────────────────────────────┤
 │  Electron Shell  │  TUI Shell (Ink)              │
-│  Homepage        │  Chat + Split Pane            │
-│  Workspace Mgr   │                               │
-│  Chat Panel      │                               │
-│  Admin Console   │                               │
+│  BrowserWindow   │  Chat + Split Pane            │
+│  localhost:5601  │                               │
+│  (real OSD UI)   │                               │
+│  + Chat Overlay  │                               │
 ├──────────────────┴───────────────────────────────┤
-│                   Core Layer                      │
+│               Main Process Layer                  │
+│  OSD Lifecycle │ Auth Proxy   │ Multi-Datasource  │
 │  Agent Runtime │ Model Router │ MCP Host          │
-│  Data Source   │ Plugin Mgr   │ Skill Registry    │
-│  Auth (OAuth)  │ SQLite Store │ Update Manager    │
+│  Data Source   │ SQLite Store │ Update Manager    │
 ├──────────────────────────────────────────────────┤
 │  OpenSearch Client  │  Elasticsearch Client       │
 └──────────────────────────────────────────────────┘
