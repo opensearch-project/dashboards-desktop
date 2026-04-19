@@ -157,9 +157,9 @@ export class MultiAgentOrchestrator {
 
     // Run all agents in parallel
     const promises = agents.map(async (agent) => {
-      let _text = "";
+      let text = "";
       for await (const chunk of agent.chat(userMessage, signal)) {
-        if (chunk.type === 'text') _text += chunk.content ?? '';
+        if (chunk.type === 'text') text += chunk.content ?? '';
       }
       return text ? `**${agent.name}**: ${text}` : null;
     });
