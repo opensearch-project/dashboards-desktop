@@ -8,7 +8,6 @@ export interface RegistryEntry {
   source: 'github' | 'npm';
 }
 
-const GITHUB_ORG = 'opensearch-project';
 const PLUGIN_TOPIC = 'osd-plugin';
 
 /** Search for plugins on GitHub by topic */

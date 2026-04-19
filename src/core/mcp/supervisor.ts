@@ -72,7 +72,7 @@ export class McpSupervisor extends EventEmitter {
   list(): Map<string, Omit<ServerState, 'process'>> {
     const result = new Map<string, Omit<ServerState, 'process'>>();
     for (const [name, s] of this.servers) {
-      const { process: _p, ...rest } = s;
+      const { process: _proc, ...rest } = s;
       result.set(name, rest);
     }
     return result;

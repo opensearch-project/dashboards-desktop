@@ -79,7 +79,7 @@ export class PluginSandbox extends EventEmitter {
   list(): Map<string, Omit<SandboxedPlugin, 'worker'>> {
     const result = new Map<string, Omit<SandboxedPlugin, 'worker'>>();
     for (const [name, p] of this.plugins) {
-      const { worker: _w, ...rest } = p;
+      const { worker: _worker, ...rest } = p;
       result.set(name, rest);
     }
     return result;
