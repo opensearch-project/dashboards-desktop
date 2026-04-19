@@ -60,6 +60,23 @@ describe('testConnection: OpenSearch', () => {
     );
     expect(OpenSearchClient).toHaveBeenCalledWith(expect.objectContaining({ requestTimeout: 500 }));
   });
+
+  it('uses default 10s timeout when none specified', async () => {
+    osInfoMock.mockResolvedValue({ body: { cluster_name: 'c', version: { number: '2.12.0' } } });
+    await testConnection({ name: 'test', url: 'https://localhost:9200', type: 'opensearch', auth_type: 'none' });
+    expect(OpenSearchClient).toHaveBeenCalledWith(expect.objectContaining({ requestTimeout: 10000 }));
+  });
+
+  it('passes apikey auth as Authorization header', async () => {
+    osInfoMock.mockResolvedValue({ body: { cluster_name: 'c', version: { number: '2.12.0' } } });
+    await testConnection({
+      name: 'test', url: 'https://localhost:9200', type: 'opensearch',
+      auth_type: 'apikey', api_key: 'os-key-456',
+    });
+    expect(OpenSearchClient).toHaveBeenCalledWith(
+      expect.objectContaining({ headers: { Authorization: 'ApiKey os-key-456' } })
+    );
+  });
 });
 
 describe('testConnection: Elasticsearch', () => {
