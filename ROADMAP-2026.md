@@ -17,6 +17,16 @@ Reboot `dashboards-desktop` as an **agent-first, local-first desktop application
 
 The minimum to ship a usable desktop app.
 
+**Project Directory Structure (agreed layout — all code lives here from M1)**
+```
+src/
+  main/        — Electron main process (TypeScript)
+  preload/     — Preload scripts (context bridge)
+  renderer/    — React UI (TypeScript + React)
+  core/        — Shared business logic (connection, storage)
+  tui/         — Ink TUI (M5, empty placeholder for now)
+```
+
 **Core Shell**
 - [ ] TypeScript rewrite from scratch (delete all 2022 JS code)
 - [ ] Electron shell with `contextIsolation` + IPC bridge
@@ -40,11 +50,13 @@ The minimum to ship a usable desktop app.
 - [ ] Connection error states with troubleshoot actions
 - [ ] Both `@opensearch-project/opensearch` and `@elastic/elasticsearch` clients
 
-**Chat Panel (Layout Only)**
+**Chat Panel Shell (UI only, no agent runtime)**
+> ⚠️ M1 chat panel is a **non-functional UI shell** — layout, chrome, and keyboard shortcuts only. Agent runtime, model integration, and message handling ship in M2.
 - [ ] Resizable right side panel (~40% width default)
 - [ ] Cmd+K to open/focus chat from anywhere
 - [ ] Cmd+Shift+Enter for full-screen chat mode
 - [ ] Conversation history sidebar (searchable, workspace-scoped)
+- [ ] Static placeholder state ("Connect a model to start chatting" empty state)
 
 **CI/CD**
 - [ ] ESLint + Prettier + tsconfig.json + husky pre-commit hooks
