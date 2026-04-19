@@ -4,11 +4,11 @@
 
 ## Task Status
 
-### devops (4 items)
-- [ ] P1: MCP orphan process cleanup (PID file on spawn, kill on startup)
-- [ ] P1: MCP discovery chunked response buffering
-- [ ] Confirm release pipeline builds (macOS/Linux/Windows)
-- [ ] Fix 18 cosmetic lint warnings (unused vars)
+### devops (4 items) ✅ DONE (7156f4b)
+- [x] P1: MCP orphan process cleanup (PID file on spawn, kill on startup)
+- [x] P1: MCP discovery chunked response buffering
+- [x] Confirm release pipeline builds (macOS/Linux/Windows)
+- [x] Fix 18 cosmetic lint warnings (unused vars)
 
 ### test (4 items)
 - [ ] E2E acceptance test: full user flow
