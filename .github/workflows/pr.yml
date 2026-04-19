@@ -73,7 +73,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Rebuild native modules for Node.js
-        run: npm rebuild better-sqlite3
+        run: npm rebuild better-sqlite3 --build-from-source
       - name: Verify better-sqlite3 loads
         run: node -e "const db = require('better-sqlite3')(':memory:'); db.exec('CREATE TABLE t(id INTEGER)'); db.prepare('INSERT INTO t VALUES(1)').run(); const r = db.prepare('SELECT * FROM t').get(); if(r.id !== 1) throw new Error('SQLite smoke test failed'); console.log('✅ better-sqlite3 smoke test passed');"
 
