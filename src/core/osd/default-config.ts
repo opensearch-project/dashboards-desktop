@@ -1,39 +1,32 @@
 /**
  * Default OSD configuration for the desktop app.
- * Written to opensearch_dashboards.yml before first spawn.
+ * Only written on first install or when user changes settings via sidebar.
  */
 
-export const DEFAULT_OSD_CONFIG: Record<string, string | boolean | number | string[]> = {
+export const DEFAULT_OSD_CONFIG = {
   'server.host': 'localhost',
   'server.port': 5601,
-
   'opensearch.hosts': '["https://localhost:9200"]',
   'opensearch.ssl.verificationMode': 'none',
   'opensearch.ignoreVersionMismatch': true,
-  'opensearch.requestHeadersWhitelist': '["authorization", "securitytenant", "x-tenant-id", "x-tenant-role"]',
-
   'data_source.enabled': true,
-  'data_source_management.manageableBy': 'all',
   'data_source.hideLocalCluster': true,
-
   'workspace.enabled': true,
-  'migrations.skip': true,
-
-  'home.disableWelcomeScreen': false,
   'opensearchDashboards.futureNavigation': true,
   'uiSettings.overrides.home:useNewHomePage': true,
 };
 
 /**
- * Generates opensearch_dashboards.yml content from defaults + user overrides.
+ * Generates opensearch_dashboards.yml content.
  */
 export function generateDefaultYml(overrides?: Record<string, unknown>): string {
   const config = { ...DEFAULT_OSD_CONFIG, ...overrides };
   const lines: string[] = [];
+  const uiOverrides: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(config)) {
-    if (key === 'uiSettings.overrides.home:useNewHomePage') {
-      // Nested YAML
+    if (key.startsWith('uiSettings.overrides.')) {
+      uiOverrides[key.replace('uiSettings.overrides.', '')] = value;
       continue;
     }
     if (typeof value === 'string' && (value.startsWith('[') || value.startsWith('{'))) {
@@ -45,10 +38,13 @@ export function generateDefaultYml(overrides?: Record<string, unknown>): string 
     }
   }
 
-  // Add uiSettings overrides block
-  lines.push('');
-  lines.push('uiSettings.overrides:');
-  lines.push('  "home:useNewHomePage": true');
+  if (Object.keys(uiOverrides).length) {
+    lines.push('');
+    lines.push('uiSettings.overrides:');
+    for (const [k, v] of Object.entries(uiOverrides)) {
+      lines.push(`  "${k}": ${v}`);
+    }
+  }
 
   return lines.join('\n') + '\n';
 }
