@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC } from '../core/types';
-import type { ConnectionInput } from '../core/types';
+import type { ConnectionInput, StreamEvent } from '../core/types';
 
 const api = {
   storage: {
@@ -25,6 +25,29 @@ const api = {
   settings: {
     get: (key: string) => ipcRenderer.invoke(IPC.SETTINGS_GET, key),
     set: (key: string, value: string) => ipcRenderer.invoke(IPC.SETTINGS_SET, key, value),
+  },
+  agent: {
+    send: (message: string, conversationId?: string) =>
+      ipcRenderer.invoke(IPC.AGENT_SEND, message, conversationId),
+    cancel: () => ipcRenderer.invoke(IPC.AGENT_CANCEL),
+    onStream: (cb: (event: StreamEvent) => void) => {
+      const handler = (_e: Electron.IpcRendererEvent, event: StreamEvent) => cb(event);
+      ipcRenderer.on(IPC.AGENT_STREAM, handler);
+      return () => { ipcRenderer.removeListener(IPC.AGENT_STREAM, handler); };
+    },
+  },
+  models: {
+    list: () => ipcRenderer.invoke(IPC.MODEL_LIST),
+    switch: (modelId: string) => ipcRenderer.invoke(IPC.MODEL_SWITCH, modelId),
+    current: () => ipcRenderer.invoke(IPC.MODEL_CURRENT),
+  },
+  conversations: {
+    list: (workspaceId: string) => ipcRenderer.invoke(IPC.CONVERSATION_LIST, workspaceId),
+    create: (workspaceId: string, title?: string) =>
+      ipcRenderer.invoke(IPC.CONVERSATION_CREATE, workspaceId, title),
+    delete: (id: string) => ipcRenderer.invoke(IPC.CONVERSATION_DELETE, id),
+    rename: (id: string, title: string) => ipcRenderer.invoke(IPC.CONVERSATION_RENAME, id, title),
+    messages: (conversationId: string) => ipcRenderer.invoke(IPC.CONVERSATION_MESSAGES, conversationId),
   },
 };
 
