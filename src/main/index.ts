@@ -519,8 +519,6 @@ ipcMain.handle(IPC.AUTH_LOGIN_GOOGLE, async () => {
   if (!clientId) throw new Error('Google OAuth not configured. Set google_client_id in Settings.');
   return loginGoogle(clientId, 'osd://auth/google/callback');
 });
-ipcMain.handle(IPC.AUTH_LOGOUT, () => true);
-ipcMain.handle(IPC.AUTH_CURRENT_USER, () => null);
 
 // --- Error handling ---
 process.on('unhandledRejection', (reason) => {
