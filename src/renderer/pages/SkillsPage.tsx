@@ -47,7 +47,7 @@ export const SkillsPage: React.FC = () => {
   return (
     <div className="admin-page" role="region" aria-label="Skills & Agents">
       <header className="admin-header">
-        <h1>Skills & Agents</h1>
+        <h1>Skills &amp; Agents</h1>
         <div className="admin-header-actions">
           <button className="btn-primary btn-sm" onClick={() => setInstallOpen(true)}>+ Install Skill</button>
           <button className="btn-sm" onClick={load} aria-label="Refresh">↻</button>

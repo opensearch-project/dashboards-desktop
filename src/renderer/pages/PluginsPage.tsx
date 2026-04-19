@@ -101,7 +101,7 @@ export const PluginsPage: React.FC = () => {
               <span>Installed: {detail.installed_at}</span>
             </div>
             <p>{detail.description}</p>
-            {detail.homepage && <p><a href={detail.homepage} target="_blank" rel="noopener">Homepage</a></p>}
+            {detail.homepage && <p><a href={detail.homepage} target="_blank" rel="noreferrer">Homepage</a></p>}
             {detail.changelog && <details><summary>Changelog</summary><pre className="plugin-changelog">{detail.changelog}</pre></details>}
             <div className="dialog-actions">
               <button className="btn-secondary" onClick={() => setDetail(null)}>Close</button>

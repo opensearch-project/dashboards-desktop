@@ -130,7 +130,7 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
             </div>
             <div className="form-actions">
               <button className="btn-secondary" onClick={back}>Back</button>
-              <button className="btn-primary" onClick={saveWorkspace}>Create & Continue</button>
+              <button className="btn-primary" onClick={saveWorkspace}>Create &amp; Continue</button>
             </div>
           </section>
         )}

@@ -123,7 +123,7 @@ export const McpPage: React.FC = () => {
             </div>
             <div className="dialog-actions">
               <button className="btn-secondary" onClick={() => setConfigServer(null)}>Cancel</button>
-              <button className="btn-primary" onClick={saveConfig}>Save & Restart</button>
+              <button className="btn-primary" onClick={saveConfig}>Save &amp; Restart</button>
             </div>
           </div>
         </div>
