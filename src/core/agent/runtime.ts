@@ -69,6 +69,8 @@ export class AgentRuntime {
       if (signal.aborted) return;
       const msg = err instanceof Error ? err.message : String(err);
       emit({ type: 'error', message: msg, code: 'RUNTIME_ERROR' });
+    } finally {
+      this.abortController = null;
     }
   }
 
