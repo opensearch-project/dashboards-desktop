@@ -623,8 +623,17 @@ app.whenReady().then(async () => {
         progressWin.webContents.executeJavaScript(
           `document.getElementById('m').textContent='Downloading: ${pct}%'`
         ).catch(() => {});
+      }).catch(async (err: Error) => {
+        progressWin.close();
+        await dialog.showMessageBox({
+          type: 'error',
+          title: 'Download Failed',
+          message: `Could not download OSD: ${err.message}`,
+          detail: 'Use "Browse for existing..." to select a local OSD installation instead.',
+        });
+        return;
       });
-      progressWin.close();
+      if (progressWin && !progressWin.isDestroyed()) progressWin.close();
       osdBinPath = path.join(OSD_DIR, 'bin', 'opensearch-dashboards');
       await db.setSettingAsync('osd_bin_path', osdBinPath);
     } else if (choice.response === 1) {
