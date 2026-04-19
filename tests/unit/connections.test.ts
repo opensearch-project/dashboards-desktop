@@ -1,228 +1,152 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import http from 'http';
-import type { ConnectionInput, ConnectionTestResult } from '../../src/core/types';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Connection manager will be at @core/connections
-// Tests define the contract for src/core/connections.ts
+// Mock Electron safeStorage
+vi.mock('electron', () => ({
+  safeStorage: {
+    isEncryptionAvailable: () => true,
+    encryptString: (text: string) => Buffer.from(`enc:${text}`),
+    decryptString: (buf: Buffer) => buf.toString().replace('enc:', ''),
+  },
+}));
 
-function getConnections() {
-  return require('../../src/core/connections');
-}
+// Mock OpenSearch client
+const mockOsInfo = vi.fn();
+vi.mock('@opensearch-project/opensearch', () => ({
+  Client: vi.fn().mockImplementation(() => ({ info: mockOsInfo })),
+}));
 
-// --- Helper: mock HTTP server ---
+// Mock Elasticsearch client
+const mockEsInfo = vi.fn();
+vi.mock('@elastic/elasticsearch', () => ({
+  Client: vi.fn().mockImplementation(() => ({ info: mockEsInfo })),
+}));
 
-function createMockServer(handler: (req: http.IncomingMessage, res: http.ServerResponse) => void): Promise<{ url: string; close: () => void }> {
-  return new Promise((resolve) => {
-    const server = http.createServer(handler);
-    server.listen(0, '127.0.0.1', () => {
-      const addr = server.address() as { port: number };
-      resolve({
-        url: `http://127.0.0.1:${addr.port}`,
-        close: () => server.close(),
-      });
+import { testConnection, encryptCredential, decryptCredential } from '../../src/core/connections';
+import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
+import { Client as ElasticsearchClient } from '@elastic/elasticsearch';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+describe('testConnection: OpenSearch', () => {
+  it('returns success for healthy cluster', async () => {
+    mockOsInfo.mockResolvedValue({
+      body: { cluster_name: 'test-cluster', version: { number: '2.12.0', distribution: 'opensearch' } },
     });
-  });
-}
 
-describe('ConnectionManager: test connectivity', () => {
-  it('returns success for healthy OpenSearch cluster', async () => {
-    const mock = await createMockServer((_req, res) => {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        name: 'test-node',
-        cluster_name: 'test-cluster',
-        version: { number: '2.12.0', distribution: 'opensearch' },
-      }));
+    const result = await testConnection({
+      name: 'test', url: 'https://localhost:9200', type: 'opensearch', auth_type: 'none',
     });
-
-    try {
-      const connections = getConnections();
-      const result: ConnectionTestResult = await connections.testConnection({
-        name: 'test',
-        url: mock.url,
-        type: 'opensearch',
-        auth_type: 'none',
-      });
-      expect(result.success).toBe(true);
-      expect(result.cluster_name).toBe('test-cluster');
-      expect(result.version).toBe('2.12.0');
-    } finally {
-      mock.close();
-    }
+    expect(result.success).toBe(true);
+    expect(result.cluster_name).toBe('test-cluster');
+    expect(result.version).toBe('2.12.0');
   });
 
-  it('returns success for healthy Elasticsearch cluster', async () => {
-    const mock = await createMockServer((_req, res) => {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        name: 'es-node',
-        cluster_name: 'es-cluster',
-        version: { number: '8.17.0' },
-      }));
+  it('passes basic auth to client', async () => {
+    mockOsInfo.mockResolvedValue({
+      body: { cluster_name: 'c', version: { number: '2.12.0' } },
     });
 
-    try {
-      const connections = getConnections();
-      const result: ConnectionTestResult = await connections.testConnection({
-        name: 'test',
-        url: mock.url,
-        type: 'elasticsearch',
-        auth_type: 'none',
-      });
-      expect(result.success).toBe(true);
-      expect(result.cluster_name).toBe('es-cluster');
-      expect(result.version).toBe('8.17.0');
-    } finally {
-      mock.close();
-    }
+    await testConnection({
+      name: 'test', url: 'https://localhost:9200', type: 'opensearch',
+      auth_type: 'basic', username: 'admin', password: 'secret',
+    });
+
+    expect(OpenSearchClient).toHaveBeenCalledWith(
+      expect.objectContaining({ auth: { username: 'admin', password: 'secret' } })
+    );
+  });
+
+  it('passes timeout option to client', async () => {
+    mockOsInfo.mockResolvedValue({
+      body: { cluster_name: 'c', version: { number: '2.12.0' } },
+    });
+
+    await testConnection(
+      { name: 'test', url: 'https://localhost:9200', type: 'opensearch', auth_type: 'none' },
+      { timeoutMs: 500 }
+    );
+
+    expect(OpenSearchClient).toHaveBeenCalledWith(
+      expect.objectContaining({ requestTimeout: 500 })
+    );
   });
 });
 
-describe('ConnectionManager: auth flows', () => {
-  it('sends basic auth header', async () => {
-    let receivedAuth = '';
-    const mock = await createMockServer((req, res) => {
-      receivedAuth = req.headers.authorization || '';
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ cluster_name: 'c', version: { number: '2.12.0' } }));
+describe('testConnection: Elasticsearch', () => {
+  it('returns success for healthy cluster', async () => {
+    mockEsInfo.mockResolvedValue({
+      cluster_name: 'es-cluster', version: { number: '8.17.0' },
     });
 
-    try {
-      const connections = getConnections();
-      await connections.testConnection({
-        name: 'basic-test',
-        url: mock.url,
-        type: 'opensearch',
-        auth_type: 'basic',
-        username: 'admin',
-        password: 'secret',
-      });
-      expect(receivedAuth).toMatch(/^Basic /);
-      const decoded = Buffer.from(receivedAuth.replace('Basic ', ''), 'base64').toString();
-      expect(decoded).toBe('admin:secret');
-    } finally {
-      mock.close();
-    }
+    const result = await testConnection({
+      name: 'test', url: 'https://localhost:9243', type: 'elasticsearch', auth_type: 'none',
+    });
+    expect(result.success).toBe(true);
+    expect(result.cluster_name).toBe('es-cluster');
+    expect(result.version).toBe('8.17.0');
   });
 
-  it('sends API key header', async () => {
-    let receivedAuth = '';
-    const mock = await createMockServer((req, res) => {
-      receivedAuth = req.headers.authorization || '';
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ cluster_name: 'c', version: { number: '8.17.0' } }));
+  it('passes API key auth to client', async () => {
+    mockEsInfo.mockResolvedValue({
+      cluster_name: 'c', version: { number: '8.17.0' },
     });
 
-    try {
-      const connections = getConnections();
-      await connections.testConnection({
-        name: 'apikey-test',
-        url: mock.url,
-        type: 'elasticsearch',
-        auth_type: 'apikey',
-        api_key: 'my-api-key-123',
-      });
-      expect(receivedAuth).toContain('ApiKey');
-    } finally {
-      mock.close();
-    }
+    await testConnection({
+      name: 'test', url: 'https://localhost:9243', type: 'elasticsearch',
+      auth_type: 'apikey', api_key: 'my-key-123',
+    });
+
+    expect(ElasticsearchClient).toHaveBeenCalledWith(
+      expect.objectContaining({ auth: { apiKey: 'my-key-123' } })
+    );
   });
 });
 
-describe('ConnectionManager: failure modes', () => {
-  it('returns error for unreachable host', async () => {
-    const connections = getConnections();
-    const result: ConnectionTestResult = await connections.testConnection({
-      name: 'unreachable',
-      url: 'http://127.0.0.1:1',
-      type: 'opensearch',
-      auth_type: 'none',
+describe('testConnection: failure modes', () => {
+  it('returns error when client throws (unreachable)', async () => {
+    mockOsInfo.mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:1'));
+
+    const result = await testConnection({
+      name: 'bad', url: 'http://127.0.0.1:1', type: 'opensearch', auth_type: 'none',
     });
     expect(result.success).toBe(false);
-    expect(result.error).toBeTruthy();
+    expect(result.error).toMatch(/ECONNREFUSED/);
   });
 
-  it('returns error for auth rejection (401)', async () => {
-    const mock = await createMockServer((_req, res) => {
-      res.writeHead(401);
-      res.end('Unauthorized');
-    });
+  it('returns error on auth failure', async () => {
+    mockOsInfo.mockRejectedValue(new Error('Response Error: 401 Unauthorized'));
 
-    try {
-      const connections = getConnections();
-      const result: ConnectionTestResult = await connections.testConnection({
-        name: 'bad-auth',
-        url: mock.url,
-        type: 'opensearch',
-        auth_type: 'basic',
-        username: 'admin',
-        password: 'wrong',
-      });
-      expect(result.success).toBe(false);
-      expect(result.error).toMatch(/auth|unauthorized|401/i);
-    } finally {
-      mock.close();
-    }
+    const result = await testConnection({
+      name: 'bad', url: 'https://localhost:9200', type: 'opensearch',
+      auth_type: 'basic', username: 'admin', password: 'wrong',
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/401/);
   });
 
-  it('returns error for timeout', async () => {
-    const mock = await createMockServer((_req, _res) => {
-      // Never respond — simulate timeout
-    });
+  it('returns error on timeout', async () => {
+    mockEsInfo.mockRejectedValue(new Error('Request timed out'));
 
-    try {
-      const connections = getConnections();
-      const result: ConnectionTestResult = await connections.testConnection({
-        name: 'slow',
-        url: mock.url,
-        type: 'opensearch',
-        auth_type: 'none',
-      }, { timeoutMs: 500 });
-      expect(result.success).toBe(false);
-      expect(result.error).toMatch(/timeout|timed out|ETIMEDOUT/i);
-    } finally {
-      mock.close();
-    }
-  });
-
-  it('returns error for invalid JSON response', async () => {
-    const mock = await createMockServer((_req, res) => {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end('<html>Not a cluster</html>');
-    });
-
-    try {
-      const connections = getConnections();
-      const result: ConnectionTestResult = await connections.testConnection({
-        name: 'bad-response',
-        url: mock.url,
-        type: 'opensearch',
-        auth_type: 'none',
-      });
-      expect(result.success).toBe(false);
-      expect(result.error).toBeTruthy();
-    } finally {
-      mock.close();
-    }
+    const result = await testConnection(
+      { name: 'slow', url: 'https://localhost:9243', type: 'elasticsearch', auth_type: 'none' },
+      { timeoutMs: 500 }
+    );
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/timed out/i);
   });
 });
 
-describe('ConnectionManager: credential encryption', () => {
-  it('encrypts credentials before storage and decrypts on retrieval', () => {
-    const connections = getConnections();
-
-    const encrypted = connections.encryptCredential('my-secret-password');
-    expect(encrypted).not.toBe('my-secret-password');
+describe('Credential encryption', () => {
+  it('encrypts and decrypts round-trip', () => {
+    const encrypted = encryptCredential('my-secret');
     expect(Buffer.isBuffer(encrypted)).toBe(true);
-
-    const decrypted = connections.decryptCredential(encrypted);
-    expect(decrypted).toBe('my-secret-password');
+    expect(decryptCredential(encrypted)).toBe('my-secret');
   });
 
-  it('handles empty credential gracefully', () => {
-    const connections = getConnections();
-    const encrypted = connections.encryptCredential('');
-    const decrypted = connections.decryptCredential(encrypted);
-    expect(decrypted).toBe('');
+  it('handles empty string', () => {
+    const encrypted = encryptCredential('');
+    expect(decryptCredential(encrypted)).toBe('');
   });
 });

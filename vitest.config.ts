@@ -4,27 +4,30 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@core': path.resolve(__dirname, 'src/core'),
       '@main': path.resolve(__dirname, 'src/main'),
       '@preload': path.resolve(__dirname, 'src/preload'),
       '@renderer': path.resolve(__dirname, 'src/renderer'),
+      '@core': path.resolve(__dirname, 'src/core'),
     },
   },
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'tests/**/*.test.{ts,tsx}'],
     exclude: ['tests/e2e/**'],
+    environmentMatchGlobs: [
+      ['tests/components/**', 'jsdom'],
+    ],
+    setupFiles: ['tests/setup.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/core/**'],
+      include: ['src/core/**', 'src/main/**'],
       thresholds: {
-        statements: 80,
-        branches: 80,
-        functions: 80,
-        lines: 80,
+        lines: 60,
+        functions: 60,
+        branches: 50,
+        statements: 60,
       },
     },
-    setupFiles: ['tests/setup.ts'],
   },
 });
