@@ -1,6 +1,6 @@
 {
   "name": "dashboards-desktop",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "description": "OpenSearch Dashboards Desktop — GUI + TUI with AI agent",
   "main": "dist/main/index.js",
   "bin": {
