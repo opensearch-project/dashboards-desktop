@@ -93,11 +93,19 @@ export class SkillLoader {
     const abs = path.resolve(sourcePath);
     if (!fs.existsSync(abs)) throw new Error(`Path not found: ${abs}`);
 
+    // Validate first — loadSkill runs validate() which checks name format
     const loaded = this.loadSkill(abs);
     const destDir = path.join(SKILLS_DIR, loaded.definition.name);
 
+    // Ensure destDir is inside SKILLS_DIR (defense-in-depth)
+    if (!destDir.startsWith(SKILLS_DIR)) throw new Error('Invalid skill name: path traversal detected');
+
     fs.mkdirSync(SKILLS_DIR, { recursive: true });
     fs.cpSync(abs, destDir, { recursive: true });
+
+    // Clear require cache so re-install picks up new code
+    const entryPath = resolveEntry(destDir);
+    if (entryPath && require.cache[entryPath]) delete require.cache[entryPath];
 
     loaded.path = destDir;
     this.skills.set(loaded.definition.name, loaded);
@@ -126,4 +134,6 @@ function validate(def: SkillDefinition, skillPath: string): void {
   if (!def.name || typeof def.name !== 'string') throw new Error(`Invalid skill at ${skillPath}: missing name`);
   if (!def.description) throw new Error(`Invalid skill "${def.name}": missing description`);
   if (!Array.isArray(def.tools)) throw new Error(`Invalid skill "${def.name}": tools must be an array`);
+  if (!/^[a-zA-Z0-9_-]+$/.test(def.name)) throw new Error(`Invalid skill name "${def.name}": must be alphanumeric, hyphens, underscores only`);
+  if (def.version && typeof def.version !== 'string') throw new Error(`Invalid skill "${def.name}": version must be a string`);
 }
