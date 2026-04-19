@@ -2,14 +2,8 @@ import { app, BrowserWindow, ipcMain, safeStorage } from 'electron';
 import * as path from 'path';
 import { IPC } from '../core/types';
 import type { ConnectionInput } from '../core/types';
-import { initStorage, getStorage } from '../core/storage';
-import {
-  addConnection,
-  updateConnection,
-  deleteConnection,
-  listConnections,
-  testConnection,
-} from '../core/connections';
+import { initStorage, getStorageProxy } from '../core/storage';
+import { testConnection } from '../core/connections';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -51,19 +45,23 @@ ipcMain.handle(IPC.CREDENTIALS_LOAD, (_e, key: string) => {
 
 // --- IPC: Connections ---
 ipcMain.handle(IPC.CONNECTION_ADD, async (_e, input: ConnectionInput) => {
-  return addConnection(input);
+  const db = getStorageProxy();
+  return db.addConnectionAsync(input);
 });
 
 ipcMain.handle(IPC.CONNECTION_UPDATE, async (_e, id: string, input: Partial<ConnectionInput>) => {
-  return updateConnection(id, input);
+  const db = getStorageProxy();
+  return db.updateConnectionAsync(id, input as Record<string, unknown>);
 });
 
 ipcMain.handle(IPC.CONNECTION_DELETE, async (_e, id: string) => {
-  return deleteConnection(id);
+  const db = getStorageProxy();
+  return db.deleteConnectionAsync(id);
 });
 
 ipcMain.handle(IPC.CONNECTION_LIST, async (_e, workspaceId?: string) => {
-  return listConnections(workspaceId);
+  const db = getStorageProxy();
+  return db.listConnectionsAsync(workspaceId);
 });
 
 ipcMain.handle(IPC.CONNECTION_TEST, async (_e, input: ConnectionInput) => {
@@ -72,24 +70,24 @@ ipcMain.handle(IPC.CONNECTION_TEST, async (_e, input: ConnectionInput) => {
 
 // --- IPC: Workspaces ---
 ipcMain.handle(IPC.WORKSPACE_LIST, async () => {
-  const db = getStorage();
-  return db.listWorkspaces();
+  const db = getStorageProxy();
+  return db.listWorkspacesAsync();
 });
 
 ipcMain.handle(IPC.WORKSPACE_CREATE, async (_e, name: string) => {
-  const db = getStorage();
-  return db.createWorkspace(name);
+  const db = getStorageProxy();
+  return db.createWorkspaceAsync(name);
 });
 
 // --- IPC: Settings ---
 ipcMain.handle(IPC.SETTINGS_GET, async (_e, key: string) => {
-  const db = getStorage();
-  return db.getSetting(key);
+  const db = getStorageProxy();
+  return db.getSettingAsync(key);
 });
 
 ipcMain.handle(IPC.SETTINGS_SET, async (_e, key: string, value: string) => {
-  const db = getStorage();
-  db.setSetting(key, value);
+  const db = getStorageProxy();
+  await db.setSettingAsync(key, value);
   return true;
 });
 
