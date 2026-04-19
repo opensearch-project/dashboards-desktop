@@ -64,7 +64,7 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
           <section aria-labelledby="welcome-heading">
             <h2 id="welcome-heading" ref={headingRef} tabIndex={-1}>Welcome to OpenSearch Dashboards Desktop</h2>
             <p>An agent-first, local-first desktop app for managing OpenSearch and Elasticsearch clusters.</p>
-            <p>Let's get you set up in a few quick steps.</p>
+            <p>Let&apos;s get you set up in a few quick steps.</p>
             <button className="btn-primary" onClick={next}>Get Started</button>
           </section>
         )}
@@ -138,7 +138,7 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
         {/* Step 4: Ready */}
         {step === 3 && (
           <section aria-labelledby="ready-heading">
-            <h2 id="ready-heading" ref={headingRef} tabIndex={-1}>You're All Set!</h2>
+            <h2 id="ready-heading" ref={headingRef} tabIndex={-1}>You&apos;re All Set!</h2>
             <p>Try one of these to get started:</p>
             <ul className="prompt-suggestions" role="list">
               <li><button className="suggestion-btn" onClick={onComplete}>Show me cluster health</button></li>

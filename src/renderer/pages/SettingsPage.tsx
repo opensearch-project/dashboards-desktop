@@ -118,7 +118,7 @@ export const SettingsPage: React.FC = () => {
                     <button className="btn-primary" onClick={installUpdate}>Install Update</button>
                   </>
                 ) : (
-                  <p>You're on the latest version (v{updateInfo.current_version})</p>
+                  <p>You&apos;re on the latest version (v{updateInfo.current_version})</p>
                 )}
               </div>
             )}
