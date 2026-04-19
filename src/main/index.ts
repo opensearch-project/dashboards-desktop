@@ -106,8 +106,13 @@ import { clusterHealthTool } from '../core/agent/tools/cluster-health';
 import { indexManageTool } from '../core/agent/tools/index-manage';
 import type { StreamEvent } from '../core/agent/types';
 import { initDatabase } from '../core/storage';
+import { McpSupervisor } from '../core/mcp/supervisor';
+import { McpDiscovery } from '../core/mcp/discovery';
+import { McpToolBridge } from '../core/mcp/tool-bridge';
+import { loadConfig } from '../core/mcp/config';
 
 let agentRuntime: AgentRuntime | null = null;
+let mcpBridge: McpToolBridge | null = null;
 
 function getOrCreateRuntime(): AgentRuntime {
   if (agentRuntime) return agentRuntime;
@@ -121,6 +126,15 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(clusterHealthTool);
   tools.register(indexManageTool);
 
+  // Wire MCP discovery into tool registry
+  const supervisor = new McpSupervisor();
+  const discovery = new McpDiscovery(supervisor);
+  mcpBridge = new McpToolBridge(tools, discovery, supervisor);
+  mcpBridge.listen();
+
+  // Start configured MCP servers and sync their tools (async, non-blocking)
+  void initMcpServers(supervisor).then(() => mcpBridge!.sync());
+
   const dbPath = path.join(require('os').homedir(), '.osd', 'osd.db');
   const db = initDatabase(dbPath);
   const conversations = new ConversationManager(db);
@@ -131,6 +145,16 @@ function getOrCreateRuntime(): AgentRuntime {
     () => null // TODO: wire to active connection from UI state
   );
   return agentRuntime;
+}
+
+/** Load MCP config and start all enabled servers */
+async function initMcpServers(supervisor: McpSupervisor): Promise<void> {
+  const config = loadConfig();
+  const starts = Object.entries(config.mcpServers)
+    .filter(([_, cfg]) => cfg.enabled !== false)
+    .map(([name, cfg]) => supervisor.start(name, cfg).catch(() => { /* log and continue */ }));
+  await Promise.allSettled(starts);
+  supervisor.startHealthChecks();
 }
 
 ipcMain.handle(IPC.AGENT_SEND, async (_e, message: string, conversationId?: string) => {
