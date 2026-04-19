@@ -408,3 +408,33 @@ button { cursor: pointer; font: inherit; border: none; background: none; color: 
 .about-list dt { font-weight: 600; color: var(--text-secondary); }
 .about-list dd { margin: 0; }
 .about-list a { color: var(--accent); }
+
+/* === Message Pin === */
+.msg-actions { display: flex; gap: 4px; margin-top: 4px; opacity: 0; transition: opacity 0.1s; }
+.chat-msg:hover .msg-actions { opacity: 1; }
+.msg-pin { font-size: 14px; color: var(--text-muted); }
+.msg-pin:hover { color: var(--warning); }
+.msg-pin.pinned { color: var(--warning); opacity: 1; }
+
+/* Pinned messages panel */
+.pinned-panel { border-left: 1px solid var(--border); width: 280px; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; background: var(--bg); }
+.pinned-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.pinned-header h3 { font-size: 13px; font-weight: 600; }
+.pinned-empty { padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.pinned-list { list-style: none; }
+.pinned-item { display: flex; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--bg-tertiary); align-items: flex-start; }
+.pinned-role { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); flex-shrink: 0; margin-top: 2px; }
+.pinned-content { flex: 1; font-size: 13px; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+/* === Command Palette === */
+.palette-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-start; justify-content: center; padding-top: 20vh; z-index: 300; }
+.palette { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); width: 480px; max-width: 90vw; max-height: 400px; display: flex; flex-direction: column; overflow: hidden; }
+.palette-input { padding: 14px 16px; border: none; border-bottom: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 15px; outline: none; }
+.palette-list { list-style: none; overflow-y: auto; flex: 1; }
+.palette-empty { padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.palette-item { display: flex; align-items: center; gap: 8px; padding: 10px 16px; cursor: pointer; font-size: 13px; }
+.palette-item:hover, .palette-item.selected { background: var(--bg-secondary); }
+.palette-item.current { font-weight: 600; }
+.palette-item-name { flex: 1; }
+.palette-item-provider { color: var(--text-muted); font-size: 11px; }
+.palette-current { font-size: 10px; color: var(--accent); font-weight: 600; text-transform: uppercase; }

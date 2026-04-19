@@ -123,6 +123,11 @@ const api = {
     channel: () => ipcRenderer.invoke(IPC.UPDATE_CHANNEL),
     setChannel: (ch: string) => ipcRenderer.invoke(IPC.UPDATE_SET_CHANNEL, ch),
   },
+  messages: {
+    pin: (messageId: string) => ipcRenderer.invoke(IPC.MESSAGE_PIN, messageId),
+    unpin: (messageId: string) => ipcRenderer.invoke(IPC.MESSAGE_UNPIN, messageId),
+    listPinned: (conversationId: string) => ipcRenderer.invoke(IPC.MESSAGE_LIST_PINNED, conversationId),
+  },
 };
 
 contextBridge.exposeInMainWorld('osd', api);

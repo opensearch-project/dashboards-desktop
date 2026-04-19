@@ -13,6 +13,10 @@ interface Props {
   content: string;
   streaming?: boolean;
   toolStatuses?: ToolStatus[];
+  messageId?: string;
+  pinned?: boolean;
+  onPin?: (id: string) => void;
+  onUnpin?: (id: string) => void;
 }
 
 /** Parse markdown to HTML — minimal inline parser for streaming content */
@@ -49,7 +53,7 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-export const ChatMessage: React.FC<Props> = ({ role, content, streaming, toolStatuses }) => {
+export const ChatMessage: React.FC<Props> = ({ role, content, streaming, toolStatuses, messageId, pinned, onPin, onUnpin }) => {
   const [displayContent, setDisplayContent] = useState(content);
   const bufferRef = useRef(content);
   const rafRef = useRef<number>(0);
@@ -107,6 +111,19 @@ export const ChatMessage: React.FC<Props> = ({ role, content, streaming, toolSta
       />
 
       {streaming && <span className="streaming-cursor" aria-hidden="true" />}
+
+      {/* Pin/bookmark action */}
+      {!streaming && messageId && (
+        <div className="msg-actions">
+          <button
+            className={`btn-icon-sm msg-pin ${pinned ? 'pinned' : ''}`}
+            onClick={() => pinned ? onUnpin?.(messageId) : onPin?.(messageId)}
+            aria-label={pinned ? 'Unpin message' : 'Pin message'}
+          >
+            {pinned ? '★' : '☆'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

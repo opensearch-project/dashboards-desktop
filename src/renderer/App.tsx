@@ -9,6 +9,7 @@ import { SkillsPage } from './pages/SkillsPage';
 import { McpPage } from './pages/McpPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ChatPanel } from './components/ChatPanel';
+import { CommandPalette } from './components/CommandPalette';
 import { Onboarding } from './components/Onboarding';
 import { ConnectionDialog } from './components/ConnectionDialog';
 import type { Workspace, Connection } from '../core/types';
@@ -24,6 +25,7 @@ export function App(): React.ReactElement {
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [activeConnection, setActiveConnection] = useState<Connection | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -48,6 +50,7 @@ export function App(): React.ReactElement {
     const handler = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (mod && e.key === 'k') { e.preventDefault(); setChatOpen(true); setPage('chat'); }
+      if (mod && e.key === 'm') { e.preventDefault(); setPaletteOpen(o => !o); }
       if (mod && e.shiftKey && e.key === 'Enter') { e.preventDefault(); setChatFullScreen(f => !f); setChatOpen(true); }
       if (e.key === 'Escape' && chatFullScreen) setChatFullScreen(false);
     };
@@ -125,6 +128,12 @@ export function App(): React.ReactElement {
           onSaved={() => { setConnectionDialogOpen(false); setEditingConnection(null); refresh(); }}
         />
       )}
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onSelect={async (id) => { await window.osd.models.switch(id); }}
+      />
     </div>
   );
 }

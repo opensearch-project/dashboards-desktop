@@ -196,14 +196,16 @@ import { ToolRegistry } from '../core/agent/tool-registry';
 import { ConversationManager } from '../core/agent/conversation';
 import { AgentRuntime } from '../core/agent/runtime';
 import { OllamaProvider } from '../core/agent/providers/ollama';
+import { OpenAIProvider } from '../core/agent/providers/openai';
+import { AnthropicProvider } from '../core/agent/providers/anthropic';
+import { BedrockProvider } from '../core/agent/providers/bedrock';
+import { OpenAICompatibleProvider } from '../core/agent/providers/openai-compatible';
 import { opensearchQueryTool } from '../core/agent/tools/opensearch-query';
 import { elasticsearchQueryTool } from '../core/agent/tools/elasticsearch-query';
 import { clusterHealthTool } from '../core/agent/tools/cluster-health';
 import { indexManageTool } from '../core/agent/tools/index-manage';
 import { adminOpenSearchTool } from '../core/agent/tools/admin-opensearch';
 import { adminElasticsearchTool } from '../core/agent/tools/admin-elasticsearch';
-import { osSecurityTool, osAlertingTool, osIsmTool, osSnapshotTool, osIngestTool } from '../core/agent/tools/admin-opensearch';
-import { esIlmTool, esWatcherTool, esSnapshotTool, esIngestTool, esSecurityTool } from '../core/agent/tools/admin-elasticsearch';
 import type { StreamEvent } from '../core/agent/types';
 import { initDatabase } from '../core/storage';
 import { McpSupervisor } from '../core/mcp/supervisor';
@@ -219,6 +221,22 @@ function getOrCreateRuntime(): AgentRuntime {
 
   const router = new ModelRouter();
   router.register(new OllamaProvider());
+  router.register(new BedrockProvider());
+
+  // Register cloud providers if API keys are configured (async, non-blocking)
+  void (async () => {
+    try {
+      const db = getStorageProxy();
+      const openaiKey = await db.getSettingAsync('openai_api_key');
+      if (openaiKey) router.register(new OpenAIProvider({ apiKey: openaiKey }));
+      const anthropicKey = await db.getSettingAsync('anthropic_api_key');
+      if (anthropicKey) router.register(new AnthropicProvider({ apiKey: anthropicKey }));
+      const compatUrl = await db.getSettingAsync('openai_compatible_url');
+      if (compatUrl) router.register(new OpenAICompatibleProvider({ baseUrl: compatUrl, apiKey: (await db.getSettingAsync('openai_compatible_key')) ?? '' }));
+    } catch {
+      // Settings not available yet — cloud providers can be added later
+    }
+  })();
 
   const tools = new ToolRegistry();
   tools.register(opensearchQueryTool);
@@ -228,25 +246,9 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(adminOpenSearchTool);
   tools.register(adminElasticsearchTool);
 
-  // M3: OpenSearch admin tools
-  tools.register(osSecurityTool);
-  tools.register(osAlertingTool);
-  tools.register(osIsmTool);
-  tools.register(osSnapshotTool);
-  tools.register(osIngestTool);
-
-  // M3: Elasticsearch admin tools
-  tools.register(esIlmTool);
-  tools.register(esWatcherTool);
-  tools.register(esSnapshotTool);
-  tools.register(esIngestTool);
-  tools.register(esSecurityTool);
-
-  // Trust levels: read ops auto-approve, write/delete ops ask
-  for (const name of ['os-security-manage', 'os-alerting-manage', 'os-ism-manage', 'os-snapshot-manage', 'os-ingest-manage',
-                       'es-ilm-manage', 'es-watcher-manage', 'es-snapshot-manage', 'es-ingest-manage', 'es-security-manage']) {
-    tools.setTrust(name, 'ask');
-  }
+  // Trust levels: admin tools require approval for all actions
+  tools.setTrust('admin-opensearch', 'ask');
+  tools.setTrust('admin-elasticsearch', 'ask');
 
   // Wire MCP discovery into tool registry
   const supervisor = new McpSupervisor();

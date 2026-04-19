@@ -129,6 +129,10 @@ export const IPC = {
   UPDATE_INSTALL: 'update:install',
   UPDATE_CHANNEL: 'update:channel',
   UPDATE_SET_CHANNEL: 'update:setChannel',
+  // M5: Advanced Chat
+  MESSAGE_PIN: 'message:pin',
+  MESSAGE_UNPIN: 'message:unpin',
+  MESSAGE_LIST_PINNED: 'message:listPinned',
 } as const;
 
 /** Streaming event from agent runtime → renderer (§3 of AGENT-RUNTIME-DESIGN) */
@@ -318,4 +322,13 @@ export interface ModelProviderConfig {
   type: 'ollama' | 'openai' | 'anthropic' | 'bedrock' | 'openai-compatible';
   base_url?: string;
   has_api_key: boolean;
+}
+
+/** Pinned/bookmarked message */
+export interface PinnedMessage {
+  message_id: string;
+  conversation_id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  pinned_at: number;
 }
