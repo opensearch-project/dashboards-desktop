@@ -37,7 +37,6 @@ win:
       arch: [x64, arm64]
     - target: zip
       arch: [x64, arm64]
-  signingHashAlgorithms: [sha256]
   # certificateSubjectName and certificateSha1 set via env vars in CI
 
 nsis:
