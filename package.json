@@ -19,6 +19,8 @@
     "format:check": "prettier --check 'src/**/*.{ts,tsx,json,css}'",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:renderer": "vitest run --config vitest.config.renderer.ts",
+    "test:e2e": "playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "postinstall": "electron-builder install-app-deps",
@@ -40,6 +42,8 @@
   "author": "OpenSearch Contributors",
   "license": "Apache-2.0",
   "dependencies": {
+    "@aws-sdk/credential-provider-node": "^3.750.0",
+    "@elastic/elasticsearch": "^8.17.0",
     "@opensearch-project/opensearch": "^2.12.0",
     "better-sqlite3": "^11.7.0",
     "ink": "^5.1.0",
@@ -68,6 +72,8 @@
     "@testing-library/jest-dom": "^6.6.0",
     "@types/better-sqlite3": "^7.6.0",
     "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0"
+    "@types/react-dom": "^18.3.0",
+    "@playwright/test": "^1.49.0",
+    "jsdom": "^25.0.0"
   }
 }
