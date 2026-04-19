@@ -28,7 +28,8 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 import { McpSupervisor } from '../../../src/core/mcp/supervisor';
-import { spawn } from 'child_process';
+import { spawn as _spawn } from 'child_process';
+const spawn = vi.mocked(_spawn);
 
 let supervisor: McpSupervisor;
 
