@@ -430,10 +430,13 @@ async function initMcpServers(supervisor: McpSupervisor): Promise<void> {
 
 ipcMain.handle(IPC.AGENT_SEND, async (_e, message: string, conversationId?: string) => {
   const runtime = getOrCreateRuntime();
-  // Create conversation if not provided
   const convId = conversationId ?? 'default';
   const emit = (event: StreamEvent) => {
+    // Broadcast to main window + all attached BrowserViews (chat overlay)
     mainWindow?.webContents.send(IPC.AGENT_STREAM, event);
+    for (const view of mainWindow?.getBrowserViews() ?? []) {
+      view.webContents.send(IPC.AGENT_STREAM, event);
+    }
   };
   await runtime.chat(convId, message, emit);
 });
@@ -534,6 +537,9 @@ ipcMain.handle(IPC.MULTI_AGENT_ROUTE, async (_e, message: string, strategy?: Rou
   const events: unknown[] = [];
   for await (const event of ma.route(message, strategy ?? 'single', context)) {
     mainWindow?.webContents.send(IPC.AGENT_STREAM, event);
+    for (const view of mainWindow?.getBrowserViews() ?? []) {
+      view.webContents.send(IPC.AGENT_STREAM, event);
+    }
     events.push(event);
   }
   return events;
