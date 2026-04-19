@@ -75,6 +75,31 @@ export const IPC = {
   CONVERSATION_DELETE: 'conversation:delete',
   CONVERSATION_RENAME: 'conversation:rename',
   CONVERSATION_MESSAGES: 'conversation:messages',
+  // M3: Admin
+  CLUSTER_HEALTH: 'cluster:health',
+  CLUSTER_NODES: 'cluster:nodes',
+  CLUSTER_SHARDS: 'cluster:shards',
+  INDICES_LIST: 'indices:list',
+  INDICES_CREATE: 'indices:create',
+  INDICES_DELETE: 'indices:delete',
+  INDICES_CLOSE: 'indices:close',
+  INDICES_OPEN: 'indices:open',
+  INDICES_REINDEX: 'indices:reindex',
+  INDICES_ALIASES: 'indices:aliases',
+  INDICES_UPDATE_ALIAS: 'indices:updateAlias',
+  SECURITY_ROLES_LIST: 'security:roles:list',
+  SECURITY_ROLES_SAVE: 'security:roles:save',
+  SECURITY_ROLES_DELETE: 'security:roles:delete',
+  SECURITY_USERS_LIST: 'security:users:list',
+  SECURITY_USERS_SAVE: 'security:users:save',
+  SECURITY_USERS_DELETE: 'security:users:delete',
+  SECURITY_TENANTS_LIST: 'security:tenants:list',
+  SECURITY_TENANTS_SAVE: 'security:tenants:save',
+  SECURITY_TENANTS_DELETE: 'security:tenants:delete',
+  AUTH_LOGIN_GITHUB: 'auth:login:github',
+  AUTH_LOGIN_GOOGLE: 'auth:login:google',
+  AUTH_LOGOUT: 'auth:logout',
+  AUTH_CURRENT_USER: 'auth:currentUser',
 } as const;
 
 /** Streaming event from agent runtime → renderer (§3 of AGENT-RUNTIME-DESIGN) */
@@ -115,4 +140,83 @@ export interface ChatMessage {
   tool_calls?: string;
   tool_call_id?: string;
   created_at: number;
+}
+
+/** Cluster health response */
+export interface ClusterHealth {
+  cluster_name: string;
+  status: 'green' | 'yellow' | 'red';
+  number_of_nodes: number;
+  number_of_data_nodes: number;
+  active_primary_shards: number;
+  active_shards: number;
+  unassigned_shards: number;
+  storage_total_bytes: number;
+  storage_used_bytes: number;
+}
+
+/** Node info */
+export interface ClusterNode {
+  id: string;
+  name: string;
+  ip: string;
+  roles: string[];
+  cpu_percent: number;
+  heap_percent: number;
+  disk_used_percent: number;
+  disk_total_bytes: number;
+}
+
+/** Shard info */
+export interface ShardInfo {
+  index: string;
+  shard: number;
+  primary: boolean;
+  state: string;
+  node: string;
+  docs: number;
+  store_bytes: number;
+}
+
+/** Index info */
+export interface IndexInfo {
+  name: string;
+  health: 'green' | 'yellow' | 'red';
+  status: 'open' | 'close';
+  docs_count: number;
+  store_size_bytes: number;
+  primary_shards: number;
+  replica_shards: number;
+  aliases: string[];
+}
+
+/** Security role */
+export interface SecurityRole {
+  name: string;
+  cluster_permissions: string[];
+  index_permissions: { index_patterns: string[]; allowed_actions: string[] }[];
+  tenant_permissions: { tenant_patterns: string[]; allowed_actions: string[] }[];
+}
+
+/** Security user */
+export interface SecurityUser {
+  username: string;
+  backend_roles: string[];
+  roles: string[];
+  attributes: Record<string, string>;
+}
+
+/** Security tenant */
+export interface SecurityTenant {
+  name: string;
+  description: string;
+}
+
+/** OAuth user */
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url: string;
+  provider: 'github' | 'google';
 }

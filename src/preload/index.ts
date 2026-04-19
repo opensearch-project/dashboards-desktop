@@ -49,6 +49,45 @@ const api = {
     rename: (id: string, title: string) => ipcRenderer.invoke(IPC.CONVERSATION_RENAME, id, title),
     messages: (conversationId: string) => ipcRenderer.invoke(IPC.CONVERSATION_MESSAGES, conversationId),
   },
+  cluster: {
+    health: () => ipcRenderer.invoke(IPC.CLUSTER_HEALTH),
+    nodes: () => ipcRenderer.invoke(IPC.CLUSTER_NODES),
+    shards: () => ipcRenderer.invoke(IPC.CLUSTER_SHARDS),
+  },
+  indices: {
+    list: () => ipcRenderer.invoke(IPC.INDICES_LIST),
+    create: (name: string, settings?: object, mappings?: object) =>
+      ipcRenderer.invoke(IPC.INDICES_CREATE, name, settings, mappings),
+    delete: (name: string) => ipcRenderer.invoke(IPC.INDICES_DELETE, name),
+    close: (name: string) => ipcRenderer.invoke(IPC.INDICES_CLOSE, name),
+    open: (name: string) => ipcRenderer.invoke(IPC.INDICES_OPEN, name),
+    reindex: (source: string, dest: string) => ipcRenderer.invoke(IPC.INDICES_REINDEX, source, dest),
+    aliases: () => ipcRenderer.invoke(IPC.INDICES_ALIASES),
+    updateAlias: (actions: object[]) => ipcRenderer.invoke(IPC.INDICES_UPDATE_ALIAS, actions),
+  },
+  security: {
+    roles: {
+      list: () => ipcRenderer.invoke(IPC.SECURITY_ROLES_LIST),
+      save: (name: string, body: object) => ipcRenderer.invoke(IPC.SECURITY_ROLES_SAVE, name, body),
+      delete: (name: string) => ipcRenderer.invoke(IPC.SECURITY_ROLES_DELETE, name),
+    },
+    users: {
+      list: () => ipcRenderer.invoke(IPC.SECURITY_USERS_LIST),
+      save: (username: string, body: object) => ipcRenderer.invoke(IPC.SECURITY_USERS_SAVE, username, body),
+      delete: (username: string) => ipcRenderer.invoke(IPC.SECURITY_USERS_DELETE, username),
+    },
+    tenants: {
+      list: () => ipcRenderer.invoke(IPC.SECURITY_TENANTS_LIST),
+      save: (name: string, body: object) => ipcRenderer.invoke(IPC.SECURITY_TENANTS_SAVE, name, body),
+      delete: (name: string) => ipcRenderer.invoke(IPC.SECURITY_TENANTS_DELETE, name),
+    },
+  },
+  auth: {
+    loginGithub: () => ipcRenderer.invoke(IPC.AUTH_LOGIN_GITHUB),
+    loginGoogle: () => ipcRenderer.invoke(IPC.AUTH_LOGIN_GOOGLE),
+    logout: () => ipcRenderer.invoke(IPC.AUTH_LOGOUT),
+    currentUser: () => ipcRenderer.invoke(IPC.AUTH_CURRENT_USER),
+  },
 };
 
 contextBridge.exposeInMainWorld('osd', api);

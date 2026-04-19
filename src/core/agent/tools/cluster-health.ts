@@ -29,9 +29,9 @@ export const clusterHealthTool: AgentTool = {
 
     try {
       if (conn.type === 'opensearch') {
-        return await getOpenSearchHealth(conn.url, detail, context);
+        return await getOpenSearchHealth(conn.url, detail);
       } else {
-        return await getElasticsearchHealth(conn.url, detail, context);
+        return await getElasticsearchHealth(conn.url, detail);
       }
     } catch (err: unknown) {
       return { content: `Health check failed: ${err instanceof Error ? err.message : err}`, isError: true };
@@ -39,19 +39,21 @@ export const clusterHealthTool: AgentTool = {
   },
 };
 
-async function getOpenSearchHealth(url: string, detail: string, ctx: ToolContext): Promise<ToolResult> {
+async function getOpenSearchHealth(url: string, detail: string): Promise<ToolResult> {
   const client = new OpenSearchClient({ node: url });
-  const health = await client.cluster.health({});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const health = await (client.cluster as any).health();
   const result: Record<string, unknown> = { health: health.body };
 
   if (detail === 'full') {
-    const stats = await client.cluster.stats({});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stats = await (client.cluster as any).stats();
     result.stats = stats.body;
   }
   return { content: JSON.stringify(result, null, 2), isError: false };
 }
 
-async function getElasticsearchHealth(url: string, detail: string, ctx: ToolContext): Promise<ToolResult> {
+async function getElasticsearchHealth(url: string, detail: string): Promise<ToolResult> {
   const client = new ElasticsearchClient({ node: url });
   const health = await client.cluster.health();
   const result: Record<string, unknown> = { health };

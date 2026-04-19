@@ -1,59 +1,318 @@
-# Contributing Guidelines
+# Contributing to OSD Desktop
 
-Thank you for your interest in contributing to our project. Whether it's a bug report, new feature, correction, or additional
-documentation, we greatly value feedback and contributions from our community.
+Thank you for your interest in contributing. This guide covers development setup, project structure, testing, and the PR process.
 
-Please read through this document before submitting any issues or pull requests to ensure we have all the necessary
-information to effectively respond to your bug report or contribution.
+---
 
+## Dev Setup
 
-## Reporting Bugs/Feature Requests
+### Prerequisites
 
-We welcome you to use the GitHub issue tracker to report bugs or suggest features.
+- **Node.js 20+** (LTS)
+- **npm 10+**
+- **Git**
+- **Ollama** (optional, for local model testing)
 
-When filing an issue, please check existing open, or recently closed, issues to make sure somebody else hasn't already
-reported the issue. Please try to include as much information as you can. Details like these are incredibly useful:
+### Clone and Install
 
-* A reproducible test case or series of steps
-* The version of our code being used
-* Any modifications you've made relevant to the bug
-* Anything unusual about your environment or deployment
+```bash
+git clone https://github.com/opensearch-project/dashboards-desktop.git
+cd dashboards-desktop
+npm ci
+```
 
+`npm ci` runs `postinstall` automatically, which calls `electron-builder install-app-deps` to rebuild native modules (e.g., `better-sqlite3`) for your Electron version.
 
-## Contributing via Pull Requests
-Contributions via pull requests are much appreciated. Before sending us a pull request, please ensure that:
+### If Native Module Rebuild Fails
 
-1. You are working against the latest source on the *main* branch.
-2. You check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
-3. You open an issue to discuss any significant work - we would hate for your time to be wasted.
+```bash
+npx electron-rebuild -f -w better-sqlite3
+```
 
-To send us a pull request, please:
+---
 
-1. Fork the repository.
-2. Modify the source; please focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
-3. Ensure local tests pass.
-4. Commit to your fork using clear commit messages.
-5. Send us a pull request, answering any default questions in the pull request interface.
-6. Pay attention to any automated CI failures reported in the pull request, and stay involved in the conversation.
+## Project Structure
 
-GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
-[creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
+```
+src/
+  main/           # Electron main process (TypeScript)
+    index.ts      # App entry — BrowserWindow, IPC handlers, lifecycle
+    migrations/   # SQLite schema migrations (v1, v2, ...)
+  preload/        # Preload scripts (context bridge)
+    index.ts      # Exposes safe IPC API to renderer
+  renderer/       # React UI (TypeScript + React)
+    index.tsx      # React entry point
+    App.tsx        # Root component, layout shell
+    pages/         # Page-level components (HomePage, etc.)
+    components/    # Reusable UI components
+    styles/        # CSS and theme files
+    types.d.ts     # Renderer type declarations
+  core/           # Shared business logic (used by main + renderer)
+    types.ts       # Shared TypeScript interfaces
+    storage.ts     # SQLite worker thread, migrations, CRUD
+    connections.ts # Connection manager, client factories
+  tui/            # Ink TUI (M5, placeholder)
+    index.ts
+bin/
+  osd.js          # CLI entry point
+docs/             # User-facing documentation
+tests/            # Test files (mirrors src/ structure)
+```
 
+### Key Conventions
 
-## Finding contributions to work on
-Looking at the existing issues is a great way to find something to contribute on. As our projects, by default, use the default GitHub issue labels (enhancement/bug/duplicate/help wanted/invalid/question/wontfix), looking at any 'help wanted' issues is a great place to start.
+- **Main process** handles all Node.js work: SQLite, cluster connections, MCP servers, filesystem
+- **Renderer** is a pure React app — no Node.js APIs, no direct cluster access
+- **Preload** bridges main ↔ renderer via `contextBridge.exposeInMainWorld`
+- **Core** contains shared types and logic imported by both main and renderer
 
+---
 
-## Code of Conduct
-This project has adopted the [Amazon Open Source Code of Conduct](https://aws.github.io/code-of-conduct).
-For more information see the [Code of Conduct FAQ](https://aws.github.io/code-of-conduct-faq) or contact
-opensource-codeofconduct@amazon.com with any additional questions or comments.
+## Running Locally
 
+```bash
+npm start              # Launch Electron app
+npm run dev            # Launch with DevTools open
+npm run tui            # Launch TUI mode (terminal)
+```
 
-## Security issue notifications
-If you discover a potential security issue in this project we ask that you notify AWS/Amazon Security via our [vulnerability reporting page](http://aws.amazon.com/security/vulnerability-reporting/). Please do **not** create a public github issue.
+### Hot Reload (Development)
 
+The `--dev` flag opens DevTools automatically. For renderer changes, refresh the window (Cmd+R). For main process changes, restart the app.
 
-## Licensing
+---
 
-See the [LICENSE](LICENSE) file for our project's licensing. We will ask you to confirm the licensing of your contribution.
+## Testing
+
+```bash
+npm test               # Run all unit tests (Vitest)
+npm run test:watch     # Watch mode
+npm run test:coverage  # With coverage report
+npm run test:renderer  # Renderer component tests (jsdom)
+npm run test:e2e       # End-to-end tests (Playwright)
+```
+
+### Test Structure
+
+```
+tests/
+  unit/              # Unit tests for core/ and main/
+  components/        # React component tests (RTL + jsdom)
+  e2e/               # Playwright end-to-end tests
+  fixtures/          # Shared test data, mock responses
+```
+
+### Test Conventions
+
+- Unit tests: `*.test.ts` — test pure logic in `core/` and `main/`
+- Component tests: `*.spec.tsx` — test React components with React Testing Library
+- E2E tests: `*.e2e.ts` — test full app flows with Playwright
+- **Agent tests use fixtures** — recorded model responses, never live API calls in CI
+- **Mock HTTP servers** (nock/msw) for data source tests
+- Coverage threshold is enforced in CI — PRs that drop coverage are flagged
+
+---
+
+## Adding a New Agent Tool
+
+Agent tools let the AI perform actions — query clusters, manage indices, read files, etc.
+
+### Step 1: Define the Tool
+
+Create a new file in `src/core/tools/`:
+
+```typescript
+// src/core/tools/my-tool.ts
+import { ToolDefinition, ToolResult } from '../types';
+
+export const myTool: ToolDefinition = {
+  name: 'my-tool',
+  description: 'Does something useful',
+  parameters: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'The query to run' },
+    },
+    required: ['query'],
+  },
+  execute: async (params, context): Promise<ToolResult> => {
+    // Implementation here
+    return { content: 'Result' };
+  },
+};
+```
+
+### Step 2: Register the Tool
+
+Add it to the tool registry in `src/core/tools/index.ts`:
+
+```typescript
+import { myTool } from './my-tool';
+
+export const builtinTools: ToolDefinition[] = [
+  // ... existing tools
+  myTool,
+];
+```
+
+### Step 3: Write Tests
+
+```typescript
+// tests/unit/tools/my-tool.test.ts
+import { myTool } from '../../../src/core/tools/my-tool';
+
+describe('my-tool', () => {
+  it('returns expected result', async () => {
+    const result = await myTool.execute({ query: 'test' }, mockContext);
+    expect(result.content).toBeDefined();
+  });
+});
+```
+
+### Step 4: Test with the Agent
+
+Launch the app, open chat, and ask the agent to use your tool. The agent discovers all registered tools automatically.
+
+---
+
+## Adding an MCP Server
+
+MCP servers are external processes that expose tools to the agent.
+
+### For Users (Install Existing)
+
+```bash
+osd mcp install @modelcontextprotocol/server-filesystem
+osd mcp config server-filesystem --root ~/data
+```
+
+### For Contributors (Ship a Test Server)
+
+Test MCP servers live in `tests/fixtures/mcp/`. The CI test suite uses these to validate MCP lifecycle without external dependencies.
+
+```typescript
+// tests/fixtures/mcp/echo-server.ts
+// A minimal MCP server that echoes input — used in CI
+```
+
+### MCP Integration Points
+
+- `src/main/mcp.ts` — MCP server process supervisor (start, stop, health check, restart)
+- `src/core/tools/index.ts` — MCP tools are merged with built-in tools at discovery time
+- `~/.osd/mcp/config.json` — User MCP server configuration
+
+---
+
+## Adding a Model Provider
+
+Model providers connect the agent to LLM APIs.
+
+### Step 1: Implement the Provider
+
+Create a new file in `src/core/models/`:
+
+```typescript
+// src/core/models/my-provider.ts
+import { ModelProvider, StreamingResponse } from '../types';
+
+export const myProvider: ModelProvider = {
+  name: 'my-provider',
+  async chat(messages, options): AsyncIterable<StreamingResponse> {
+    // Implement streaming chat completion
+  },
+  async test(): Promise<boolean> {
+    // Return true if the provider is reachable
+  },
+};
+```
+
+### Step 2: Register the Provider
+
+Add it to `src/core/models/index.ts`:
+
+```typescript
+import { myProvider } from './my-provider';
+
+export const providers: Record<string, ModelProvider> = {
+  // ... existing providers
+  'my-provider': myProvider,
+};
+```
+
+### Step 3: Write Fixture-Based Tests
+
+```typescript
+// tests/unit/models/my-provider.test.ts
+// Use recorded responses — never call live APIs in tests
+```
+
+---
+
+## PR Process
+
+### Before Submitting
+
+1. Fork the repository
+2. Create a feature branch from `main`
+3. Make your changes — focus on one concern per PR
+4. Run the full check suite:
+   ```bash
+   npm run lint
+   npm run typecheck
+   npm test
+   ```
+5. Commit with clear messages: `feat(core): add index alias management tool`
+
+### CI Pipeline
+
+Every PR runs:
+
+1. **Lint** — ESLint + Prettier check
+2. **Typecheck** — `tsc --noEmit`
+3. **Unit tests** — Vitest with coverage
+4. **Component tests** — React Testing Library
+5. **Build** — Electron build (Linux x64)
+
+PRs that fail any step are blocked from merging.
+
+### Commit Message Format
+
+```
+type(scope): description
+
+feat(core): add SigV4 auth for OpenSearch connections
+fix(renderer): chat panel resize below minimum width
+docs: update getting started guide
+test(e2e): add connection manager flow
+chore: bump electron to 39.x
+```
+
+### Review Process
+
+- All PRs require at least one maintainer approval
+- CI must pass
+- Coverage must not decrease
+- Keep PRs focused — large PRs are harder to review
+
+---
+
+## Reporting Bugs
+
+Use [GitHub Issues](https://github.com/opensearch-project/dashboards-desktop/issues). Include:
+
+- Steps to reproduce
+- Expected vs actual behavior
+- OS and app version (`osd --version`)
+- Output of `osd doctor` if relevant
+
+---
+
+## Security Issue Notifications
+
+If you discover a potential security issue, notify AWS/Amazon Security via the [vulnerability reporting page](http://aws.amazon.com/security/vulnerability-reporting/). Do **not** create a public GitHub issue.
+
+---
+
+## License
+
+This project is licensed under the [Apache-2.0 License](LICENSE). By contributing, you agree that your contributions will be licensed under the same terms.

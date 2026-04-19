@@ -72,13 +72,6 @@ export interface ChatParams {
   signal?: AbortSignal;
 }
 
-export interface ChatParams {
-  model: string;
-  messages: ChatMessage[];
-  tools?: ToolDefinition[];
-  signal?: AbortSignal;
-}
-
 export interface ModelProvider {
   id: string;
   displayName: string;

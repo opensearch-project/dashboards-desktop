@@ -125,7 +125,7 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     // Up arrow to edit last user message
     if (e.key === 'ArrowUp' && !input) {
-      const lastUserIdx = messages.findLastIndex(m => m.role === 'user');
+      const lastUserIdx = messages.findLastIndex((m: DisplayMessage) => m.role === 'user');
       if (lastUserIdx >= 0) {
         setEditIndex(lastUserIdx);
         setInput(messages[lastUserIdx].content);

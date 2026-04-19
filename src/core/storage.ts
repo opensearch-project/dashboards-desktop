@@ -13,7 +13,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
+import * as crypto from 'crypto';
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -146,7 +146,7 @@ function runMigrations(db: DB): void {
 function ensureDefaultWorkspace(db: DB): void {
   const existing = db.prepare('SELECT id FROM workspaces WHERE is_default = 1').get();
   if (!existing) {
-    db.prepare('INSERT INTO workspaces (id, name, is_default) VALUES (?, ?, 1)').run(uuidv4(), 'Default');
+    db.prepare('INSERT INTO workspaces (id, name, is_default) VALUES (?, ?, 1)').run(crypto.randomUUID(), 'Default');
   }
 }
 
@@ -163,7 +163,7 @@ interface ConnectionInput {
 }
 
 export function addConnection(db: DB, input: ConnectionInput): string {
-  const id = uuidv4();
+  const id = crypto.randomUUID();
   db.prepare(
     `INSERT INTO connections (id, name, url, type, auth_type, workspace_id, username, region)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
@@ -199,7 +199,7 @@ export function listWorkspaces(db: DB): unknown[] {
 }
 
 export function createWorkspace(db: DB, name: string): string {
-  const id = uuidv4();
+  const id = crypto.randomUUID();
   db.prepare('INSERT INTO workspaces (id, name) VALUES (?, ?)').run(id, name);
   return id;
 }

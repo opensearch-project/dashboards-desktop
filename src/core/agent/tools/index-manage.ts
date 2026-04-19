@@ -37,9 +37,9 @@ export const indexManageTool: AgentTool = {
 
     try {
       if (conn.type === 'opensearch') {
-        return await execOpenSearch(conn.url, action, index, input, context);
+        return await execOpenSearch(conn.url, action, index, input);
       } else {
-        return await execElasticsearch(conn.url, action, index, input, context);
+        return await execElasticsearch(conn.url, action, index, input);
       }
     } catch (err: unknown) {
       return { content: `index-manage failed: ${err instanceof Error ? err.message : err}`, isError: true };
@@ -47,28 +47,32 @@ export const indexManageTool: AgentTool = {
   },
 };
 
-async function execOpenSearch(url: string, action: string, index: string, input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function execOpenSearch(url: string, action: string, index: string, input: Record<string, unknown>): Promise<ToolResult> {
   const client = new OpenSearchClient({ node: url });
+  // Use `as any` for OpenSearch client methods that have overly strict param types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const c = client as any;
   let res: unknown;
 
   switch (action) {
     case 'list':
-      res = (await client.cat.indices({ format: 'json' })).body;
+      res = (await c.cat.indices({ format: 'json' })).body;
       break;
     case 'get-mapping':
-      res = (await client.indices.getMapping({ index })).body;
+      res = (await c.indices.getMapping({ index })).body;
       break;
     case 'create':
-      res = (await client.indices.create({ index, body: { settings: input.settings, mappings: input.mappings } })).body;
+      res = (await c.indices.create({ index, body: { settings: input.settings, mappings: input.mappings } })).body;
       break;
     case 'delete':
-      res = (await client.indices.delete({ index })).body;
+      res = (await c.indices.delete({ index })).body;
       break;
     case 'reindex':
-      res = (await client.reindex({ body: { source: { index }, dest: { index: input.destination as string } } })).body;
+      res = (await c.reindex({ body: { source: { index }, dest: { index: input.destination } } })).body;
       break;
     case 'alias':
-      res = (await client.indices.putAlias({ index, name: input.alias as string })).body;
+      res = (await c.indices.putAlias({ index, name: input.alias })).body;
       break;
     default:
       return { content: `Unknown action: ${action}`, isError: true };
@@ -76,7 +80,7 @@ async function execOpenSearch(url: string, action: string, index: string, input:
   return { content: JSON.stringify(res, null, 2), isError: false };
 }
 
-async function execElasticsearch(url: string, action: string, index: string, input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> {
+async function execElasticsearch(url: string, action: string, index: string, input: Record<string, unknown>): Promise<ToolResult> {
   const client = new ElasticsearchClient({ node: url });
   let res: unknown;
 

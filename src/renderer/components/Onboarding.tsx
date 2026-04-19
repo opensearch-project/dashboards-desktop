@@ -32,7 +32,7 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
 
   const saveConnection = async () => {
     if (connName && connUrl) {
-      await window.osd.connections.add({ name: connName, url: connUrl, type: connType, auth_type: authType });
+      await window.osd.connections.add({ name: connName, url: connUrl, type: connType, auth_type: authType, workspace_id: 'default' });
     }
     next();
   };
