@@ -17,6 +17,9 @@ interface AuthUser {
 
 let currentUser: AuthUser | null = null;
 const tokenStore = new Map<string, Buffer>();
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+const GITHUB_TOKEN_REFRESH_MS = 7 * 60 * 60 * 1000; // 7h (tokens expire at 8h)
 
 function storeToken(key: string, token: string): void {
   if (safeStorage.isEncryptionAvailable()) {
@@ -38,6 +41,7 @@ export function registerAuthIPC(config: { githubClientId: string; googleClientId
   ipcMain.handle('auth:loginGithub', async () => {
     const result = await loginGithub(config.githubClientId, config.redirectUri);
     storeToken('github', result.accessToken);
+    scheduleGithubRefresh(config);
     currentUser = {
       provider: 'github',
       id: result.user.login,
@@ -64,10 +68,23 @@ export function registerAuthIPC(config: { githubClientId: string; googleClientId
   ipcMain.handle('auth:logout', () => {
     currentUser = null;
     tokenStore.clear();
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
     return true;
   });
 
   ipcMain.handle('auth:currentUser', () => {
     return currentUser;
   });
+}
+
+function scheduleGithubRefresh(config: { githubClientId: string; redirectUri: string }): void {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(async () => {
+    try {
+      const result = await loginGithub(config.githubClientId, config.redirectUri);
+      storeToken('github', result.accessToken);
+    } catch {
+      // Silent fail — user will be prompted on next action requiring auth
+    }
+  }, GITHUB_TOKEN_REFRESH_MS);
 }
