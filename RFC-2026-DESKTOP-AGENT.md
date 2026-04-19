@@ -98,14 +98,15 @@ osd chat             # Quick agent chat (no GUI)
 └─────────────────────────────────────────────────────────────┘
 ```
 
-#### Implementation Change Summary
+#### Key Architecture Decisions (Pivot)
 
-| Component | Previous | New |
-|-----------|----------|-----|
+| Component | Old Approach | New Approach |
+|-----------|-------------|-------------|
 | Admin UI | Custom React pages (HomePage, ClusterPage, IndicesPage, SecurityPage) | Real OSD web UI at localhost:5601 |
 | BrowserWindow | Loads local HTML/React bundle | Loads `http://localhost:5601` |
-| Chat panel | React component in custom renderer | Overlay/sidebar injected into OSD web UI |
-| Request auth | Direct client calls with auth | Proxy intercepts requests, adds SigV4/auth headers |
+| Admin tools | Reimplemented in TypeScript | Provided by OSD natively |
+| Chat panel | React component in renderer | Overlay/sidebar injected into OSD web UI |
+| Request signing | Direct client calls with auth | Proxy layer intercepts requests, adds SigV4/auth headers |
 | Multi-cluster | Connection manager switches clients | Proxy switches which cluster OSD points to |
 | OSD lifecycle | N/A | Main process spawns/manages local OSD instance |
 
@@ -119,7 +120,6 @@ osd chat             # Quick agent chat (no GUI)
 - Electron shell + native menus
 - CI/CD pipeline + packaging
 - All user-facing requirements and acceptance criteria
-```
 
 ### 3.4 Homepage & Workspace
 
@@ -508,7 +508,7 @@ All 12 issues should be closed with a comment linking to this RFC once approved:
 | MCP support | First-class MCP host | Industry-standard tool extensibility |
 | Local models | Ollama integration | Best UX — `ollama pull` then select |
 | Auth storage | Electron `safeStorage` | OS-level encryption |
-| OSD integration | Wrap local OSD instance (localhost:5601) | Real OSD UI via BrowserWindow. Electron adds auth proxy, chat overlay, native menus. No UI reimplementation. |
+| OSD integration | Wrap local OSD instance (localhost:5601) | Real OSD UI via BrowserWindow, not reimplemented. Electron adds auth proxy, chat overlay, native menus |
 | Update | `electron-updater` + custom OSD updater | Separate shell and core updates |
 | Search engine clients | `@opensearch-project/opensearch` + `@elastic/elasticsearch` | Native clients for both |
 

@@ -10,26 +10,24 @@ const mockChild = () => {
   return child;
 };
 
-const { spawnMock, setHealth } = vi.hoisted(() => {
-  const spawnMock = vi.fn();
-  let health = 200;
-  return { spawnMock, setHealth: (code: number) => { health = code; }, getHealth: () => health };
-});
+let spawnMock = vi.fn(() => mockChild());
 
 vi.mock('child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('child_process')>();
   return { ...actual, default: actual, spawn: (...args: any[]) => spawnMock(...args) };
 });
 
+let healthResponse = 200;
 vi.mock('http', async (importOriginal) => {
-  const { getHealth } = await vi.importMock<{ getHealth: () => number }>('../../../tests/unit/osd/lifecycle.test.ts');
   const actual = await importOriginal<typeof import('http')>();
   return {
-    ...actual, default: actual,
+    ...actual,
+    default: actual,
     get: (_url: string, cb: (res: { statusCode: number }) => void) => {
       const req = new EventEmitter() as any;
-      req.setTimeout = vi.fn(); req.destroy = vi.fn();
-      setTimeout(() => cb({ statusCode: 200 }), 5);
+      req.setTimeout = vi.fn();
+      req.destroy = vi.fn();
+      setTimeout(() => cb({ statusCode: healthResponse }), 5);
       return req;
     },
   };
@@ -39,10 +37,10 @@ import { OsdLifecycle } from '../../../src/core/osd/lifecycle';
 
 const config = { binPath: '/opt/osd/bin/opensearch-dashboards', port: 5601 };
 
-beforeEach(() => { spawnMock.mockReset(); spawnMock.mockReturnValue(mockChild()); });
-
 describe('OSD Lifecycle: spawn', () => {
-  it('starts OSD and resolves when healthy', async () => {
+  beforeEach(() => { spawnMock = vi.fn(() => mockChild()); healthResponse = 200; });
+
+  it('starts OSD process and resolves when healthy', async () => {
     const osd = new OsdLifecycle(config);
     await osd.start();
     expect(osd.status).toBe('running');
@@ -50,7 +48,7 @@ describe('OSD Lifecycle: spawn', () => {
     osd.stop();
   });
 
-  it('emits status events', async () => {
+  it('emits status events during startup', async () => {
     const osd = new OsdLifecycle(config);
     const statuses: string[] = [];
     osd.on('status', (s: string) => statuses.push(s));
@@ -60,14 +58,14 @@ describe('OSD Lifecycle: spawn', () => {
     osd.stop();
   });
 
-  it('passes opensearchUrl arg', async () => {
+  it('passes opensearchUrl as --opensearch.hosts arg', async () => {
     const osd = new OsdLifecycle({ ...config, opensearchUrl: 'https://cluster:9200' });
     await osd.start();
     expect(spawnMock).toHaveBeenCalledWith(config.binPath, expect.arrayContaining(['--opensearch.hosts', 'https://cluster:9200']), expect.any(Object));
     osd.stop();
   });
 
-  it('no-op if already running', async () => {
+  it('is a no-op if already running', async () => {
     const osd = new OsdLifecycle(config);
     await osd.start();
     await osd.start();
@@ -75,17 +73,29 @@ describe('OSD Lifecycle: spawn', () => {
     osd.stop();
   });
 
-  it('defaults to port 5601', () => {
+  it('uses default port 5601', () => {
     const osd = new OsdLifecycle({ binPath: '/bin/osd' });
     expect(osd.port).toBe(5601);
     expect(osd.url).toBe('http://localhost:5601');
   });
 });
 
+describe('OSD Lifecycle: health check', () => {
+  it('times out if OSD never becomes healthy', async () => {
+    healthResponse = 503;
+    spawnMock = vi.fn(() => mockChild());
+    const osd = new OsdLifecycle(config);
+    await expect((osd as any).waitForReady.call(osd, 100)).rejects.toThrow(/failed to start/i);
+    expect(osd.status).toBe('error');
+  });
+});
+
 describe('OSD Lifecycle: stop', () => {
-  it('sends SIGTERM', async () => {
+  beforeEach(() => { spawnMock = vi.fn(() => mockChild()); healthResponse = 200; });
+
+  it('sends SIGTERM to process', async () => {
     const child = mockChild();
-    spawnMock.mockReturnValue(child);
+    spawnMock = vi.fn(() => child);
     const osd = new OsdLifecycle(config);
     await osd.start();
     osd.stop();
@@ -100,10 +110,12 @@ describe('OSD Lifecycle: stop', () => {
   });
 });
 
-describe('OSD Lifecycle: crash', () => {
-  it('emits error on unexpected exit', async () => {
+describe('OSD Lifecycle: crash recovery', () => {
+  beforeEach(() => { healthResponse = 200; });
+
+  it('emits error status on unexpected exit', async () => {
     const child = mockChild();
-    spawnMock.mockReturnValue(child);
+    spawnMock = vi.fn(() => child);
     const osd = new OsdLifecycle(config);
     await osd.start();
     const statuses: string[] = [];
@@ -114,7 +126,7 @@ describe('OSD Lifecycle: crash', () => {
 
   it('emits stopped on clean exit', async () => {
     const child = mockChild();
-    spawnMock.mockReturnValue(child);
+    spawnMock = vi.fn(() => child);
     const osd = new OsdLifecycle(config);
     await osd.start();
     const statuses: string[] = [];
@@ -123,9 +135,9 @@ describe('OSD Lifecycle: crash', () => {
     expect(statuses).toContain('stopped');
   });
 
-  it('emits log from stdout', async () => {
+  it('emits log events from stdout', async () => {
     const child = mockChild();
-    spawnMock.mockReturnValue(child);
+    spawnMock = vi.fn(() => child);
     const osd = new OsdLifecycle(config);
     const logs: string[] = [];
     osd.on('log', (msg: string) => logs.push(msg));
