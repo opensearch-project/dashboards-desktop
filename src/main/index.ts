@@ -29,16 +29,18 @@ ipcMain.handle(IPC.STORAGE_INIT, async () => {
   return true;
 });
 
-// --- IPC: Credentials via safeStorage ---
-ipcMain.handle(IPC.CREDENTIALS_SAVE, (_e, key: string, value: string) => {
+// --- IPC: Credentials via safeStorage + SQLite persistence ---
+ipcMain.handle(IPC.CREDENTIALS_SAVE, async (_e, key: string, value: string) => {
   if (!safeStorage.isEncryptionAvailable()) return false;
   const buf = safeStorage.encryptString(value);
-  credentialStore.set(key, buf);
+  const db = getStorageProxy();
+  await db.saveCredentialAsync(key, buf);
   return true;
 });
 
-ipcMain.handle(IPC.CREDENTIALS_LOAD, (_e, key: string) => {
-  const buf = credentialStore.get(key);
+ipcMain.handle(IPC.CREDENTIALS_LOAD, async (_e, key: string) => {
+  const db = getStorageProxy();
+  const buf = await db.loadCredentialAsync(key);
   if (!buf) return null;
   return safeStorage.decryptString(buf);
 });
@@ -90,9 +92,6 @@ ipcMain.handle(IPC.SETTINGS_SET, async (_e, key: string, value: string) => {
   await db.setSettingAsync(key, value);
   return true;
 });
-
-// In-memory credential store (encrypted buffers)
-const credentialStore = new Map<string, Buffer>();
 
 // --- IPC: Admin — Cluster, Indices, Security ---
 import { Client as OSClient } from '@opensearch-project/opensearch';
