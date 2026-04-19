@@ -263,6 +263,36 @@ ipcMain.handle(IPC.CONVERSATION_RENAME, async (_e, id: string, title: string) =>
   return getStorageProxy().renameConversationAsync(id, title);
 });
 
+// --- IPC: Connection Switching (re-registers signing proxy) ---
+ipcMain.handle(IPC.CONNECTION_SWITCH, async (_e, connectionId: string) => {
+  const db = getStorageProxy();
+  const conns = await db.listConnectionsAsync() as Array<{ id: string; url: string; auth_type: string; username?: string; region?: string }>;
+  const conn = conns.find(c => c.id === connectionId);
+  if (!conn) throw new Error(`Connection ${connectionId} not found`);
+
+  const { clearSigningProxy, registerSigningProxy } = await import('../core/osd/signing-proxy.js');
+  clearSigningProxy();
+
+  const auth: { type: string; username?: string; password?: string; apiKey?: string; region?: string; accessKeyId?: string; secretAccessKey?: string } = { type: conn.auth_type };
+  if (conn.auth_type === 'basic') {
+    auth.username = conn.username;
+    const cred = await db.loadCredentialAsync(`conn:${conn.id}:password`);
+    auth.password = cred ? Buffer.from(cred).toString() : '';
+  } else if (conn.auth_type === 'apikey') {
+    const cred = await db.loadCredentialAsync(`conn:${conn.id}:apikey`);
+    auth.apiKey = cred ? Buffer.from(cred).toString() : '';
+  } else if (conn.auth_type === 'sigv4') {
+    auth.region = conn.region;
+    const ak = await db.loadCredentialAsync(`conn:${conn.id}:accessKeyId`);
+    const sk = await db.loadCredentialAsync(`conn:${conn.id}:secretAccessKey`);
+    auth.accessKeyId = ak ? Buffer.from(ak).toString() : '';
+    auth.secretAccessKey = sk ? Buffer.from(sk).toString() : '';
+  }
+
+  registerSigningProxy(conn.url, auth as Parameters<typeof registerSigningProxy>[1]);
+  return { id: conn.id, url: conn.url };
+});
+
 // --- IPC: OAuth (implemented below with real PKCE flows) ---
 ipcMain.handle(IPC.AUTH_LOGOUT, () => {
   return true;
