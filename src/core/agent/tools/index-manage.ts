@@ -53,22 +53,22 @@ async function execOpenSearch(url: string, action: string, index: string, input:
 
   switch (action) {
     case 'list':
-      res = (await client.cat.indices({ format: 'json' }, { signal: ctx.signal })).body;
+      res = (await client.cat.indices({ format: 'json' })).body;
       break;
     case 'get-mapping':
-      res = (await client.indices.getMapping({ index }, { signal: ctx.signal })).body;
+      res = (await client.indices.getMapping({ index })).body;
       break;
     case 'create':
-      res = (await client.indices.create({ index, body: { settings: input.settings, mappings: input.mappings } }, { signal: ctx.signal })).body;
+      res = (await client.indices.create({ index, body: { settings: input.settings, mappings: input.mappings } })).body;
       break;
     case 'delete':
-      res = (await client.indices.delete({ index }, { signal: ctx.signal })).body;
+      res = (await client.indices.delete({ index })).body;
       break;
     case 'reindex':
-      res = (await client.reindex({ body: { source: { index }, dest: { index: input.destination as string } } }, { signal: ctx.signal })).body;
+      res = (await client.reindex({ body: { source: { index }, dest: { index: input.destination as string } } })).body;
       break;
     case 'alias':
-      res = (await client.indices.putAlias({ index, name: input.alias as string }, { signal: ctx.signal })).body;
+      res = (await client.indices.putAlias({ index, name: input.alias as string })).body;
       break;
     default:
       return { content: `Unknown action: ${action}`, isError: true };

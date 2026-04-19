@@ -150,7 +150,7 @@ button { cursor: pointer; font: inherit; border: none; background: none; color: 
 .chat-msg-user { align-self: flex-end; background: var(--accent); color: #fff; }
 .chat-msg-assistant { align-self: flex-start; background: var(--bg-secondary); }
 .chat-msg-content { white-space: pre-wrap; word-break: break-word; }
-.chat-input-area { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.chat-input-area { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
 .chat-input { flex: 1; resize: none; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); font: inherit; font-size: 14px; min-height: 42px; max-height: 120px; }
 .chat-send { width: 42px; height: 42px; border-radius: 50%; font-size: 18px; padding: 0; }
 
@@ -246,3 +246,26 @@ button { cursor: pointer; font: inherit; border: none; background: none; color: 
 .model-option.active { background: var(--bg-tertiary); font-weight: 500; }
 .model-option-name { flex: 1; }
 .model-option-provider { color: var(--text-muted); font-size: 11px; }
+
+/* === Conversation Sidebar === */
+.conv-sidebar { width: 220px; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+.conv-sidebar-header { display: flex; gap: 6px; padding: 8px; align-items: center; }
+.conv-search { flex: 1; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 12px; }
+.conv-empty { padding: 12px; color: var(--text-muted); font-size: 13px; text-align: center; }
+.conv-list { list-style: none; flex: 1; overflow-y: auto; }
+.conv-item-row { display: flex; align-items: center; padding: 0 4px; border-radius: var(--radius-sm); }
+.conv-item-row:hover { background: var(--bg-secondary); }
+.conv-item-row.active { background: var(--bg-tertiary); }
+.conv-item-row:hover .conv-item-actions { opacity: 1; }
+.conv-item-btn { flex: 1; padding: 7px 8px; text-align: left; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-item-title { overflow: hidden; text-overflow: ellipsis; }
+.conv-item-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.1s; }
+.btn-icon-sm { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); font-size: 12px; }
+.btn-icon-sm:hover { background: var(--bg-tertiary); }
+.conv-rename-form { flex: 1; padding: 4px; }
+.conv-rename-form input { width: 100%; padding: 4px 6px; border: 1px solid var(--accent); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 13px; }
+
+/* === Chat Input Enhancements === */
+.chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+.edit-indicator { font-size: 12px; color: var(--text-muted); padding: 0 0 4px; }
+.btn-link { background: none; border: none; color: var(--accent); font-size: 12px; cursor: pointer; text-decoration: underline; padding: 0; }

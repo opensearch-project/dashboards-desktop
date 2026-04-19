@@ -21,7 +21,7 @@ export interface ConnectionInput {
   url: string;
   type: 'opensearch' | 'elasticsearch';
   auth_type: AuthType;
-  workspace_id?: string;
+  workspace_id: string;
   username?: string;
   password?: string;
   api_key?: string;

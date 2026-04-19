@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ChatMessage } from './ChatMessage';
+import { ModelSwitcher } from './ModelSwitcher';
+import { ConversationSidebar } from './ConversationSidebar';
+import type { StreamEvent, ChatMessage as ChatMsg } from '../../core/types';
 
-interface Conversation { id: string; title: string; updatedAt: string; }
-interface Message { id: string; role: 'user' | 'assistant'; content: string; }
+interface ToolStatus { id: string; name: string; state: 'running' | 'done' | 'error'; output?: string; isError?: boolean; }
+interface DisplayMessage { id: string; role: 'user' | 'assistant'; content: string; streaming?: boolean; toolStatuses?: ToolStatus[]; }
 
 interface Props {
   fullScreen: boolean;
@@ -16,70 +20,147 @@ const MAX_WIDTH_RATIO = 0.8;
 export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullScreen, workspaceId }) => {
   const [width, setWidth] = useState(480);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [streaming, setStreaming] = useState(false);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamBufferRef = useRef('');
+  const toolStatusesRef = useRef<ToolStatus[]>([]);
   const resizing = useRef(false);
 
-  // Focus input on open
   useEffect(() => { inputRef.current?.focus(); }, []);
-
-  // Scroll to bottom on new messages
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  // Resize handler
+  // Load conversation messages when switching
+  useEffect(() => {
+    if (!activeConv) { setMessages([]); return; }
+    window.osd.conversations.messages(activeConv).then((msgs: ChatMsg[]) => {
+      setMessages(msgs.filter(m => m.role === 'user' || m.role === 'assistant').map(m => ({
+        id: m.id, role: m.role as 'user' | 'assistant', content: m.content ?? '',
+      })));
+    }).catch(() => {});
+  }, [activeConv]);
+
+  // Subscribe to stream events
+  useEffect(() => {
+    const unsub = window.osd.agent.onStream((event: StreamEvent) => {
+      switch (event.type) {
+        case 'token':
+          streamBufferRef.current += event.content;
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last?.streaming) return [...prev.slice(0, -1), { ...last, content: streamBufferRef.current }];
+            return prev;
+          });
+          break;
+        case 'tool_call_start':
+          toolStatusesRef.current = [...toolStatusesRef.current, { id: event.id, name: event.name, state: 'running' }];
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last?.streaming) return [...prev.slice(0, -1), { ...last, toolStatuses: [...toolStatusesRef.current] }];
+            return prev;
+          });
+          break;
+        case 'tool_result':
+          toolStatusesRef.current = toolStatusesRef.current.map(t =>
+            t.id === event.id ? { ...t, state: event.isError ? 'error' : 'done', output: event.output, isError: event.isError } : t
+          );
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last?.streaming) return [...prev.slice(0, -1), { ...last, toolStatuses: [...toolStatusesRef.current] }];
+            return prev;
+          });
+          break;
+        case 'done':
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last?.streaming) return [...prev.slice(0, -1), { ...last, streaming: false }];
+            return prev;
+          });
+          setStreaming(false);
+          break;
+        case 'error':
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last?.streaming) return [...prev.slice(0, -1), { ...last, content: `Error: ${event.message}`, streaming: false }];
+            return [...prev, { id: Date.now().toString(), role: 'assistant', content: `Error: ${event.message}` }];
+          });
+          setStreaming(false);
+          break;
+      }
+    });
+    return unsub;
+  }, []);
+
+  const sendMessage = useCallback(async (text?: string) => {
+    const msg = (text ?? input).trim();
+    if (!msg || streaming) return;
+    setInput('');
+    setEditIndex(null);
+    streamBufferRef.current = '';
+    toolStatusesRef.current = [];
+
+    const userMsg: DisplayMessage = { id: Date.now().toString(), role: 'user', content: msg };
+    const assistantMsg: DisplayMessage = { id: (Date.now() + 1).toString(), role: 'assistant', content: '', streaming: true, toolStatuses: [] };
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
+    setStreaming(true);
+
+    try {
+      const convId = await window.osd.agent.send(msg, activeConv ?? undefined);
+      if (!activeConv && convId) setActiveConv(convId);
+    } catch {
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.streaming) return [...prev.slice(0, -1), { ...last, content: 'Failed to send message.', streaming: false }];
+        return prev;
+      });
+      setStreaming(false);
+    }
+  }, [input, streaming, activeConv]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    // Up arrow to edit last user message
+    if (e.key === 'ArrowUp' && !input) {
+      const lastUserIdx = messages.findLastIndex(m => m.role === 'user');
+      if (lastUserIdx >= 0) {
+        setEditIndex(lastUserIdx);
+        setInput(messages[lastUserIdx].content);
+      }
+    }
+  };
+
+  const handleEditSend = () => {
+    if (editIndex === null) return;
+    // Truncate messages to the edit point and resend
+    setMessages(prev => prev.slice(0, editIndex));
+    sendMessage();
+  };
+
+  // Resize
   const onResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     resizing.current = true;
-    const startX = e.clientX;
-    const startW = width;
+    const startX = e.clientX, startW = width;
     const onMove = (ev: MouseEvent) => {
       if (!resizing.current) return;
-      const maxW = window.innerWidth * MAX_WIDTH_RATIO;
-      setWidth(Math.max(MIN_WIDTH, Math.min(maxW, startW + (startX - ev.clientX))));
+      setWidth(Math.max(MIN_WIDTH, Math.min(window.innerWidth * MAX_WIDTH_RATIO, startW + (startX - ev.clientX))));
     };
     const onUp = () => { resizing.current = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   }, [width]);
 
-  // Send message (placeholder — agent runtime in M2)
-  const sendMessage = () => {
-    const text = input.trim();
-    if (!text) return;
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: text };
-    const assistantMsg: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: 'Connect a model to start chatting. Agent runtime ships in M2.' };
-    setMessages(prev => [...prev, userMsg, assistantMsg]);
-    setInput('');
-    if (!activeConv) {
-      const conv: Conversation = { id: Date.now().toString(), title: text.slice(0, 50), updatedAt: new Date().toISOString() };
-      setConversations(prev => [conv, ...prev]);
-      setActiveConv(conv.id);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  };
-
-  const filteredConvs = searchQuery
-    ? conversations.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    : conversations;
-
   return (
     <aside
-      ref={panelRef}
       className={`chat-panel ${fullScreen ? 'chat-panel-fullscreen' : ''}`}
       style={fullScreen ? undefined : { width }}
       role="complementary"
       aria-label="Chat panel"
     >
-      {/* Resize handle */}
       {!fullScreen && (
         <div
           className="chat-resize-handle"
@@ -97,56 +178,26 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
         />
       )}
 
-      {/* Header */}
       <header className="chat-header">
-        <button className="btn-icon" onClick={() => setSidebarOpen(s => !s)} aria-label={sidebarOpen ? 'Hide conversations' : 'Show conversations'} aria-expanded={sidebarOpen}>
-          ☰
-        </button>
+        <button className="btn-icon" onClick={() => setSidebarOpen(s => !s)} aria-label={sidebarOpen ? 'Hide conversations' : 'Show conversations'} aria-expanded={sidebarOpen}>☰</button>
         <h2 className="chat-title">Chat</h2>
+        <ModelSwitcher />
         <div className="chat-header-actions">
-          <button className="btn-icon" onClick={onToggleFullScreen} aria-label={fullScreen ? 'Exit full screen' : 'Full screen'}>
-            {fullScreen ? '⊡' : '⊞'}
-          </button>
+          <button className="btn-icon" onClick={onToggleFullScreen} aria-label={fullScreen ? 'Exit full screen' : 'Full screen'}>{fullScreen ? '⊡' : '⊞'}</button>
           <button className="btn-icon" onClick={onClose} aria-label="Close chat">✕</button>
         </div>
       </header>
 
       <div className="chat-body">
-        {/* Conversation sidebar */}
         {sidebarOpen && (
-          <nav className="chat-sidebar" aria-label="Conversation history">
-            <div className="chat-sidebar-search">
-              <input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search conversations…"
-                aria-label="Search conversations"
-              />
-            </div>
-            <button className="btn-sm chat-new-conv" onClick={() => { setActiveConv(null); setMessages([]); }}>
-              + New conversation
-            </button>
-            {filteredConvs.length === 0 ? (
-              <p className="chat-sidebar-empty" role="status">No conversations yet</p>
-            ) : (
-              <ul role="list">
-                {filteredConvs.map(c => (
-                  <li key={c.id}>
-                    <button
-                      className={`conv-item ${c.id === activeConv ? 'active' : ''}`}
-                      onClick={() => setActiveConv(c.id)}
-                      aria-current={c.id === activeConv ? 'true' : undefined}
-                    >
-                      {c.title}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </nav>
+          <ConversationSidebar
+            workspaceId={workspaceId}
+            activeId={activeConv}
+            onSelect={setActiveConv}
+            onNew={() => { setActiveConv(null); setMessages([]); }}
+          />
         )}
 
-        {/* Messages */}
         <div className="chat-messages" role="log" aria-label="Chat messages" aria-live="polite">
           {messages.length === 0 ? (
             <div className="chat-empty" role="status">
@@ -155,30 +206,43 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
             </div>
           ) : (
             messages.map(msg => (
-              <div key={msg.id} className={`chat-msg chat-msg-${msg.role}`} role="article" aria-label={`${msg.role} message`}>
-                <div className="chat-msg-content">{msg.content}</div>
-              </div>
+              <ChatMessage
+                key={msg.id}
+                role={msg.role}
+                content={msg.content}
+                streaming={msg.streaming}
+                toolStatuses={msg.toolStatuses}
+              />
             ))
           )}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input */}
       <footer className="chat-input-area">
-        <textarea
-          ref={inputRef}
-          className="chat-input"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask anything… (Enter to send, Shift+Enter for newline)"
-          aria-label="Message input"
-          rows={1}
-        />
-        <button className="btn-primary chat-send" onClick={sendMessage} disabled={!input.trim()} aria-label="Send message">
-          ↑
-        </button>
+        {editIndex !== null && (
+          <div className="edit-indicator" role="status">
+            Editing message — <button className="btn-link" onClick={() => { setEditIndex(null); setInput(''); }}>Cancel</button>
+          </div>
+        )}
+        <div className="chat-input-row">
+          <textarea
+            ref={inputRef}
+            className="chat-input"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={streaming ? 'Waiting for response…' : 'Ask anything… (Enter to send)'}
+            aria-label="Message input"
+            rows={1}
+            disabled={streaming}
+          />
+          {streaming ? (
+            <button className="btn-danger chat-send" onClick={() => window.osd.agent.cancel()} aria-label="Stop generation">■</button>
+          ) : (
+            <button className="btn-primary chat-send" onClick={() => editIndex !== null ? handleEditSend() : sendMessage()} disabled={!input.trim()} aria-label="Send message">↑</button>
+          )}
+        </div>
       </footer>
     </aside>
   );

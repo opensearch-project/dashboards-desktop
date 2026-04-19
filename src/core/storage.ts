@@ -19,7 +19,7 @@ import { v4 as uuidv4 } from 'uuid';
 // Schema
 // ---------------------------------------------------------------------------
 
-export const LATEST_SCHEMA_VERSION = 2;
+export const LATEST_SCHEMA_VERSION = 3;
 
 interface Migration {
   version: number;
@@ -90,6 +90,18 @@ const MIGRATIONS: Migration[] = [
         FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
       );
       UPDATE schema_version SET version = 2;
+    `,
+  },
+  {
+    version: 3,
+    up: `
+      ALTER TABLE conversations ADD COLUMN model TEXT NOT NULL DEFAULT '';
+      ALTER TABLE messages ADD COLUMN tool_calls TEXT;
+      ALTER TABLE messages ADD COLUMN tool_call_id TEXT;
+      ALTER TABLE messages ADD COLUMN token_count INTEGER;
+      CREATE INDEX IF NOT EXISTS idx_conversations_workspace ON conversations(workspace_id, updated_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at ASC);
+      UPDATE schema_version SET version = 3;
     `,
   },
 ];

@@ -33,8 +33,7 @@ export const opensearchQueryTool: AgentTool = {
     try {
       const client = new Client({ node: conn.url });
       const res = await client.search(
-        { index: input.index as string, body: input.body },
-        { signal: context.signal }
+        { index: input.index as string, body: input.body as Record<string, unknown> }
       );
       return { content: JSON.stringify(res.body, null, 2), isError: false };
     } catch (err: unknown) {

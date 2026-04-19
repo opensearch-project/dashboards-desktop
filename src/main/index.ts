@@ -94,6 +94,73 @@ ipcMain.handle(IPC.SETTINGS_SET, async (_e, key: string, value: string) => {
 // In-memory credential store (encrypted buffers)
 const credentialStore = new Map<string, Buffer>();
 
+// --- Agent Runtime ---
+import { ModelRouter } from '../core/agent/model-router';
+import { ToolRegistry } from '../core/agent/tool-registry';
+import { ConversationManager } from '../core/agent/conversation';
+import { AgentRuntime } from '../core/agent/runtime';
+import { OllamaProvider } from '../core/agent/providers/ollama';
+import { opensearchQueryTool } from '../core/agent/tools/opensearch-query';
+import { elasticsearchQueryTool } from '../core/agent/tools/elasticsearch-query';
+import { clusterHealthTool } from '../core/agent/tools/cluster-health';
+import { indexManageTool } from '../core/agent/tools/index-manage';
+import type { StreamEvent } from '../core/agent/types';
+import { initDatabase } from '../core/storage';
+
+let agentRuntime: AgentRuntime | null = null;
+
+function getOrCreateRuntime(): AgentRuntime {
+  if (agentRuntime) return agentRuntime;
+
+  const router = new ModelRouter();
+  router.register(new OllamaProvider());
+
+  const tools = new ToolRegistry();
+  tools.register(opensearchQueryTool);
+  tools.register(elasticsearchQueryTool);
+  tools.register(clusterHealthTool);
+  tools.register(indexManageTool);
+
+  const dbPath = path.join(require('os').homedir(), '.osd', 'osd.db');
+  const db = initDatabase(dbPath);
+  const conversations = new ConversationManager(db);
+
+  agentRuntime = new AgentRuntime(
+    router, tools, conversations,
+    'ollama:llama3', 'default',
+    () => null // TODO: wire to active connection from UI state
+  );
+  return agentRuntime;
+}
+
+ipcMain.handle('agent:send', async (_e, conversationId: string, message: string) => {
+  const runtime = getOrCreateRuntime();
+  const emit = (event: StreamEvent) => {
+    mainWindow?.webContents.send('agent:stream', event);
+  };
+  await runtime.chat(conversationId, message, emit);
+});
+
+ipcMain.handle('agent:cancel', () => {
+  agentRuntime?.cancel();
+});
+
+ipcMain.handle('agent:switchModel', (_e, specifier: string) => {
+  const runtime = getOrCreateRuntime();
+  runtime.setModel(specifier);
+  return true;
+});
+
+ipcMain.handle('agent:listModels', async () => {
+  const runtime = getOrCreateRuntime();
+  const router = (runtime as unknown as { router: ModelRouter }).router;
+  return router.listAllModels();
+});
+
+ipcMain.handle('agent:getModel', () => {
+  return agentRuntime?.getModel() ?? 'ollama:llama3';
+});
+
 // --- App lifecycle ---
 app.whenReady().then(async () => {
   await initStorage();
