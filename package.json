@@ -40,7 +40,7 @@
     "type": "git",
     "url": "git+https://github.com/opensearch-project/dashboards-desktop.git"
   },
-  "author": "OpenSearch Contributors",
+  "author": "OpenSearch Contributors <opensearch@amazon.com>",
   "license": "Apache-2.0",
   "dependencies": {
     "@aws-sdk/credential-provider-node": "^3.750.0",
