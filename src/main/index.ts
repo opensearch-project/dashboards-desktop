@@ -30,7 +30,7 @@ const originalHandle = ipcMain.handle.bind(ipcMain);
 ipcMain.handle = ((channel: string, listener: (...args: any[]) => any) => {
   return originalHandle(channel, async (...args: any[]) => {
     try {
-      return await (listener as Function)(...args);
+      return await (listener as (...a: any[]) => any)(...args);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       const stack = err instanceof Error ? err.stack : undefined;
@@ -457,7 +457,7 @@ import { registerAllM4IPC, setPluginManager, setMcpSupervisor, setUpdateManager 
 app.whenReady().then(async () => {
   // 1. Menu first (instant), then window + storage in parallel
   buildAppMenu();
-  const [/* storage */] = await Promise.all([
+  const [_storage] = await Promise.all([
     initStorage(),
     (createWindow(), Promise.resolve()),
   ]);

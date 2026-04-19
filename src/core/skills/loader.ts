@@ -5,7 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import type { AgentTool, ToolDefinition } from '../agent/types';
+import type { AgentTool } from '../agent/types';
 import type { ToolRegistry } from '../agent/tool-registry';
 
 const SKILLS_DIR = path.join(process.env.HOME ?? '~', '.osd', 'skills');

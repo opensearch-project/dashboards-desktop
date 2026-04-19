@@ -98,7 +98,7 @@ export class MultiAgentOrchestrator {
 
     yield { type: 'token', content: '' }; // signal start
 
-    let text = '';
+    let _text = '';
     const pendingToolCalls: Array<{ id: string; name: string; input: string }> = [];
     let currentId = '';
     let currentName = '';
@@ -107,7 +107,7 @@ export class MultiAgentOrchestrator {
     for await (const chunk of agent.chat(userMessage, signal)) {
       switch (chunk.type) {
         case 'text':
-          text += chunk.content ?? '';
+          _text += chunk.content ?? '';
           yield { type: 'token', content: chunk.content ?? '' };
           break;
         case 'tool_call_start':

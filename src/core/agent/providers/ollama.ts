@@ -20,7 +20,7 @@ export class OllamaProvider implements ModelProvider {
     let res: Response;
     try {
       res = await fetch(`${this.baseUrl}/api/tags`, { signal: AbortSignal.timeout(5000) });
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
       throw new Error(`Cannot connect to Ollama at ${this.baseUrl}. Is Ollama running? (ollama serve)`);
     }
     if (!res.ok) throw new Error(`Ollama unavailable: ${res.status}`);
