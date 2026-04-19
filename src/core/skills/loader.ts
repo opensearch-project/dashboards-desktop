@@ -96,8 +96,15 @@ export class SkillLoader {
     const loaded = this.loadSkill(abs);
     const destDir = path.join(SKILLS_DIR, loaded.definition.name);
 
+    // Defense-in-depth: ensure destDir is inside SKILLS_DIR
+    if (!destDir.startsWith(SKILLS_DIR)) throw new Error('Invalid skill name: path traversal detected');
+
     fs.mkdirSync(SKILLS_DIR, { recursive: true });
     fs.cpSync(abs, destDir, { recursive: true });
+
+    // Clear require cache so re-install picks up new code
+    const entryPath = resolveEntry(destDir);
+    if (entryPath && require.cache[entryPath]) delete require.cache[entryPath];
 
     loaded.path = destDir;
     this.skills.set(loaded.definition.name, loaded);
@@ -124,6 +131,7 @@ function resolveEntry(dir: string): string | null {
 
 function validate(def: SkillDefinition, skillPath: string): void {
   if (!def.name || typeof def.name !== 'string') throw new Error(`Invalid skill at ${skillPath}: missing name`);
+  if (!/^[a-zA-Z0-9_-]+$/.test(def.name)) throw new Error(`Invalid skill name "${def.name}": must be alphanumeric, hyphens, underscores only`);
   if (!def.description) throw new Error(`Invalid skill "${def.name}": missing description`);
   if (!Array.isArray(def.tools)) throw new Error(`Invalid skill "${def.name}": tools must be an array`);
 }
