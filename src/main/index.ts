@@ -575,20 +575,48 @@ app.whenReady().then(async () => {
   await initStorage();
   const db = getStorageProxy();
 
-  // 2. Check OSD binary path — first-run dialog if not configured
+  // 2. Check OSD binary — auto-download if not installed
+  const { isOsdInstalled, downloadAndInstall, OSD_DIR } = await import('../core/osd/downloader.js');
   let osdBinPath = await db.getSettingAsync('osd_bin_path') as string | null;
-  if (!osdBinPath) {
-    const { dialog } = await import('electron');
-    const result = await dialog.showOpenDialog({
-      title: 'Select OpenSearch Dashboards binary',
-      message: 'Where is your opensearch-dashboards startup script?',
-      properties: ['openFile'],
-      filters: [{ name: 'Scripts', extensions: ['sh', 'bat', ''] }],
+
+  if (!osdBinPath && !isOsdInstalled()) {
+    const { dialog, BrowserWindow: BW } = await import('electron');
+    const choice = await dialog.showMessageBox({
+      type: 'question',
+      title: 'OpenSearch Dashboards Not Found',
+      message: 'Download OpenSearch Dashboards automatically?',
+      detail: 'This will download ~300MB and install to ~/.osd-desktop/osd/',
+      buttons: ['Download', 'Browse for existing...', 'Cancel'],
+      defaultId: 0,
     });
-    if (result.filePaths[0]) {
-      osdBinPath = result.filePaths[0];
+
+    if (choice.response === 0) {
+      // Auto-download with progress
+      const progressWin = new BW({ width: 400, height: 120, frame: false, resizable: false, alwaysOnTop: true });
+      progressWin.loadURL(`data:text/html,<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#1a1a2e;color:#e8e8f0"><div id="m">Downloading OpenSearch Dashboards...</div></body>`);
+
+      await downloadAndInstall((p) => {
+        progressWin.webContents.executeJavaScript(
+          `document.getElementById('m').textContent='${p.phase}: ${p.percent}%'`
+        ).catch(() => {});
+      });
+      progressWin.close();
+      osdBinPath = path.join(OSD_DIR, 'bin', 'opensearch-dashboards');
       await db.setSettingAsync('osd_bin_path', osdBinPath);
+    } else if (choice.response === 1) {
+      // Manual browse
+      const result = await dialog.showOpenDialog({
+        title: 'Select OpenSearch Dashboards binary',
+        properties: ['openFile'],
+      });
+      if (result.filePaths[0]) {
+        osdBinPath = result.filePaths[0];
+        await db.setSettingAsync('osd_bin_path', osdBinPath);
+      }
     }
+  } else if (!osdBinPath && isOsdInstalled()) {
+    osdBinPath = path.join(OSD_DIR, 'bin', 'opensearch-dashboards');
+    await db.setSettingAsync('osd_bin_path', osdBinPath);
   }
 
   // 3. Start OSD if binary configured
