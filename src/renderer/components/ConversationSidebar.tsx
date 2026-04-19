@@ -21,6 +21,7 @@ export const ConversationSidebar: React.FC<Props> = ({ workspaceId, activeId, on
     setConversations(list);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [workspaceId]);
 
   useEffect(() => { if (renamingId) renameRef.current?.focus(); }, [renamingId]);
