@@ -36,7 +36,7 @@ const ChatOverlay: React.FC = () => {
         onToggleFullScreen={() => {}}
         workspaceId={workspaceId}
       />
-      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+      {paletteOpen && <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onSelect={async (id) => { await window.osd.models.switch(id); }} />}
     </ErrorBoundary>
   );
 };

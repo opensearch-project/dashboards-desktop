@@ -619,7 +619,7 @@ app.whenReady().then(async () => {
 
       await downloadAndInstall((p) => {
         progressWin.webContents.executeJavaScript(
-          `document.getElementById('m').textContent='${p.phase}: ${p.percent}%'`
+          `document.getElementById('m').textContent='Downloading: ${p.percent}%'`
         ).catch(() => {});
       });
       progressWin.close();
