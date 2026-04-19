@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from './ChatMessage';
 import { ModelSwitcher } from './ModelSwitcher';
 import { ConversationSidebar } from './ConversationSidebar';
+import { PinnedMessages } from './PinnedMessages';
 import type { StreamEvent, ChatMessage as ChatMsg } from '../../core/types';
 
 interface ToolStatus { id: string; name: string; state: 'running' | 'done' | 'error'; output?: string; isError?: boolean; }
@@ -25,6 +26,8 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+  const [showPinned, setShowPinned] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamBufferRef = useRef('');
@@ -36,13 +39,23 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
 
   // Load conversation messages when switching
   useEffect(() => {
-    if (!activeConv) { setMessages([]); return; }
+    if (!activeConv) { setMessages([]); setPinnedIds(new Set()); return; }
     window.osd.conversations.messages(activeConv).then((msgs: ChatMsg[]) => {
       setMessages(msgs.filter(m => m.role === 'user' || m.role === 'assistant').map(m => ({
         id: m.id, role: m.role as 'user' | 'assistant', content: m.content ?? '',
       })));
     }).catch(() => {});
+    window.osd.messages.listPinned(activeConv).then(pins => {
+      setPinnedIds(new Set(pins.map((p: { message_id: string }) => p.message_id)));
+    }).catch(() => {});
   }, [activeConv]);
+
+  const handlePin = useCallback(async (messageId: string) => {
+    try { await window.osd.messages.pin(messageId); setPinnedIds(prev => new Set(prev).add(messageId)); } catch { /* noop */ }
+  }, []);
+  const handleUnpin = useCallback(async (messageId: string) => {
+    try { await window.osd.messages.unpin(messageId); setPinnedIds(prev => { const s = new Set(prev); s.delete(messageId); return s; }); } catch { /* noop */ }
+  }, []);
 
   // Subscribe to stream events
   useEffect(() => {
@@ -185,6 +198,7 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
         <h2 className="chat-title">Chat</h2>
         <ModelSwitcher />
         <div className="chat-header-actions">
+          <button className="btn-icon" onClick={() => setShowPinned(s => !s)} aria-label={showPinned ? 'Hide pinned' : 'Show pinned'} aria-pressed={showPinned}>📌</button>
           <button className="btn-icon" onClick={onToggleFullScreen} aria-label={fullScreen ? 'Exit full screen' : 'Full screen'}>{fullScreen ? '⊡' : '⊞'}</button>
           <button className="btn-icon" onClick={onClose} aria-label="Close chat">✕</button>
         </div>
@@ -200,6 +214,10 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
           />
         )}
 
+        {showPinned && (
+          <PinnedMessages conversationId={activeConv} onClose={() => setShowPinned(false)} onUnpin={handleUnpin} />
+        )}
+
         <div className="chat-messages" role="log" aria-label="Chat messages" aria-live="polite">
           {messages.length === 0 ? (
             <div className="chat-empty" role="status">
@@ -210,10 +228,14 @@ export const ChatPanel: React.FC<Props> = ({ fullScreen, onClose, onToggleFullSc
             messages.map(msg => (
               <ChatMessage
                 key={msg.id}
+                messageId={msg.id}
                 role={msg.role}
                 content={msg.content}
                 streaming={msg.streaming}
                 toolStatuses={msg.toolStatuses}
+                pinned={pinnedIds.has(msg.id)}
+                onPin={handlePin}
+                onUnpin={handleUnpin}
               />
             ))
           )}

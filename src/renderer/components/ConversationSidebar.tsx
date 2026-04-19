@@ -38,16 +38,15 @@ export const ConversationSidebar: React.FC<Props> = ({ workspaceId, activeId, on
 
   const handleRename = async (id: string) => {
     if (renameValue.trim()) {
-      await window.osd.conversations.rename(id, renameValue.trim());
-      await load();
+      try { await window.osd.conversations.rename(id, renameValue.trim()); await load(); }
+      catch (e: unknown) { setError(e instanceof Error ? e.message : 'Rename failed'); }
     }
     setRenamingId(null);
   };
 
   const handleDelete = async (id: string) => {
-    await window.osd.conversations.delete(id);
-    await load();
-    if (activeId === id) onNew();
+    try { await window.osd.conversations.delete(id); await load(); if (activeId === id) onNew(); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : 'Delete failed'); }
   };
 
   return (
