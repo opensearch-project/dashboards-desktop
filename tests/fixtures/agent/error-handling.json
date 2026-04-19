@@ -1,0 +1,31 @@
+{
+  "name": "error-handling",
+  "model": "ollama:llama3",
+  "turns": [
+    {
+      "request": {
+        "messages": [{ "role": "user", "content": "Query nonexistent index" }],
+        "tools": ["opensearch-query"]
+      },
+      "response": {
+        "chunks": [
+          { "type": "tool_call_start", "toolCall": { "id": "tc_err", "name": "opensearch-query" } },
+          { "type": "tool_call_delta", "content": "{\"index\":\"nonexistent\",\"body\":{\"query\":{\"match_all\":{}}}}" },
+          { "type": "tool_call_end", "toolCall": { "id": "tc_err" } }
+        ]
+      },
+      "toolResults": [
+        { "id": "tc_err", "content": "index_not_found_exception: no such index [nonexistent]", "isError": true }
+      ]
+    },
+    {
+      "request": "auto",
+      "response": {
+        "chunks": [
+          { "type": "text", "content": "The index \"nonexistent\" doesn't exist. Would you like me to list available indices?" },
+          { "type": "usage", "usage": { "inputTokens": 200, "outputTokens": 25 } }
+        ]
+      }
+    }
+  ]
+}

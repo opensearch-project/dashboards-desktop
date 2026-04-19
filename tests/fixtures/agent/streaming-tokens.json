@@ -1,0 +1,25 @@
+{
+  "name": "streaming-tokens",
+  "model": "ollama:llama3",
+  "turns": [
+    {
+      "request": {
+        "messages": [{ "role": "user", "content": "Hello" }],
+        "tools": []
+      },
+      "response": {
+        "chunks": [
+          { "type": "text", "content": "Hi" },
+          { "type": "text", "content": " there" },
+          { "type": "text", "content": "!" },
+          { "type": "text", "content": " How" },
+          { "type": "text", "content": " can" },
+          { "type": "text", "content": " I" },
+          { "type": "text", "content": " help" },
+          { "type": "text", "content": "?" },
+          { "type": "usage", "usage": { "inputTokens": 5, "outputTokens": 8 } }
+        ]
+      }
+    }
+  ]
+}

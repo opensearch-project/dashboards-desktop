@@ -1,2 +1,37 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+*.tsbuildinfo
+
+# App data
+.osd/
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Coverage
+coverage/
+
+# Electron
+*.dmg
+*.snap
+*.deb
+*.rpm
+*.AppImage
+*.exe
+*.msi
+*.nupkg

@@ -1,0 +1,31 @@
+{
+  "name": "tool-use-flow",
+  "model": "ollama:llama3",
+  "turns": [
+    {
+      "request": {
+        "messages": [{ "role": "user", "content": "Show me error counts in logs-*" }],
+        "tools": ["opensearch-query", "cluster-health"]
+      },
+      "response": {
+        "chunks": [
+          { "type": "tool_call_start", "toolCall": { "id": "tc_1", "name": "opensearch-query" } },
+          { "type": "tool_call_delta", "content": "{\"index\":\"logs-*\",\"body\":{\"size\":0,\"aggs\":{\"errors\":{\"terms\":{\"field\":\"error_code\"}}}}}" },
+          { "type": "tool_call_end", "toolCall": { "id": "tc_1" } }
+        ]
+      },
+      "toolResults": [
+        { "id": "tc_1", "content": "{\"aggregations\":{\"errors\":{\"buckets\":[{\"key\":502,\"doc_count\":1247}]}}}", "isError": false }
+      ]
+    },
+    {
+      "request": "auto",
+      "response": {
+        "chunks": [
+          { "type": "text", "content": "The most common error is **502** with 1,247 occurrences." },
+          { "type": "usage", "usage": { "inputTokens": 350, "outputTokens": 42 } }
+        ]
+      }
+    }
+  ]
+}

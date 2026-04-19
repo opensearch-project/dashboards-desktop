@@ -1,0 +1,18 @@
+{
+  "name": "simple-query",
+  "model": "ollama:llama3",
+  "turns": [
+    {
+      "request": {
+        "messages": [{ "role": "user", "content": "What is OpenSearch?" }],
+        "tools": []
+      },
+      "response": {
+        "chunks": [
+          { "type": "text", "content": "OpenSearch is an open-source search and analytics engine." },
+          { "type": "usage", "usage": { "inputTokens": 12, "outputTokens": 15 } }
+        ]
+      }
+    }
+  ]
+}
