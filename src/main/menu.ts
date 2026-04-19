@@ -2,7 +2,7 @@
  * App menu — File, Edit, View, Window, Help with keyboard shortcuts + About dialog.
  */
 
-import { Menu, app, dialog, shell, type MenuItemConstructorOptions } from 'electron';
+import { Menu, BrowserWindow, app, dialog, shell, type MenuItemConstructorOptions } from 'electron';
 
 const isMac = process.platform === 'darwin';
 
@@ -25,10 +25,10 @@ export function buildAppMenu(): void {
     {
       label: 'File',
       submenu: [
-        { label: 'New Conversation', accelerator: 'CmdOrCtrl+N', click: (_m, win) => win?.webContents.send('menu:newConversation') },
-        { label: 'New Workspace', accelerator: 'CmdOrCtrl+Shift+N', click: (_m, win) => win?.webContents.send('menu:newWorkspace') },
+        { label: 'New Conversation', accelerator: 'CmdOrCtrl+N', click: (_m, win) => (win as BrowserWindow)?.webContents.send('menu:newConversation') },
+        { label: 'New Workspace', accelerator: 'CmdOrCtrl+Shift+N', click: (_m, win) => (win as BrowserWindow)?.webContents.send('menu:newWorkspace') },
         { type: 'separator' },
-        { label: 'Settings', accelerator: 'CmdOrCtrl+,', click: (_m, win) => win?.webContents.send('menu:settings') },
+        { label: 'Settings', accelerator: 'CmdOrCtrl+,', click: (_m, win) => (win as BrowserWindow)?.webContents.send('menu:settings') },
         { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' },
       ],
@@ -48,8 +48,8 @@ export function buildAppMenu(): void {
     {
       label: 'View',
       submenu: [
-        { label: 'Focus Chat', accelerator: 'CmdOrCtrl+K', click: (_m, win) => win?.webContents.send('menu:focusChat') },
-        { label: 'Toggle Full Screen Chat', accelerator: 'CmdOrCtrl+Shift+Enter', click: (_m, win) => win?.webContents.send('menu:toggleFullScreenChat') },
+        { label: 'Focus Chat', accelerator: 'CmdOrCtrl+K', click: (_m, win) => (win as BrowserWindow)?.webContents.send('menu:focusChat') },
+        { label: 'Toggle Full Screen Chat', accelerator: 'CmdOrCtrl+Shift+Enter', click: (_m, win) => (win as BrowserWindow)?.webContents.send('menu:toggleFullScreenChat') },
         { type: 'separator' },
         { role: 'reload' },
         { role: 'forceReload' },

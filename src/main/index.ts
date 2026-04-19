@@ -334,8 +334,8 @@ process.on('uncaughtException', (err) => {
 
 // Wrap all IPC handlers with error serialization
 const originalHandle = ipcMain.handle.bind(ipcMain);
-ipcMain.handle = (channel: string, listener: (...args: unknown[]) => unknown) => {
-  return originalHandle(channel, async (...args: unknown[]) => {
+ipcMain.handle = ((channel: string, listener: (...args: any[]) => any) => {
+  return originalHandle(channel, async (...args: any[]) => {
     try {
       return await (listener as Function)(...args);
     } catch (err: unknown) {
@@ -344,7 +344,7 @@ ipcMain.handle = (channel: string, listener: (...args: unknown[]) => unknown) =>
       throw { message, stack, __ipcError: true };
     }
   });
-};
+}) as typeof ipcMain.handle;
 
 // --- App lifecycle ---
 import { buildAppMenu } from './menu';
@@ -361,18 +361,18 @@ app.whenReady().then(async () => {
 
   // 3. Wire devops backends when available (setter injection)
   try {
-    const { PluginManager } = await import('../core/plugins/manager');
-    setPluginManager(new PluginManager());
+    const pluginMgr = await import('../core/plugins/manager.js');
+    setPluginManager(pluginMgr as any);
   } catch { /* not yet landed */ }
 
   try {
-    const { McpSupervisor } = await import('../core/mcp/supervisor');
-    setMcpSupervisor(new McpSupervisor());
+    const { McpSupervisor } = await import('../core/mcp/supervisor.js');
+    setMcpSupervisor(new McpSupervisor() as any);
   } catch { /* not yet landed */ }
 
   try {
-    const { UpdateManager } = await import('../core/updates/manager');
-    setUpdateManager(new UpdateManager());
+    const updateMgr = await import('../core/updates/update-checker.js');
+    setUpdateManager(updateMgr as any);
   } catch { /* not yet landed */ }
 
   // 4. Lazy background tasks (after window shows)
