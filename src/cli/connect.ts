@@ -53,7 +53,7 @@ function connectAdd(args: string[]): void {
 
 function connectList(): void {
   const db = initDatabase(DB_PATH);
-  const conns = listConnections(db) as Array<{ name: string; url: string; type: string; auth_type: string }>;
+  const conns = listConnections(db) as Array<{ name: string; url: string; type: string; auth_type: string; workspace_id: string }>;
   db.close();
 
   if (conns.length === 0) { console.log('No connections saved.'); return; }
@@ -69,14 +69,14 @@ async function connectTest(args: string[]): Promise<void> {
   if (!name) { console.error('Usage: osd connect test <name>'); process.exit(1); }
 
   const db = initDatabase(DB_PATH);
-  const conns = listConnections(db) as Array<{ name: string; url: string; type: string; auth_type: string }>;
+  const conns = listConnections(db) as Array<{ name: string; url: string; type: string; auth_type: string; workspace_id: string }>;
   db.close();
 
   const conn = conns.find((c) => c.name === name);
   if (!conn) { console.error(`Connection "${name}" not found.`); process.exit(1); }
 
   console.log(`Testing ${conn.name} (${conn.url})...`);
-  const result = await testConnection({ ...conn, type: conn.type as 'opensearch' | 'elasticsearch', auth_type: conn.auth_type as 'basic' | 'apikey' | 'aws-sigv4' | 'none' });
+  const result = await testConnection({ ...conn, workspace_id: conn.workspace_id ?? '', type: conn.type as 'opensearch' | 'elasticsearch', auth_type: conn.auth_type as 'basic' | 'apikey' | 'aws-sigv4' | 'none' });
 
   if (result.success) {
     console.log(`✅ Connected — ${result.cluster_name} v${result.version}`);

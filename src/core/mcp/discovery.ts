@@ -72,7 +72,7 @@ export class McpDiscovery {
 
       this.mcpTools.set(name, tools);
       return tools;
-    } catch (err) {
+    } catch (_err) {
       this.mcpTools.set(name, []);
       return [];
     }

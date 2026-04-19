@@ -2,7 +2,7 @@
  * Orchestrator — routes user messages to agents, coordinates multi-agent workflows.
  */
 
-import type { StreamChunk, StreamEvent, ToolContext } from '../types';
+import type { StreamEvent, ToolContext } from '../types';
 import type { AgentConfig } from './agent-instance';
 import { AgentRegistry } from './registry';
 import { MessageBus } from './message-bus';

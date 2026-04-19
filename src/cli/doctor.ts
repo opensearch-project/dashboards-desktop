@@ -130,7 +130,7 @@ async function checkConnections(): Promise<Check[]> {
     const checks: Check[] = [];
     for (const conn of conns) {
       try {
-        const res = await fetch(conn.url, { signal: AbortSignal.timeout(5000) });
+        const _res = await fetch(conn.url, { signal: AbortSignal.timeout(5000) });
         checks.push({ name: `Connection: ${conn.name}`, status: 'ok', message: `${conn.type} — reachable` });
       } catch {
         checks.push({ name: `Connection: ${conn.name}`, status: 'fail', message: `${conn.url} unreachable`, fix: 'Check URL and network connectivity' });
