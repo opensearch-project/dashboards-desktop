@@ -257,13 +257,7 @@ ipcMain.handle(IPC.CONVERSATION_RENAME, async (_e, id: string, title: string) =>
   return getStorageProxy().renameConversationAsync(id, title);
 });
 
-// --- IPC: OAuth ---
-ipcMain.handle(IPC.AUTH_LOGIN_GITHUB, async () => {
-  throw new Error('OAuth not configured. Set GitHub client ID in Settings.');
-});
-ipcMain.handle(IPC.AUTH_LOGIN_GOOGLE, async () => {
-  throw new Error('OAuth not configured. Set Google client ID in Settings.');
-});
+// --- IPC: OAuth (implemented below with real PKCE flows) ---
 ipcMain.handle(IPC.AUTH_LOGOUT, () => {
   return true;
 });
