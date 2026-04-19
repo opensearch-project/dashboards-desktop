@@ -95,5 +95,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: build-linux-x64
-          path: dist/linux-unpacked/
+          path: release/linux-unpacked/
           retention-days: 7

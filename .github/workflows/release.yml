@@ -93,16 +93,16 @@ jobs:
         with:
           name: release-${{ runner.os }}-${{ matrix.arch }}
           path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.exe
-            dist/*.msi
-            dist/*.AppImage
-            dist/*.deb
-            dist/*.rpm
-            dist/*.snap
-            dist/*.yml
-            dist/*.yaml
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.msi
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.snap
+            release/*.yml
+            release/*.yaml
           retention-days: 30
 
       # macOS cleanup

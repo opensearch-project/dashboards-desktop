@@ -3,7 +3,7 @@ productName: OpenSearch Dashboards Desktop
 copyright: Copyright © 2026 OpenSearch Contributors
 
 directories:
-  output: dist
+  output: release
   buildResources: build
 
 files:
