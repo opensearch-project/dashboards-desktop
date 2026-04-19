@@ -49,6 +49,7 @@ export async function loginGoogle(
 
 function openAuthWindow(url: string, redirectUri: string, expectedState: string): Promise<string> {
   return new Promise((resolve, reject) => {
+    let resolved = false;
     const win = new BrowserWindow({
       width: 600,
       height: 700,
@@ -57,25 +58,30 @@ function openAuthWindow(url: string, redirectUri: string, expectedState: string)
     });
 
     win.webContents.on('will-redirect', (_e, navUrl) => {
-      if (!navUrl.startsWith(redirectUri)) return;
+      if (resolved || !navUrl.startsWith(redirectUri)) return;
       const params = new URL(navUrl).searchParams;
       const code = params.get('code');
       const state = params.get('state');
       if (state !== expectedState) {
+        resolved = true;
         win.close();
         reject(new Error('State mismatch'));
         return;
       }
       if (!code) {
+        resolved = true;
         win.close();
         reject(new Error('No code in redirect'));
         return;
       }
+      resolved = true;
       win.close();
       resolve(code);
     });
 
-    win.on('closed', () => reject(new Error('Auth window closed')));
+    win.on('closed', () => {
+      if (!resolved) reject(new Error('Auth window closed'));
+    });
     win.loadURL(url);
   });
 }
