@@ -644,6 +644,15 @@ app.whenReady().then(async () => {
     osdReady = true;
   } else if (osdBinPath) {
     const { OsdLifecycle } = await import('../core/osd/lifecycle.js');
+    const { SettingsPersistence } = await import('../core/osd/settings-persistence.js');
+    const { handleUpgrade } = await import('../core/osd/upgrade-handler.js');
+    const { OSD_VERSION } = await import('../core/osd/manifest.js');
+
+    // Generate yml from SQLite settings + handle upgrades
+    const persistence = new SettingsPersistence(db as unknown as Parameters<typeof SettingsPersistence['prototype']['generateYml']> extends never[] ? never : any);
+    const osdDir = path.dirname(path.dirname(osdBinPath)); // bin/opensearch-dashboards → osd root
+    await handleUpgrade(persistence, osdDir, OSD_VERSION);
+
     const osd = new OsdLifecycle({ binPath: osdBinPath, port: Number(process.env.OSD_PORT ?? 5601) });
     osd.on('status', (s: string) => console.log(`[OSD] ${s}`));
     osd.on('log', (msg: string) => process.stdout.write(`[OSD] ${msg}`));
