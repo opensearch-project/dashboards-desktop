@@ -2,8 +2,12 @@
 'use strict';
 
 const args = process.argv.slice(2);
+const command = args[0];
 
-if (args.includes('--tui')) {
+if (command === 'chat') {
+  const { runChatCLI, parseChatArgs } = require('../src/cli/chat.js');
+  runChatCLI(parseChatArgs(args.slice(1)));
+} else if (args.includes('--tui')) {
   require('../src/tui/index.js');
 } else {
   const { execFileSync } = require('child_process');
