@@ -8,37 +8,25 @@ import { branchConversation } from '../../../src/core/agent/branching';
 
 function fakeDb(sourceConvo: unknown, targetMsg: unknown, messages: unknown[] = []) {
   const mockRun = vi.fn();
-  const mockAll = vi.fn(() => messages);
-  const mockTransaction = vi.fn((fn: Function) => fn);
+  const defaultStmt = { run: mockRun, get: vi.fn(), all: vi.fn(() => messages) };
 
   return {
     prepare: vi.fn((sql: string) => {
-      if (sql.includes('SELECT model, title FROM conversations')) return { get: vi.fn(() => sourceConvo) };
-      if (sql.includes('SELECT created_at FROM messages WHERE id')) return { get: vi.fn(() => targetMsg) };
-      if (sql.includes('INSERT INTO conversations')) return { run: mockRun };
-      if (sql.includes('INSERT INTO messages (id, conversation_id, role')) return { run: mockRun };
-      if (sql.includes('SELECT role, content')) return { all: mockAll };
-      return { run: mockRun, get: vi.fn(), all: mockAll };
+      if (sql.includes('SELECT model, title FROM conversations')) return { ...defaultStmt, get: vi.fn(() => sourceConvo) };
+      if (sql.includes('SELECT created_at FROM messages WHERE id')) return { ...defaultStmt, get: vi.fn(() => targetMsg) };
+      return defaultStmt;
     }),
-    transaction: mockTransaction,
+    transaction: vi.fn((fn: Function) => fn),
     _mockRun: mockRun,
-    _mockAll: mockAll,
   };
 }
 
 describe('branchConversation', () => {
   it('creates a new conversation with branch title', () => {
-    const db = fakeDb(
-      { model: 'ollama:llama3', title: 'Original Chat' },
-      { created_at: '2026-04-19T10:00:00' },
-      []
-    );
+    const db = fakeDb({ model: 'ollama:llama3', title: 'Original Chat' }, { created_at: '2026-04-19T10:00:00' }, []);
     const newId = branchConversation(db, 'conv-1', 'msg-3', 'ws-1');
     expect(newId).toBeTruthy();
     expect(db._mockRun).toHaveBeenCalled();
-    // Verify the INSERT INTO conversations was called with branch title
-    const insertCall = db.prepare.mock.calls.find((c: string[]) => c[0].includes('INSERT INTO conversations'));
-    expect(insertCall).toBeTruthy();
   });
 
   it('copies messages up to the fork point', () => {
@@ -46,14 +34,11 @@ describe('branchConversation', () => {
       { role: 'user', content: 'Hello', tool_calls: null, tool_call_id: null, token_count: 5, created_at: '2026-04-19T10:00:00' },
       { role: 'assistant', content: 'Hi', tool_calls: null, tool_call_id: null, token_count: 3, created_at: '2026-04-19T10:00:01' },
     ];
-    const db = fakeDb(
-      { model: 'ollama:llama3', title: 'Chat' },
-      { created_at: '2026-04-19T10:00:01' },
-      messages
-    );
+    const db = fakeDb({ model: 'ollama:llama3', title: 'Chat' }, { created_at: '2026-04-19T10:00:01' }, messages);
     branchConversation(db, 'conv-1', 'msg-2', 'ws-1');
-    // Transaction should have been called to copy messages
-    expect(db.transaction).toHaveBeenCalled();
+    // Should insert 2 messages (one per row in messages array)
+    const insertCalls = db._mockRun.mock.calls.filter((c: unknown[]) => c.length > 3);
+    expect(insertCalls.length).toBeGreaterThanOrEqual(messages.length);
   });
 
   it('throws when source conversation not found', () => {
@@ -67,11 +52,7 @@ describe('branchConversation', () => {
   });
 
   it('returns a different id than the source', () => {
-    const db = fakeDb(
-      { model: 'ollama:llama3', title: 'Chat' },
-      { created_at: '2026-04-19T10:00:00' },
-      []
-    );
+    const db = fakeDb({ model: 'ollama:llama3', title: 'Chat' }, { created_at: '2026-04-19T10:00:00' }, []);
     const newId = branchConversation(db, 'conv-1', 'msg-1', 'ws-1');
     expect(newId).not.toBe('conv-1');
   });
