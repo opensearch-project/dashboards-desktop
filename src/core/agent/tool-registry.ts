@@ -60,15 +60,25 @@ export class ToolRegistry {
     const tool = this.tools.get(name);
     if (!tool) return { content: `Tool not found: ${name}`, isError: true };
 
+    // Combine caller's signal with timeout signal
+    const timeoutController = new AbortController();
+    const timer = setTimeout(() => timeoutController.abort(), timeoutMs);
+    const combinedSignal = context.signal.aborted ? context.signal : timeoutController.signal;
+    context.signal.addEventListener('abort', () => timeoutController.abort(), { once: true });
+
     try {
-      const result = await withTimeout(tool.execute(input, context), timeoutMs);
+      const result = await tool.execute(input, { ...context, signal: combinedSignal });
       return {
         content: truncate(result.content, MAX_OUTPUT_BYTES),
         isError: result.isError,
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      return { content: `Tool execution failed: ${msg}`, isError: true };
+      return { content: timeoutController.signal.aborted && !context.signal.aborted
+        ? `Tool timed out after ${timeoutMs}ms`
+        : `Tool execution failed: ${msg}`, isError: true };
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -76,16 +86,6 @@ export class ToolRegistry {
     const defs = this.list();
     for (const cb of this.listeners) cb(defs);
   }
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`Tool timed out after ${ms}ms`)), ms);
-    promise.then(
-      (v) => { clearTimeout(timer); resolve(v); },
-      (e) => { clearTimeout(timer); reject(e); }
-    );
-  });
 }
 
 function truncate(str: string, maxBytes: number): string {

@@ -131,7 +131,9 @@ export class AgentRuntime {
           case 'tool_call_end':
             if (currentToolCall?.name) {
               let parsedInput: Record<string, unknown> = {};
-              try { parsedInput = JSON.parse(inputBuffer); } catch { /* use empty */ }
+              try { parsedInput = JSON.parse(inputBuffer); } catch {
+                emit({ type: 'error', message: `Malformed tool input for ${currentToolCall.name}: ${inputBuffer.slice(0, 200)}`, code: 'TOOL_INPUT_PARSE' });
+              }
               const tc: ToolCall = {
                 id: currentToolCall.id ?? currentToolCall.name,
                 name: currentToolCall.name,
