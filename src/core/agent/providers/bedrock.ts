@@ -2,9 +2,13 @@ import type { ModelProvider, ModelInfo, ChatParams, StreamChunk, ChatMessage, To
 
 /**
  * AWS Bedrock provider — uses the Converse Stream API.
- * Requires AWS credentials in the environment (credential chain).
- * Uses fetch + AWS SigV4 signing via a lightweight helper.
+ * SigV4 signing via @aws-sdk/credential-provider-node + aws4.
+ * Retries on throttle (429 / ThrottlingException) with exponential backoff.
  */
+
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+
 export class BedrockProvider implements ModelProvider {
   id = 'bedrock';
   displayName = 'Amazon Bedrock';
@@ -15,8 +19,6 @@ export class BedrockProvider implements ModelProvider {
   ) {}
 
   async listModels(): Promise<ModelInfo[]> {
-    // Bedrock doesn't have a simple list endpoint usable without SDK.
-    // Return well-known models; users specify model ID directly.
     return [
       { id: 'anthropic.claude-sonnet-4-20250514-v1:0', displayName: 'Claude Sonnet 4 (Bedrock)', contextWindow: 200_000, supportsTools: true, local: false },
       { id: 'anthropic.claude-haiku-3-5-20241022-v1:0', displayName: 'Claude 3.5 Haiku (Bedrock)', contextWindow: 200_000, supportsTools: true, local: false },
@@ -37,27 +39,73 @@ export class BedrockProvider implements ModelProvider {
       body.system = [{ text: systemMsg.content }];
     }
     if (params.tools?.length) {
-      body.toolConfig = {
-        tools: params.tools.map(toConverseTool),
-      };
+      body.toolConfig = { tools: params.tools.map(toConverseTool) };
     }
 
     const url = `https://bedrock-runtime.${this.region}.amazonaws.com/model/${encodeURIComponent(params.model)}/converse-stream`;
-    let init: RequestInit = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: params.signal,
-    };
+    const jsonBody = JSON.stringify(body);
 
-    if (this.signRequest) {
-      init = await this.signRequest({ ...init, url });
-    }
-
-    const res = await fetch(url, init);
-    if (!res.ok) throw new Error(`Bedrock error: ${res.status} ${await res.text()}`);
-
+    const res = await this.fetchWithRetry(url, jsonBody, params.signal);
     yield* parseBedrockStream(res);
+  }
+
+  private async fetchWithRetry(url: string, jsonBody: string, signal?: AbortSignal): Promise<Response> {
+    let lastError: Error | undefined;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+
+      let init: RequestInit = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: jsonBody,
+        signal,
+      };
+
+      if (this.signRequest) {
+        init = await this.signRequest({ ...init, url });
+      } else {
+        init = await this.defaultSign(url, init);
+      }
+
+      const res = await fetch(url, init);
+
+      if (res.ok) return res;
+
+      const text = await res.text();
+      lastError = new Error(`Bedrock ${res.status}: ${text}`);
+
+      const isThrottle = res.status === 429 || text.includes('ThrottlingException');
+      if (!isThrottle || attempt === MAX_RETRIES) throw lastError;
+    }
+    throw lastError!;
+  }
+
+  private async defaultSign(url: string, init: RequestInit): Promise<RequestInit> {
+    try {
+      const { defaultProvider } = await import('@aws-sdk/credential-provider-node');
+      const aws4 = await import('aws4');
+      const creds = await defaultProvider()();
+      const parsed = new URL(url);
+      const signed = aws4.sign({
+        host: parsed.host,
+        path: parsed.pathname,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: init.body as string,
+        service: 'bedrock',
+        region: this.region,
+      }, {
+        accessKeyId: creds.accessKeyId,
+        secretAccessKey: creds.secretAccessKey,
+        sessionToken: creds.sessionToken,
+      });
+      return { ...init, headers: signed.headers as Record<string, string> };
+    } catch (err) {
+      throw new Error(`AWS credential resolution failed: ${err instanceof Error ? err.message : err}`);
+    }
   }
 }
 

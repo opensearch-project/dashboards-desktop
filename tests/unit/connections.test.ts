@@ -9,16 +9,16 @@ vi.mock('electron', () => ({
   },
 }));
 
-// Mock OpenSearch client
+// Mock OpenSearch client — create fresh mock fn per test via factory
 const mockOsInfo = vi.fn();
 vi.mock('@opensearch-project/opensearch', () => ({
-  Client: vi.fn().mockImplementation(() => ({ info: mockOsInfo })),
+  Client: vi.fn().mockImplementation(() => ({ info: (...args: unknown[]) => mockOsInfo(...args) })),
 }));
 
 // Mock Elasticsearch client
 const mockEsInfo = vi.fn();
 vi.mock('@elastic/elasticsearch', () => ({
-  Client: vi.fn().mockImplementation(() => ({ info: mockEsInfo })),
+  Client: vi.fn().mockImplementation(() => ({ info: (...args: unknown[]) => mockEsInfo(...args) })),
 }));
 
 import { testConnection, encryptCredential, decryptCredential } from '../../src/core/connections';
@@ -26,7 +26,10 @@ import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
 import { Client as ElasticsearchClient } from '@elastic/elasticsearch';
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  mockOsInfo.mockReset();
+  mockEsInfo.mockReset();
+  (OpenSearchClient as unknown as ReturnType<typeof vi.fn>).mockClear();
+  (ElasticsearchClient as unknown as ReturnType<typeof vi.fn>).mockClear();
 });
 
 describe('testConnection: OpenSearch', () => {
@@ -76,8 +79,10 @@ describe('testConnection: OpenSearch', () => {
 
 describe('testConnection: Elasticsearch', () => {
   it('returns success for healthy cluster', async () => {
+    // ES client returns body directly (no .body wrapper)
     mockEsInfo.mockResolvedValue({
-      cluster_name: 'es-cluster', version: { number: '8.17.0' },
+      cluster_name: 'es-cluster',
+      version: { number: '8.17.0' },
     });
 
     const result = await testConnection({

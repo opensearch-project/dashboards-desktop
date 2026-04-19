@@ -22,7 +22,7 @@ export const Onboarding: React.FC<Props> = ({ onComplete }) => {
     setTesting(true);
     setTestResult(null);
     try {
-      const result = await window.osd.connections.test({ name: connName, url: connUrl, type: connType, auth_type: authType });
+      const result = await window.osd.connections.test({ name: connName, url: connUrl, type: connType, auth_type: authType, workspace_id: 'default' });
       setTestResult(result ?? { success: false, error: 'IPC unavailable' });
     } catch (e: any) {
       setTestResult({ success: false, error: e.message });

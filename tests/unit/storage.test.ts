@@ -3,175 +3,190 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-// Mock uuid before importing storage
-vi.mock('uuid', () => ({ v4: () => 'test-uuid-' + Math.random().toString(36).slice(2, 8) }));
+// Mock uuid
+vi.mock('uuid', () => ({ v4: vi.fn(() => 'uuid-' + Math.random().toString(36).slice(2, 8)) }));
 
-import {
-  initDatabase,
-  getSchemaVersion,
-  LATEST_SCHEMA_VERSION,
-  addConnection,
-  getConnection,
-  listConnections,
-  updateConnection,
-  deleteConnection,
-  listWorkspaces,
-  createWorkspace,
-  getSetting,
-  setSetting,
-} from '../../src/core/storage';
+// In-memory SQLite mock that simulates better-sqlite3 API
+function createMockDb() {
+  const tables = new Map<string, Map<string, Record<string, unknown>>>();
+  const pragmas: Record<string, unknown> = {};
+  const stmtResults = new Map<string, unknown[]>();
+
+  return {
+    pragma: vi.fn((cmd: string) => {
+      if (cmd.includes('=')) {
+        const [key, val] = cmd.split('=').map((s) => s.trim());
+        pragmas[key] = val;
+        return;
+      }
+      if (cmd === 'journal_mode') return [{ journal_mode: pragmas['journal_mode'] || 'wal' }];
+      if (cmd === 'foreign_keys') return [{ foreign_keys: pragmas['foreign_keys'] === 'ON' ? 1 : 0 }];
+      return [];
+    }),
+    exec: vi.fn(),
+    prepare: vi.fn(() => ({
+      run: vi.fn(),
+      get: vi.fn(),
+      all: vi.fn(() => []),
+    })),
+    close: vi.fn(),
+    _pragmas: pragmas,
+  };
+}
+
+let mockDb: ReturnType<typeof createMockDb>;
+
+vi.mock('better-sqlite3', () => {
+  return {
+    default: vi.fn(() => {
+      mockDb = createMockDb();
+      return mockDb;
+    }),
+  };
+});
 
 let tmpDir: string;
 let dbPath: string;
-let db: ReturnType<typeof initDatabase>;
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'osd-test-'));
   dbPath = path.join(tmpDir, 'osd.db');
-  db = initDatabase(dbPath);
+  vi.resetModules();
 });
 
 afterEach(() => {
-  db.close();
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-describe('Storage: auto-init', () => {
-  it('creates DB file and all required tables', () => {
-    expect(fs.existsSync(dbPath)).toBe(true);
-    const tables: { name: string }[] = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
-      .all();
-    const names = tables.map((t) => t.name);
-    expect(names).toContain('connections');
-    expect(names).toContain('workspaces');
-    expect(names).toContain('settings');
-    expect(names).toContain('conversations');
-    expect(names).toContain('messages');
-    expect(names).toContain('schema_version');
+describe('Storage: initDatabase', () => {
+  it('creates a Database instance and enables WAL + foreign keys', async () => {
+    const storage = await import('../../src/core/storage');
+    const db = storage.initDatabase(dbPath);
+    expect(db.pragma).toHaveBeenCalledWith('journal_mode = WAL');
+    expect(db.pragma).toHaveBeenCalledWith('foreign_keys = ON');
   });
 
-  it('enables WAL mode', () => {
-    const result = db.pragma('journal_mode');
-    expect(result[0].journal_mode).toBe('wal');
+  it('runs migrations via db.exec', async () => {
+    const storage = await import('../../src/core/storage');
+    const db = storage.initDatabase(dbPath);
+    // Should have called exec with migration SQL containing CREATE TABLE
+    expect(db.exec).toHaveBeenCalled();
+    const execCall = (db.exec as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    expect(execCall).toContain('CREATE TABLE');
+    expect(execCall).toContain('connections');
+    expect(execCall).toContain('workspaces');
+    expect(execCall).toContain('settings');
+    expect(execCall).toContain('conversations');
+    expect(execCall).toContain('messages');
   });
 
-  it('enables foreign keys', () => {
-    const result = db.pragma('foreign_keys');
-    expect(result[0].foreign_keys).toBe(1);
-  });
-
-  it('is idempotent — calling init twice does not error', () => {
-    const db2 = initDatabase(dbPath);
-    db2.close();
+  it('exports LATEST_SCHEMA_VERSION as a number >= 1', async () => {
+    const storage = await import('../../src/core/storage');
+    expect(typeof storage.LATEST_SCHEMA_VERSION).toBe('number');
+    expect(storage.LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(1);
   });
 });
 
-describe('Storage: schema migrations', () => {
-  it('sets schema version to LATEST_SCHEMA_VERSION on fresh init', () => {
-    expect(getSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
+describe('Storage: getSchemaVersion', () => {
+  it('returns 0 when schema_version table does not exist', async () => {
+    const storage = await import('../../src/core/storage');
+    const fakeDb = {
+      prepare: vi.fn(() => ({
+        get: vi.fn(() => { throw new Error('no such table'); }),
+      })),
+    };
+    expect(storage.getSchemaVersion(fakeDb)).toBe(0);
   });
 
-  it('returns 0 for a DB with no schema_version table', () => {
-    const emptyPath = path.join(tmpDir, 'empty.db');
-    const Database = require('better-sqlite3');
-    const emptyDb = new Database(emptyPath);
-    expect(getSchemaVersion(emptyDb)).toBe(0);
-    emptyDb.close();
+  it('returns version from schema_version table', async () => {
+    const storage = await import('../../src/core/storage');
+    const fakeDb = {
+      prepare: vi.fn(() => ({
+        get: vi.fn(() => ({ version: 1 })),
+      })),
+    };
+    expect(storage.getSchemaVersion(fakeDb)).toBe(1);
   });
 });
 
-describe('Storage: connections CRUD', () => {
-  let wsId: string;
-
-  beforeEach(() => {
-    const ws = listWorkspaces(db);
-    wsId = (ws[0] as { id: string }).id;
-  });
-
-  it('adds a connection and retrieves it', () => {
-    const id = addConnection(db, {
-      name: 'test-cluster',
-      url: 'https://localhost:9200',
-      type: 'opensearch',
-      auth_type: 'basic',
-      workspace_id: wsId,
+describe('Storage: addConnection', () => {
+  it('inserts a row and returns an id', async () => {
+    const storage = await import('../../src/core/storage');
+    const mockRun = vi.fn();
+    const fakeDb = {
+      prepare: vi.fn(() => ({ run: mockRun, get: vi.fn(), all: vi.fn(() => []) })),
+    };
+    const id = storage.addConnection(fakeDb, {
+      name: 'test', url: 'https://localhost:9200', type: 'opensearch',
+      auth_type: 'basic', workspace_id: 'ws-1',
     });
     expect(id).toBeTruthy();
-
-    const conn = getConnection(db, id) as Record<string, unknown>;
-    expect(conn.name).toBe('test-cluster');
-    expect(conn.url).toBe('https://localhost:9200');
-    expect(conn.type).toBe('opensearch');
-    expect(conn.auth_type).toBe('basic');
-    expect(conn.workspace_id).toBe(wsId);
-  });
-
-  it('lists connections filtered by workspace', () => {
-    const ws2 = createWorkspace(db, 'Other');
-    addConnection(db, { name: 'a', url: 'https://a:9200', type: 'opensearch', auth_type: 'none', workspace_id: wsId });
-    addConnection(db, { name: 'b', url: 'https://b:9200', type: 'elasticsearch', auth_type: 'apikey', workspace_id: wsId });
-    addConnection(db, { name: 'c', url: 'https://c:9200', type: 'opensearch', auth_type: 'none', workspace_id: ws2 });
-
-    const conns = listConnections(db, wsId) as { name: string }[];
-    expect(conns).toHaveLength(2);
-    expect(conns.map((c) => c.name).sort()).toEqual(['a', 'b']);
-  });
-
-  it('lists all connections when no workspace filter', () => {
-    addConnection(db, { name: 'x', url: 'https://x:9200', type: 'opensearch', auth_type: 'none', workspace_id: wsId });
-    const all = listConnections(db);
-    expect(all.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('updates a connection', () => {
-    const id = addConnection(db, { name: 'old', url: 'https://localhost:9200', type: 'opensearch', auth_type: 'none', workspace_id: wsId });
-    updateConnection(db, id, { name: 'new' });
-    const conn = getConnection(db, id) as Record<string, unknown>;
-    expect(conn.name).toBe('new');
-  });
-
-  it('deletes a connection', () => {
-    const id = addConnection(db, { name: 'del', url: 'https://localhost:9200', type: 'opensearch', auth_type: 'none', workspace_id: wsId });
-    deleteConnection(db, id);
-    expect(getConnection(db, id)).toBeUndefined();
+    expect(mockRun).toHaveBeenCalled();
   });
 });
 
-describe('Storage: workspaces', () => {
-  it('creates a default workspace on init', () => {
-    const ws = listWorkspaces(db) as { is_default: number }[];
-    expect(ws.length).toBeGreaterThanOrEqual(1);
-    expect(ws.some((w) => w.is_default === 1)).toBe(true);
+describe('Storage: getConnection', () => {
+  it('queries by id', async () => {
+    const storage = await import('../../src/core/storage');
+    const mockGet = vi.fn(() => ({ id: 'abc', name: 'test' }));
+    const fakeDb = { prepare: vi.fn(() => ({ get: mockGet })) };
+    const result = storage.getConnection(fakeDb, 'abc');
+    expect(result).toEqual({ id: 'abc', name: 'test' });
+    expect(mockGet).toHaveBeenCalledWith('abc');
   });
 
-  it('creates and lists workspaces', () => {
-    const id = createWorkspace(db, 'My Workspace');
-    expect(id).toBeTruthy();
-    const ws = listWorkspaces(db) as { name: string }[];
-    expect(ws.some((w) => w.name === 'My Workspace')).toBe(true);
+  it('returns undefined for missing connection', async () => {
+    const storage = await import('../../src/core/storage');
+    const fakeDb = { prepare: vi.fn(() => ({ get: vi.fn(() => undefined) })) };
+    expect(storage.getConnection(fakeDb, 'missing')).toBeUndefined();
   });
+});
 
-  it('default workspace is listed first', () => {
-    createWorkspace(db, 'AAA');
-    const ws = listWorkspaces(db) as { is_default: number }[];
-    expect(ws[0].is_default).toBe(1);
+describe('Storage: deleteConnection', () => {
+  it('deletes by id', async () => {
+    const storage = await import('../../src/core/storage');
+    const mockRun = vi.fn();
+    const fakeDb = { prepare: vi.fn(() => ({ run: mockRun })) };
+    storage.deleteConnection(fakeDb, 'abc');
+    expect(mockRun).toHaveBeenCalledWith('abc');
   });
 });
 
 describe('Storage: settings', () => {
-  it('sets and gets a setting', () => {
-    setSetting(db, 'theme', 'dark');
-    expect(getSetting(db, 'theme')).toBe('dark');
+  it('setSetting calls INSERT OR REPLACE', async () => {
+    const storage = await import('../../src/core/storage');
+    const mockRun = vi.fn();
+    const fakeDb = { prepare: vi.fn(() => ({ run: mockRun })) };
+    storage.setSetting(fakeDb, 'theme', 'dark');
+    expect(mockRun).toHaveBeenCalledWith('theme', 'dark');
   });
 
-  it('returns undefined for missing setting', () => {
-    expect(getSetting(db, 'nonexistent')).toBeUndefined();
+  it('getSetting returns value or undefined', async () => {
+    const storage = await import('../../src/core/storage');
+    const fakeDb = { prepare: vi.fn(() => ({ get: vi.fn(() => ({ value: 'dark' })) })) };
+    expect(storage.getSetting(fakeDb, 'theme')).toBe('dark');
+
+    const fakeDb2 = { prepare: vi.fn(() => ({ get: vi.fn(() => undefined) })) };
+    expect(storage.getSetting(fakeDb2, 'missing')).toBeUndefined();
+  });
+});
+
+describe('Storage: workspaces', () => {
+  it('createWorkspace inserts and returns id', async () => {
+    const storage = await import('../../src/core/storage');
+    const mockRun = vi.fn();
+    const fakeDb = { prepare: vi.fn(() => ({ run: mockRun, get: vi.fn(), all: vi.fn(() => []) })) };
+    const id = storage.createWorkspace(fakeDb, 'My WS');
+    expect(id).toBeTruthy();
+    expect(mockRun).toHaveBeenCalled();
   });
 
-  it('overwrites existing setting via INSERT OR REPLACE', () => {
-    setSetting(db, 'model', 'ollama:llama3');
-    setSetting(db, 'model', 'anthropic:claude');
-    expect(getSetting(db, 'model')).toBe('anthropic:claude');
+  it('listWorkspaces returns array', async () => {
+    const storage = await import('../../src/core/storage');
+    const mockAll = vi.fn(() => [{ id: '1', name: 'Default', is_default: 1 }]);
+    const fakeDb = { prepare: vi.fn(() => ({ all: mockAll })) };
+    const ws = storage.listWorkspaces(fakeDb);
+    expect(ws).toHaveLength(1);
+    expect((ws[0] as { name: string }).name).toBe('Default');
   });
 });

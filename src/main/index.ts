@@ -133,31 +133,33 @@ function getOrCreateRuntime(): AgentRuntime {
   return agentRuntime;
 }
 
-ipcMain.handle('agent:send', async (_e, conversationId: string, message: string) => {
+ipcMain.handle(IPC.AGENT_SEND, async (_e, message: string, conversationId?: string) => {
   const runtime = getOrCreateRuntime();
+  // Create conversation if not provided
+  const convId = conversationId ?? 'default';
   const emit = (event: StreamEvent) => {
-    mainWindow?.webContents.send('agent:stream', event);
+    mainWindow?.webContents.send(IPC.AGENT_STREAM, event);
   };
-  await runtime.chat(conversationId, message, emit);
+  await runtime.chat(convId, message, emit);
 });
 
-ipcMain.handle('agent:cancel', () => {
+ipcMain.handle(IPC.AGENT_CANCEL, () => {
   agentRuntime?.cancel();
 });
 
-ipcMain.handle('agent:switchModel', (_e, specifier: string) => {
+ipcMain.handle(IPC.MODEL_SWITCH, (_e, specifier: string) => {
   const runtime = getOrCreateRuntime();
   runtime.setModel(specifier);
   return true;
 });
 
-ipcMain.handle('agent:listModels', async () => {
+ipcMain.handle(IPC.MODEL_LIST, async () => {
   const runtime = getOrCreateRuntime();
   const router = (runtime as unknown as { router: ModelRouter }).router;
   return router.listAllModels();
 });
 
-ipcMain.handle('agent:getModel', () => {
+ipcMain.handle(IPC.MODEL_CURRENT, () => {
   return agentRuntime?.getModel() ?? 'ollama:llama3';
 });
 
