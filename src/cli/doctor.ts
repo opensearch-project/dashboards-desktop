@@ -76,7 +76,7 @@ function checkMcpServers(): Check[] {
 
 async function checkOllama(): Promise<Check> {
   try {
-    const res = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) });
+    const _res = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) });
     if (!res.ok) return { name: 'Ollama', status: 'fail', message: `HTTP ${res.status}` };
     const data = (await res.json()) as { models?: unknown[] };
     const count = data.models?.length ?? 0;
@@ -130,7 +130,7 @@ async function checkConnections(): Promise<Check[]> {
     const checks: Check[] = [];
     for (const conn of conns) {
       try {
-        const res = await fetch(conn.url, { signal: AbortSignal.timeout(5000) });
+        const _res = await fetch(conn.url, { signal: AbortSignal.timeout(5000) });
         checks.push({ name: `Connection: ${conn.name}`, status: 'ok', message: `${conn.type} — reachable` });
       } catch {
         checks.push({ name: `Connection: ${conn.name}`, status: 'fail', message: `${conn.url} unreachable`, fix: 'Check URL and network connectivity' });

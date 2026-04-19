@@ -378,7 +378,7 @@ const originalHandle = ipcMain.handle.bind(ipcMain);
 ipcMain.handle = ((channel: string, listener: (...args: any[]) => any) => {
   return originalHandle(channel, async (...args: any[]) => {
     try {
-      return await (listener as Function)(...args);
+      return await (listener as (...args: unknown[]) => unknown)(...args);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       const stack = err instanceof Error ? err.stack : undefined;

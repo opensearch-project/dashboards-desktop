@@ -6,7 +6,7 @@
  * registers/unregisters tools when servers start or stop.
  */
 
-import type { AgentTool, ToolDefinition, ToolResult, ToolContext } from '../agent/types';
+import type { AgentTool,  ToolResult, ToolContext } from '../agent/types';
 import { ToolRegistry } from '../agent/tool-registry';
 import { McpDiscovery } from './discovery';
 import { McpSupervisor } from './supervisor';

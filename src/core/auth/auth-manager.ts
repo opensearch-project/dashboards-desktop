@@ -27,7 +27,7 @@ function storeToken(key: string, token: string): void {
   }
 }
 
-function loadToken(key: string): string | null {
+function _loadToken(key: string): string | null {
   const buf = tokenStore.get(key);
   if (!buf) return null;
   return safeStorage.decryptString(buf);
