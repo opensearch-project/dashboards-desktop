@@ -76,7 +76,7 @@ function checkMcpServers(): Check[] {
 
 async function checkOllama(): Promise<Check> {
   try {
-    const _res = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) });
+    const res = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) });
     if (!res.ok) return { name: 'Ollama', status: 'fail', message: `HTTP ${res.status}` };
     const data = (await res.json()) as { models?: unknown[] };
     const count = data.models?.length ?? 0;
