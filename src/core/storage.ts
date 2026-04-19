@@ -288,7 +288,7 @@ export class StorageProxy {
       else p.resolve(resp.result);
     });
     // Fix #1: reject all pending on worker crash/exit
-    this.worker.on('error', (err) => this.rejectAll(err));
+    this.worker.on('error', (err) => this.rejectAll(err instanceof Error ? err : new Error(String(err))));
     this.worker.on('exit', (code) => {
       if (code !== 0) this.rejectAll(new Error(`Storage worker exited with code ${code}`));
     });
