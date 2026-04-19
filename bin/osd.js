@@ -13,6 +13,9 @@ if (command === 'chat') {
 } else if (command === 'agent') {
   const { handleAgentCommand } = require('../src/cli/agents.js');
   handleAgentCommand(args.slice(1));
+} else if (command === 'doctor') {
+  const { handleDoctorCommand } = require('../src/cli/doctor.js');
+  handleDoctorCommand();
 } else if (args.includes('--tui')) {
   require('../src/tui/index.js');
 } else {
