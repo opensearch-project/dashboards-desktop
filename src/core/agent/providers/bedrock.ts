@@ -135,26 +135,50 @@ function toConverseTool(tool: ToolDefinition) {
 
 async function* parseBedrockStream(res: Response): AsyncIterable<StreamChunk> {
   const reader = res.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
   let inputTokens = 0;
   let outputTokens = 0;
+  let buf = new Uint8Array(0);
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    buffer += decoder.decode(value, { stream: true });
 
-    // Bedrock event stream uses `:event-type` headers in binary framing.
-    // For simplicity, parse as newline-delimited JSON chunks from the response body.
-    const lines = buffer.split('\n');
-    buffer = lines.pop()!;
+    // Append new data to buffer
+    const next = new Uint8Array(buf.length + value.length);
+    next.set(buf);
+    next.set(value, buf.length);
+    buf = next;
 
-    for (const line of lines) {
-      if (!line.trim()) continue;
+    // Parse complete AWS event-stream frames from buffer
+    while (buf.length >= 12) {
+      const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+      const totalLen = view.getUint32(0);
+      if (buf.length < totalLen) break; // incomplete frame
+
+      const headersLen = view.getUint32(4);
+      // Skip: 4 prelude CRC at offset 8
+      const headersEnd = 12 + headersLen;
+      const payloadEnd = totalLen - 4; // last 4 bytes = message CRC
+
+      // Parse headers to find :event-type and :content-type
+      const headers = parseEventHeaders(buf.slice(12, headersEnd));
+      const eventType = headers[':event-type'] ?? '';
+
+      // Extract payload
+      const payload = buf.slice(headersEnd, payloadEnd);
+      buf = buf.slice(totalLen);
+
+      // Exception frames
+      if (headers[':message-type'] === 'exception') {
+        const text = new TextDecoder().decode(payload);
+        throw new Error(`Bedrock stream error: ${eventType} — ${text}`);
+      }
+
+      if (payload.length === 0) continue;
+
       let event: BedrockEvent;
       try {
-        event = JSON.parse(line);
+        event = JSON.parse(new TextDecoder().decode(payload));
       } catch {
         continue;
       }
@@ -176,6 +200,53 @@ async function* parseBedrockStream(res: Response): AsyncIterable<StreamChunk> {
   }
 
   yield { type: 'usage', usage: { inputTokens, outputTokens } };
+}
+
+/**
+ * Parse AWS event-stream headers from a binary buffer.
+ * Format: name (1-byte len + string), type (1 byte), value (2-byte len + bytes)
+ * We only care about type 7 (string) headers.
+ */
+function parseEventHeaders(buf: Uint8Array): Record<string, string> {
+  const headers: Record<string, string> = {};
+  let offset = 0;
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  const decoder = new TextDecoder();
+
+  while (offset < buf.length) {
+    const nameLen = buf[offset++];
+    const name = decoder.decode(buf.slice(offset, offset + nameLen));
+    offset += nameLen;
+
+    const headerType = buf[offset++];
+
+    if (headerType === 7) {
+      // String type: 2-byte length + UTF-8 value
+      const valLen = view.getUint16(offset);
+      offset += 2;
+      const value = decoder.decode(buf.slice(offset, offset + valLen));
+      offset += valLen;
+      headers[name] = value;
+    } else if (headerType === 0) {
+      // Bool true — no value bytes
+      headers[name] = 'true';
+    } else if (headerType === 1) {
+      // Bool false — no value bytes
+      headers[name] = 'false';
+    } else if (headerType === 4) {
+      // Timestamp — 8 bytes
+      offset += 8;
+    } else if (headerType === 6) {
+      // Bytes — 2-byte length + bytes
+      const valLen = view.getUint16(offset);
+      offset += 2 + valLen;
+    } else {
+      // Unknown type — can't safely skip, bail
+      break;
+    }
+  }
+
+  return headers;
 }
 
 interface BedrockEvent {
