@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Conversation } from '../../core/types';
 
 interface Props {
@@ -20,16 +20,15 @@ export const ConversationSidebar: React.FC<Props> = ({
   const [renameValue, setRenameValue] = useState('');
   const renameRef = useRef<HTMLInputElement>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!workspaceId) return;
     const list = await window.osd.conversations.list(workspaceId);
     setConversations(list);
-  };
+  }, [workspaceId]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId]);
+  }, [load]);
 
   useEffect(() => {
     if (renamingId) renameRef.current?.focus();
