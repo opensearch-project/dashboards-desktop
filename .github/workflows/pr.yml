@@ -54,18 +54,6 @@ jobs:
           name: coverage-unit
           path: coverage/
 
-  test-renderer:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - run: npm rebuild better-sqlite3
-      - run: npm run test:renderer
-
   native-module-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -81,7 +69,7 @@ jobs:
         run: node -e "const db = require('better-sqlite3')(':memory:'); db.exec('CREATE TABLE t(id INTEGER)'); db.prepare('INSERT INTO t VALUES(1)').run(); const r = db.prepare('SELECT * FROM t').get(); if(r.id !== 1) throw new Error('SQLite smoke test failed'); console.log('✅ better-sqlite3 smoke test passed');"
 
   build:
-    needs: [lint, typecheck, test-unit, test-renderer, native-module-smoke]
+    needs: [lint, typecheck, test-unit, native-module-smoke]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

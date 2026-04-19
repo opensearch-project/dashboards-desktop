@@ -7,8 +7,17 @@ directories:
   buildResources: build
 
 files:
-  - dist/**/*
+  - dist/main/**/*
+  - dist/preload/**/*
+  - dist/core/**/*
+  - dist/cli/**/*
+  - dist/tui/**/*
   - package.json
+
+extraResources:
+  - from: "assets/osd-setup"
+    to: "osd-setup"
+    filter: ["**/*"]
 
 asar: true
 asarUnpack:

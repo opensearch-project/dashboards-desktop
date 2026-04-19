@@ -106,6 +106,7 @@ export const IPC = {
   AUTH_LOGIN_GITHUB: 'auth:login:github',
   AUTH_LOGIN_GOOGLE: 'auth:login:google',
   AUTH_LOGOUT: 'auth:logout',
+  CONNECTION_SWITCH: 'connection:switch',
   AUTH_CURRENT_USER: 'auth:currentUser',
   // M4: Extensibility
   PLUGIN_LIST: 'plugin:list',

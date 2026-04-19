@@ -1,0 +1,28 @@
+{
+  "version": "3.6.0",
+  "artifacts": {
+    "linux-x64": {
+      "url": "https://artifacts.opensearch.org/releases/core/opensearch-dashboards/3.6.0/opensearch-dashboards-min-3.6.0-linux-x64.tar.gz",
+      "sha256": "",
+      "size": 217769295
+    },
+    "linux-arm64": {
+      "url": "https://artifacts.opensearch.org/releases/core/opensearch-dashboards/3.6.0/opensearch-dashboards-min-3.6.0-linux-arm64.tar.gz",
+      "sha256": "",
+      "size": 0
+    },
+    "win32-x64": {
+      "url": "https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/3.6.0/opensearch-dashboards-3.6.0-windows-x64.zip",
+      "sha256": "",
+      "size": 533712897
+    },
+    "darwin-x64": {
+      "type": "build-from-source",
+      "note": "macOS has no official OSD binary — requires CI-built artifact"
+    },
+    "darwin-arm64": {
+      "type": "build-from-source",
+      "note": "macOS has no official OSD binary — requires CI-built artifact"
+    }
+  }
+}
