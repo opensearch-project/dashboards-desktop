@@ -207,9 +207,9 @@ ipcMain.handle(IPC.INDICES_OPEN, async (_e, index: string) => {
   if (activeConnectionType === 'opensearch') return (await osClient().indices.open({ index })).body;
   return esClient().indices.open({ index });
 });
-ipcMain.handle(IPC.INDICES_UPDATE_ALIAS, async (_e, actions: Record<string, unknown>) => {
+ipcMain.handle(IPC.INDICES_UPDATE_ALIAS, async (_e, actions: unknown) => {
   if (activeConnectionType === 'opensearch') return (await osClient().indices.updateAliases({ body: { actions } })).body;
-  return esClient().indices.updateAliases({ actions });
+  return esClient().indices.updateAliases({ actions } as Record<string, unknown>);
 });
 
 // --- IPC: Conversations ---
