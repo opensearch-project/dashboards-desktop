@@ -2,7 +2,7 @@
  * Conversation manager — per-workspace conversation storage and context window management.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import * as crypto from 'crypto';
 import type { ChatMessage, ModelInfo, ToolDefinition } from './types';
 
 const RESERVED_OUTPUT_TOKENS = 4096;
@@ -14,7 +14,7 @@ export class ConversationManager {
   constructor(private db: DB) {}
 
   create(workspaceId: string, model: string, title?: string): string {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     this.db.prepare(
       `INSERT INTO conversations (id, workspace_id, title, model, created_at, updated_at)
        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`
@@ -33,7 +33,7 @@ export class ConversationManager {
   }
 
   addMessage(conversationId: string, role: string, content: string, toolCalls?: string, toolCallId?: string): string {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     const tokenCount = estimateTokens(content);
     this.db.prepare(
       `INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id, token_count, created_at)

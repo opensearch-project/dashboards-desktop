@@ -2,7 +2,7 @@
  * App menu — File, Edit, View, Window, Help with keyboard shortcuts + About dialog.
  */
 
-import { Menu, BrowserWindow, app, dialog, shell, type MenuItemConstructorOptions } from 'electron';
+import { Menu, app, dialog, shell, type BrowserWindow, type MenuItemConstructorOptions } from 'electron';
 
 const isMac = process.platform === 'darwin';
 
