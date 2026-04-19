@@ -41,6 +41,7 @@ export class OsdLifecycle extends EventEmitter {
 
     const args = [
       '--server.port', String(this._port),
+      '--data_source.enabled', 'true',
       ...(this.config.opensearchUrl ? ['--opensearch.hosts', this.config.opensearchUrl] : []),
       ...(this.config.args ?? []),
     ];
