@@ -11,6 +11,8 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
+    minWidth: 800,
+    minHeight: 600,
     title: 'OpenSearch Dashboards Desktop',
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'index.js'),
