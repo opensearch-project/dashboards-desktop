@@ -59,6 +59,7 @@ export class OpenAIProvider implements ModelProvider {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let lastUsage = { inputTokens: 0, outputTokens: 0 };
 
     while (true) {
       const { done, value } = await reader.read();
@@ -72,7 +73,7 @@ export class OpenAIProvider implements ModelProvider {
         if (!line.startsWith('data: ')) continue;
         const data = line.slice(6).trim();
         if (data === '[DONE]') {
-          yield { type: 'usage', usage: { inputTokens: 0, outputTokens: 0 } };
+          yield { type: 'usage', usage: lastUsage };
           return;
         }
 
@@ -98,12 +99,9 @@ export class OpenAIProvider implements ModelProvider {
         }
 
         if (chunk.usage) {
-          yield {
-            type: 'usage',
-            usage: {
-              inputTokens: chunk.usage.prompt_tokens,
-              outputTokens: chunk.usage.completion_tokens,
-            },
+          lastUsage = {
+            inputTokens: chunk.usage.prompt_tokens ?? lastUsage.inputTokens,
+            outputTokens: chunk.usage.completion_tokens ?? lastUsage.outputTokens,
           };
         }
       }

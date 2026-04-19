@@ -96,12 +96,13 @@ export class OllamaProvider implements ModelProvider {
 
         if (chunk.message?.tool_calls) {
           for (const tc of chunk.message.tool_calls) {
+            const tcId = randomUUID();
             yield {
               type: 'tool_call_start',
-              toolCall: { id: tc.function.name, name: tc.function.name },
+              toolCall: { id: tcId, name: tc.function.name },
             };
             yield { type: 'tool_call_delta', content: JSON.stringify(tc.function.arguments) };
-            yield { type: 'tool_call_end', toolCall: { id: tc.function.name } };
+            yield { type: 'tool_call_end', toolCall: { id: tcId } };
           }
         } else if (chunk.message?.content) {
           yield { type: 'text', content: chunk.message.content };

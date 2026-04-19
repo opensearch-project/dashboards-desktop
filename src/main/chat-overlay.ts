@@ -40,7 +40,8 @@ export function setupChatOverlay(mainWindow: BrowserWindow): void {
     toggleChat(mainWindow);
   });
 
-  // Handle close from chat panel
+  // Handle close from chat panel (remove first to avoid double-register on macOS reactivate)
+  ipcMain.removeHandler('chat-overlay:close');
   ipcMain.handle('chat-overlay:close', () => {
     hideChat(mainWindow);
   });

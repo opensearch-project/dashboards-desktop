@@ -215,16 +215,24 @@ export class MultiAgentOrchestrator {
   ): AsyncIterable<StreamEvent> {
     const agents = this.registry.list();
 
-    // Run all agents in parallel
+    // Run all agents in parallel with 30s per-agent timeout
     const promises = agents.map(async (agent) => {
       let text = '';
-      for await (const chunk of agent.chat(userMessage, signal)) {
-        if (chunk.type === 'text') text += chunk.content ?? '';
-      }
-      return text ? `**${agent.name}**: ${text}` : null;
+      const timeout = new Promise<null>((r) => setTimeout(() => r(null), 30_000));
+      const work = (async () => {
+        for await (const chunk of agent.chat(userMessage, signal)) {
+          if (chunk.type === 'text') text += chunk.content ?? '';
+        }
+        return text ? `**${agent.name}**: ${text}` : null;
+      })();
+      return Promise.race([work, timeout]);
     });
 
-    const results = (await Promise.all(promises)).filter(Boolean);
+    const settled = await Promise.allSettled(promises);
+    const results = settled
+      .filter((r): r is PromiseFulfilledResult<string | null> => r.status === 'fulfilled')
+      .map((r) => r.value)
+      .filter(Boolean);
     const merged = results.join('\n\n');
     yield { type: 'token', content: merged };
     yield { type: 'done', usage: { inputTokens: 0, outputTokens: 0 } };

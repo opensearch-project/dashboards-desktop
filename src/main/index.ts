@@ -6,6 +6,7 @@ import { initStorage, getStorageProxy } from '../core/storage';
 import { testConnection } from '../core/connections';
 
 let mainWindow: BrowserWindow | null = null;
+let destroyChatOverlay: () => void = () => {};
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -667,7 +668,9 @@ app.whenReady().then(async () => {
     win.loadURL(`http://localhost:${osdPort}`);
 
     // Chat overlay (BrowserView sidebar — fee's implementation)
-    const { setupChatOverlay } = await import('./chat-overlay.js');
+    const chatOverlay = await import('./chat-overlay.js');
+    const { setupChatOverlay } = chatOverlay;
+    destroyChatOverlay = chatOverlay.destroyChatOverlay;
     setupChatOverlay(win);
   }
 
@@ -713,6 +716,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
+  destroyChatOverlay();
   if (process.platform !== 'darwin') app.quit();
 });
 
