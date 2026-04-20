@@ -738,6 +738,13 @@ app.whenReady().then(async () => {
       const osdView = win?.getBrowserViews().find(v => v.webContents.getURL().includes('localhost'));
       if (osdView) osdView.webContents.loadURL(`http://localhost:${osdPort}${urlPath}`);
     });
+
+    ipcMain.handle('__navigate_home__', () => {
+      const osdPort = process.env.OSD_PORT ?? '5601';
+      const win = BrowserWindow.getAllWindows()[0];
+      const osdView = win?.getBrowserViews().find(v => v.webContents.getURL().includes('localhost'));
+      if (osdView) osdView.webContents.loadURL(`http://localhost:${osdPort}/app/home`);
+    });
   }
 
   // 4. Create window — loads OSD if ready, fallback otherwise
@@ -778,6 +785,12 @@ app.whenReady().then(async () => {
 
   // 5. Register M4 IPC bridges
   registerAllM4IPC();
+
+  // 6. Backup/Restore + Recovery
+  const { registerBackupRestoreIPC } = await import('./backup-restore.js');
+  const { registerRecoveryIPC } = await import('./recovery.js');
+  registerBackupRestoreIPC();
+  registerRecoveryIPC();
 
   // 3. Wire devops backends when available (setter injection)
   try {
