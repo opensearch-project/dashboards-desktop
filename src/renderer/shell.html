@@ -102,6 +102,9 @@
           <div id="conn-list"><span class="meta">Loading...</span></div>
         </div>
       `,
+      chat: `
+        <iframe id="chat-frame" src="./chat-overlay.html" style="width:100%;height:100vh;border:none;"></iframe>
+      `,
     };
 
     // Navigation
@@ -116,12 +119,15 @@
           return;
         }
         if (page === 'chat') {
-          // Chat is a full page — hide OSD, show chat BrowserView
+          // Chat is a regular page like plugins/settings
           document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           currentPage = 'chat';
-          content.classList.remove('visible');
-          ipcRenderer.invoke('chat-overlay:toggle');
+          content.classList.add('visible');
+          content.innerHTML = pages.chat;
+          content.style.height = '100vh';
+          content.style.padding = '0';
+          ipcRenderer.invoke('shell:hide-osd');
           return;
         }
         if (page === 'feedback') {
@@ -136,13 +142,13 @@
 
         if (page === 'home') {
           content.classList.remove('visible');
+          content.style.padding = '32px';
           ipcRenderer.invoke('shell:show-osd');
-          ipcRenderer.invoke('chat-overlay:close');
         } else {
           content.classList.add('visible');
+          content.style.padding = '32px';
           content.innerHTML = pages[page] || `<h1>${page}</h1><p class="meta">Coming soon</p>`;
           ipcRenderer.invoke('shell:hide-osd');
-          ipcRenderer.invoke('chat-overlay:close');
           if (page === 'plugins') loadPlugins();
           if (page === 'settings') loadSettings();
           if (page === 'connections') loadConnections();
