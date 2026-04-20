@@ -772,10 +772,12 @@ app.whenReady().then(async () => {
     const sidebarW = getSidebarWidth();
     osdView.setBounds({ x: sidebarW, y: 0, width: width - sidebarW, height });
     osdView.webContents.loadURL(`http://localhost:${osdPort}`);
-    win.on('resize', () => {
+    const resizeOsd = () => {
       const [w, h] = win.getContentSize();
       osdView.setBounds({ x: getSidebarWidth(), y: 0, width: w - getSidebarWidth(), height: h });
-    });
+    };
+    win.on('resize', resizeOsd);
+    win.on('sidebar-resized' as any, resizeOsd);
   }
 
   // Sidebar (left panel — added after OSD so it's on top)
