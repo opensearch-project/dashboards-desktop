@@ -43,21 +43,19 @@ export const clusterHealthTool: AgentTool = {
 };
 
 async function getOpenSearchHealth(url: string, detail: string): Promise<ToolResult> {
-  const client = new OpenSearchClient({ node: url } as any);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const health = await (client.cluster as any).health();
+  const client = new OpenSearchClient({ node: url } as Record<string, unknown>);
+  const health = await (client.cluster as Record<string, Function>).health();
   const result: Record<string, unknown> = { health: health.body };
 
   if (detail === 'full') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stats = await (client.cluster as any).stats();
+    const stats = await (client.cluster as Record<string, Function>).stats();
     result.stats = stats.body;
   }
   return { content: JSON.stringify(result, null, 2), isError: false };
 }
 
 async function getElasticsearchHealth(url: string, detail: string): Promise<ToolResult> {
-  const client = new ElasticsearchClient({ node: url } as any);
+  const client = new ElasticsearchClient({ node: url } as Record<string, unknown>);
   const health = await client.cluster.health();
   const result: Record<string, unknown> = { health };
 
