@@ -7,7 +7,12 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DB = any;
 
+const CURRENT_SCHEMA_VERSION = 1;
+
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS sidebar_schema_version (
+  version INTEGER PRIMARY KEY
+);
 CREATE TABLE IF NOT EXISTS osd_config (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,
@@ -25,6 +30,10 @@ CREATE TABLE IF NOT EXISTS osd_versions (
 );
 `;
 
+const MIGRATIONS: Record<number, string> = {
+  // Future migrations go here: 2: 'ALTER TABLE ...', etc.
+};
+
 export interface OsdPlugin { name: string; source: string; installed_at?: string }
 export interface SidebarSettings {
   config: Record<string, string>;
@@ -34,7 +43,33 @@ export interface SidebarSettings {
 
 export class SettingsPersistence {
   constructor(private db: DB) {
-    this.db.exec(SCHEMA);
+    try {
+      this.db.exec(SCHEMA);
+      this.migrate();
+    } catch (err) {
+      // If DB is corrupt, reset sidebar tables and retry
+      try {
+        this.db.exec('DROP TABLE IF EXISTS osd_config; DROP TABLE IF EXISTS osd_plugins; DROP TABLE IF EXISTS osd_versions; DROP TABLE IF EXISTS sidebar_schema_version;');
+        this.db.exec(SCHEMA);
+        this.migrate();
+      } catch {
+        throw new Error(`Sidebar DB unrecoverable: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+  }
+
+  private migrate(): void {
+    const row = this.db.prepare('SELECT version FROM sidebar_schema_version LIMIT 1').get() as { version: number } | undefined;
+    const current = row?.version ?? 0;
+    if (current >= CURRENT_SCHEMA_VERSION) return;
+
+    const tx = this.db.transaction(() => {
+      for (let v = current + 1; v <= CURRENT_SCHEMA_VERSION; v++) {
+        if (MIGRATIONS[v]) this.db.exec(MIGRATIONS[v]);
+      }
+      this.db.prepare('INSERT OR REPLACE INTO sidebar_schema_version (version) VALUES (?)').run(CURRENT_SCHEMA_VERSION);
+    });
+    tx();
   }
 
   // --- OSD Config (yml overrides) ---
@@ -104,13 +139,26 @@ export class SettingsPersistence {
   }
 
   importJSON(json: string): void {
-    const data = JSON.parse(json) as SidebarSettings;
+    let data: SidebarSettings;
+    try {
+      data = JSON.parse(json) as SidebarSettings;
+    } catch {
+      throw new Error('Invalid JSON: failed to parse settings backup');
+    }
+    if (!data || typeof data !== 'object') throw new Error('Invalid settings: expected object');
+    if (typeof data.config !== 'object' || data.config === null) throw new Error('Invalid settings: config must be an object');
+    if (!Array.isArray(data.plugins)) throw new Error('Invalid settings: plugins must be an array');
+    for (const p of data.plugins) {
+      if (!p.name || typeof p.name !== 'string') throw new Error(`Invalid plugin entry: missing name`);
+      if (!p.source || typeof p.source !== 'string') throw new Error(`Invalid plugin "${p.name}": missing source`);
+    }
+
     const tx = this.db.transaction(() => {
-      // Config
       this.db.prepare('DELETE FROM osd_config').run();
       const ins = this.db.prepare('INSERT INTO osd_config (key, value) VALUES (?, ?)');
-      for (const [k, v] of Object.entries(data.config)) ins.run(k, v);
-      // Plugins
+      for (const [k, v] of Object.entries(data.config)) {
+        if (typeof k === 'string' && typeof v === 'string') ins.run(k, v);
+      }
       this.db.prepare('DELETE FROM osd_plugins').run();
       const insP = this.db.prepare('INSERT INTO osd_plugins (name, source) VALUES (?, ?)');
       for (const p of data.plugins) insP.run(p.name, p.source);
