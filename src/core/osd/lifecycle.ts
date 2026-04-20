@@ -48,7 +48,11 @@ export class OsdLifecycle extends EventEmitter {
 
     this.process = spawn(this.config.binPath, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=1024' },
+      env: {
+        ...process.env,
+        NODE_OPTIONS: '--max-old-space-size=1024',
+        KBN_PATH_CONF: path.join(path.dirname(path.dirname(this.config.binPath)), 'config'),
+      },
     });
 
     this.process.stdout?.on('data', (chunk: Buffer) => {

@@ -1,4 +1,4 @@
-import { createWriteStream, mkdirSync, existsSync, rmSync } from 'fs';
+import { createWriteStream, mkdirSync, existsSync, rmSync, symlinkSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
 import { pipeline } from 'stream/promises';
@@ -40,6 +40,15 @@ export async function downloadAndInstall(
     await download(artifact.url, tmpFile, artifact.size, onProgress);
     
     await extract(tmpFile, artifact.format);
+
+    // On macOS/Windows, bundled node is linux ELF — replace with system node
+    if (process.platform !== 'linux') {
+      const bundledNode = join(OSD_DIR, 'node', 'bin', 'node');
+      if (existsSync(bundledNode)) rmSync(bundledNode);
+      mkdirSync(join(OSD_DIR, 'node', 'bin'), { recursive: true });
+      const systemNode = execFileSync('which', ['node'], { encoding: 'utf-8' }).trim();
+      symlinkSync(systemNode, bundledNode);
+    }
   } finally {
     if (existsSync(tmpFile)) rmSync(tmpFile);
   }
