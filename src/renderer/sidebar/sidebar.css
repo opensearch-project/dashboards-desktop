@@ -138,4 +138,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar { transition: none; }
+  .update-progress-bar { transition: none; }
 }
+
+/* Update panel */
+.update-version { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; }
+.update-label { color: var(--sidebar-text-muted); }
+.update-value { font-weight: 500; }
+.update-progress { position: relative; height: 20px; background: rgba(0,0,0,0.2); border-radius: 10px; margin: 12px 0; overflow: hidden; }
+.update-progress-bar { height: 100%; background: var(--accent); border-radius: 10px; transition: width 0.3s ease; }
+.update-progress-text { position: absolute; top: 0; left: 0; right: 0; text-align: center; font-size: 11px; line-height: 20px; }

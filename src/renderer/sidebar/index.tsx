@@ -9,13 +9,14 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './sidebar.css';
 
-type Section = 'home' | 'connections' | 'config' | 'plugins' | 'chat' | 'settings';
+type Section = 'home' | 'connections' | 'config' | 'plugins' | 'update' | 'chat' | 'settings';
 
 const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
   { id: 'home', icon: '🏠', label: 'Home' },
   { id: 'connections', icon: '🔌', label: 'Connections' },
   { id: 'config', icon: '⚙️', label: 'OSD Config' },
   { id: 'plugins', icon: '🧩', label: 'Plugins' },
+  { id: 'update', icon: '🔄', label: 'Update OSD' },
   { id: 'chat', icon: '💬', label: 'Chat' },
   { id: 'settings', icon: '🔧', label: 'Settings' },
 ];
@@ -65,6 +66,7 @@ const Sidebar: React.FC = () => {
         {active === 'connections' && <ConnectionsPanel />}
         {active === 'config' && <ConfigPanel />}
         {active === 'plugins' && <PluginsPanel />}
+        {active === 'update' && <UpdatePanel />}
         {active === 'settings' && <SettingsPanel />}
       </main>
     </div>
@@ -239,6 +241,66 @@ const PluginsPanel: React.FC = () => {
           ))}
         </ul>
       )}
+    </section>
+  );
+};
+
+const UpdatePanel: React.FC = () => {
+  const [current, setCurrent] = React.useState('');
+  const [latest, setLatest] = React.useState('');
+  const [available, setAvailable] = React.useState(false);
+  const [checking, setChecking] = React.useState(false);
+  const [upgrading, setUpgrading] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    window.osd?.osdUpgrade?.getVersion().then(v => setCurrent(v ?? 'unknown')).catch(() => {});
+    const unsub = window.osd?.osdUpgrade?.onProgress((p: number) => setProgress(p));
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  const checkUpdate = async () => {
+    setChecking(true); setError('');
+    try {
+      const result = await window.osd?.osdUpgrade?.checkAvailable();
+      if (result) { setAvailable(result.available); setCurrent(result.current); setLatest(result.latest); }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Check failed'); }
+    setChecking(false);
+  };
+
+  const doUpgrade = async () => {
+    setUpgrading(true); setProgress(0); setError('');
+    try {
+      await window.osd?.osdUpgrade?.upgrade();
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Upgrade failed'); }
+    setUpgrading(false);
+  };
+
+  return (
+    <section aria-label="Update OSD">
+      <div className="panel-header"><h2>Update OSD</h2></div>
+      <div className="update-version">
+        <span className="update-label">Current:</span>
+        <span className="update-value">{current || '—'}</span>
+      </div>
+      {latest && (
+        <div className="update-version">
+          <span className="update-label">Latest:</span>
+          <span className="update-value">{latest}</span>
+        </div>
+      )}
+      {error && <p className="panel-error" role="alert">{error}</p>}
+      {upgrading && (
+        <div className="update-progress" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+          <div className="update-progress-bar" style={{ width: `${progress}%` }} />
+          <span className="update-progress-text">{progress}%</span>
+        </div>
+      )}
+      <div className="panel-actions">
+        {!available && <button className="btn-sm" onClick={checkUpdate} disabled={checking}>{checking ? 'Checking…' : 'Check for Updates'}</button>}
+        {available && !upgrading && <button className="btn-sm btn-warning" onClick={doUpgrade}>Upgrade to {latest}</button>}
+      </div>
     </section>
   );
 };
