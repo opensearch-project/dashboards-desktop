@@ -600,7 +600,14 @@ app.whenReady().then(async () => {
 
   // 2. Check OSD binary — guide user to configure
   const { isOsdInstalled, OSD_DIR } = await import('../core/osd/downloader.js');
+  const { existsSync } = await import('fs');
   let osdBinPath = await db.getSettingAsync('osd_bin_path') as string | null;
+
+  // If saved path no longer exists, clear it so first-run dialog shows again
+  if (osdBinPath && osdBinPath !== '__external__' && !existsSync(osdBinPath)) {
+    osdBinPath = null;
+    await db.setSettingAsync('osd_bin_path', '');
+  }
 
   if (!osdBinPath && !isOsdInstalled()) {
     const { dialog, BrowserWindow: BW } = await import('electron');
