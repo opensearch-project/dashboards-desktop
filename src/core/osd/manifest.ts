@@ -39,20 +39,18 @@ export async function getLatestVersion(): Promise<string> {
  */
 export function buildArtifactUrl(version: string, platformKey?: string): OsdArtifact | null {
   const key = platformKey ?? getPlatformKey();
-  const [os, arch] = key.split('-');
+  const [os, cpuArch] = key.split('-');
 
-  // Only linux min builds are available on artifacts.opensearch.org
-  if (os === 'linux') {
-    return {
-      url: `${ARTIFACTS_BASE}/${version}/opensearch-dashboards-min-${version}-linux-${arch}.tar.gz`,
-      version,
-      size: arch === 'x64' ? 217_000_000 : 200_000_000,
-      format: 'tar.gz',
-    };
-  }
+  // OSD is Node.js-based — linux builds work on all platforms
+  // Use native linux build for linux, fallback to linux for macOS/Windows
+  const targetArch = cpuArch === 'arm64' ? 'arm64' : 'x64';
 
-  // macOS and Windows — no min builds available yet
-  return null;
+  return {
+    url: `${ARTIFACTS_BASE}/${version}/opensearch-dashboards-min-${version}-linux-${targetArch}.tar.gz`,
+    version,
+    size: targetArch === 'x64' ? 217_000_000 : 200_000_000,
+    format: 'tar.gz',
+  };
 }
 
 /**
