@@ -10,6 +10,7 @@ export const DEFAULT_OSD_CONFIG = {
   'opensearch.ignoreVersionMismatch': true,
   'migrations.skip': true,
   'savedObjects.permission.enabled': false,
+  'opensearch.memoryStorage.enabled': true,
   'data_source.enabled': true,
   'data_source.hideLocalCluster': true,
   'workspace.enabled': true,
