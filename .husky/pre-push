@@ -1,0 +1,21 @@
+#!/bin/sh
+# Pre-push hook: run full lint + typecheck on all src files
+# Prevents pushing code that will fail CI
+
+echo "🔍 Running pre-push checks..."
+
+# Typecheck
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript errors found. Push rejected."
+  exit 1
+fi
+
+# Lint (errors only, no warnings)
+npx eslint src/ --quiet
+if [ $? -ne 0 ]; then
+  echo "❌ Lint errors found. Push rejected."
+  exit 1
+fi
+
+echo "✅ Pre-push checks passed."
