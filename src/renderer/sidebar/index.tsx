@@ -256,7 +256,7 @@ const UpdatePanel: React.FC = () => {
 
   React.useEffect(() => {
     window.osd?.osdUpgrade?.getVersion().then(v => setCurrent(v ?? 'unknown')).catch(() => {});
-    const unsub = window.osd?.osdUpgrade?.onProgress((p: number) => setProgress(p));
+    const unsub = window.osd?.osdUpgrade?.onProgress((p: { percent: number }) => setProgress(p.percent));
     return () => { if (unsub) unsub(); };
   }, []);
 
