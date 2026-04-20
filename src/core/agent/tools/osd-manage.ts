@@ -24,7 +24,7 @@ export const osdManageTool: AgentTool = {
   execute: async (input: Record<string, unknown>, context: ToolContext): Promise<ToolResult> => {
     const action = input.action as string;
     // Delegate to OSD lifecycle module via IPC-style callback
-    const osd = (context as any).osdLifecycle;
+    const osd = (context as unknown as { osdLifecycle: { getStatus(): unknown; restart(): Promise<void>; installPlugin(s: string): Promise<void>; removePlugin(s: string): Promise<void> } }).osdLifecycle;
     if (!osd) return { content: 'OSD lifecycle not available', isError: true };
 
     switch (action) {
