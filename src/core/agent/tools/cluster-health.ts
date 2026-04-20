@@ -44,11 +44,11 @@ export const clusterHealthTool: AgentTool = {
 
 async function getOpenSearchHealth(url: string, detail: string): Promise<ToolResult> {
   const client = new OpenSearchClient({ node: url } as Record<string, unknown>);
-  const health = await (client.cluster as Record<string, Function>).health();
+  const health = await (client.cluster as Record<string, () => Promise<{ body: unknown }>>).health();
   const result: Record<string, unknown> = { health: health.body };
 
   if (detail === 'full') {
-    const stats = await (client.cluster as Record<string, Function>).stats();
+    const stats = await (client.cluster as Record<string, () => Promise<{ body: unknown }>>).stats();
     result.stats = stats.body;
   }
   return { content: JSON.stringify(result, null, 2), isError: false };
