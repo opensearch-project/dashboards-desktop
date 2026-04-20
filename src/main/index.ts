@@ -721,6 +721,16 @@ app.whenReady().then(async () => {
 
     // Graceful shutdown
     app.on('before-quit', () => osd.stop());
+
+    // Bounce IPC — kill and restart OSD
+    ipcMain.handle('osd:bounce', async () => {
+      osd.stop();
+      await new Promise(r => setTimeout(r, 2000));
+      await osd.start();
+      return 'ok';
+    });
+
+    ipcMain.handle('osd:status', () => osd.status);
   }
 
   // 4. Create window — loads OSD if ready, fallback otherwise
