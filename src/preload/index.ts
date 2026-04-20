@@ -130,6 +130,15 @@ const api = {
     channel: () => ipcRenderer.invoke(IPC.UPDATE_CHANNEL),
     setChannel: (ch: string) => ipcRenderer.invoke(IPC.UPDATE_SET_CHANNEL, ch),
   },
+  osdUpgrade: {
+    checkAvailable: () => ipcRenderer.invoke('osd:check-upgrade'),
+    getVersion: () => ipcRenderer.invoke('osd:get-version'),
+    upgrade: () => ipcRenderer.invoke('osd:upgrade'),
+    onProgress: (cb: (progress: { percent: number }) => void) => {
+      ipcRenderer.on('osd:upgrade-progress', (_e, p) => cb(p));
+      return () => ipcRenderer.removeAllListeners('osd:upgrade-progress');
+    },
+  },
   messages: {
     pin: (messageId: string) => ipcRenderer.invoke(IPC.MESSAGE_PIN, messageId),
     unpin: (messageId: string) => ipcRenderer.invoke(IPC.MESSAGE_UNPIN, messageId),
