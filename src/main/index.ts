@@ -731,6 +731,13 @@ app.whenReady().then(async () => {
     });
 
     ipcMain.handle('osd:status', () => osd.status);
+
+    ipcMain.handle('osd:navigate', (_e, urlPath: string) => {
+      const osdPort = process.env.OSD_PORT ?? '5601';
+      const win = BrowserWindow.getAllWindows()[0];
+      const osdView = win?.getBrowserViews().find(v => v.webContents.getURL().includes('localhost'));
+      if (osdView) osdView.webContents.loadURL(`http://localhost:${osdPort}${urlPath}`);
+    });
   }
 
   // 4. Create window — loads OSD if ready, fallback otherwise
