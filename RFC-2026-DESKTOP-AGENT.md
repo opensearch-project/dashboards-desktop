@@ -128,6 +128,22 @@ osd chat             # Quick agent chat (no GUI)
 - **Sidebar** (48px): Slack-style icon strip — Home, Connections, Chat toggle, Settings. Always visible. No OSD modification.
 - **OSD Content**: Real OSD web UI in a BrowserView, offset by sidebar width. Resizes with window.
 - **Chat Overlay** (420px): Agent chat panel, toggled via ⌘K or sidebar chat icon. Right-anchored BrowserView.
+
+#### Sidebar Menu Items (v0.3+)
+
+| Icon | Label | Description | Issue |
+|------|-------|-------------|-------|
+| 🏠 | Home | Navigate back to OSD home page | #1 |
+| ⚙️ | Management | OSD configuration editor (yml settings via UI) | #2 |
+| 🔄 | Update OSD | Re-download, update version, switch to local/source mode | #3 |
+| 🧩 | Plugins | Install/remove/configure OSD plugins | #4 |
+| 🔁 | Bounce | Kill and restart OSD process | #5 |
+| 🗄️ | Backup/Restore | Export/import SQLite data (connections, settings, chat history) | #6 |
+| ♻️ | Recovery | Reset all config and OSD to factory defaults | #7 |
+| 🛠️ | Utilities | Create local OpenSearch cluster, setup S3 credentials, etc. | #8 |
+
+Each item opens a panel/modal in the sidebar area or triggers an action via IPC.
+
 | Admin tools | Reimplemented in TypeScript | Provided by OSD natively |
 | Chat panel | React component in renderer | Overlay/sidebar injected into OSD web UI |
 | Request signing | Direct client calls with auth | Proxy layer intercepts requests, adds SigV4/auth headers |
