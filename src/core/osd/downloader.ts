@@ -1,11 +1,8 @@
 import { createWriteStream, mkdirSync, existsSync, rmSync, symlinkSync } from 'fs';
 import { join } from 'path';
-import { createHash } from 'crypto';
-import { pipeline } from 'stream/promises';
-import { createReadStream } from 'fs';
 import { execFileSync } from 'child_process';
 import { homedir } from 'os';
-import { getLatestArtifact, type OsdArtifact } from './manifest.js';
+import { getLatestArtifact } from './manifest.js';
 
 export const OSD_HOME = join(homedir(), '.osd-desktop');
 export const OSD_DIR = join(OSD_HOME, 'osd');
@@ -87,19 +84,6 @@ async function download(
     fileStream.end(() => resolve());
     fileStream.on('error', reject);
   });
-}
-
-async function verifySha256(
-  filePath: string,
-  expected: string,
-): Promise<void> {
-  const hash = createHash('sha256');
-  await pipeline(createReadStream(filePath), hash);
-  const actual = hash.digest('hex');
-  if (actual !== expected) {
-    rmSync(filePath);
-    throw new Error(`SHA-256 mismatch: expected ${expected}, got ${actual}`);
-  }
 }
 
 async function extract(

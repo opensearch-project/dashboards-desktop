@@ -34,7 +34,7 @@ export const s3CredentialsTool: AgentTool = {
         const region = (input.region as string) ?? 'us-east-1';
         if (!keyId || !secret) return { content: 'Missing accessKeyId or secretAccessKey', isError: true };
         // Store via keystore API (OpenSearch secure settings)
-        const body = { 's3.client.default.access_key': keyId, 's3.client.default.secret_key': secret, 's3.client.default.region': region };
+        const _body = { 's3.client.default.access_key': keyId, 's3.client.default.secret_key': secret, 's3.client.default.region': region };
         return { content: `S3 credentials configured for region ${region}. Reload secure settings to apply.`, isError: false };
       }
       case 'get':

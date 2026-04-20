@@ -39,7 +39,7 @@ export async function getLatestVersion(): Promise<string> {
  */
 export function buildArtifactUrl(version: string, platformKey?: string): OsdArtifact | null {
   const key = platformKey ?? getPlatformKey();
-  const [os, cpuArch] = key.split('-');
+  const [_os, cpuArch] = key.split('-');
 
   // OSD is Node.js-based — linux builds work on all platforms
   // Use native linux build for linux, fallback to linux for macOS/Windows

@@ -2,7 +2,7 @@
  * Feedback — form dialog → screenshot + metadata → GitHub issue.
  */
 
-import { ipcMain, BrowserWindow, clipboard, nativeImage, shell } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron';
 import { platform, arch, release } from 'os';
 
 const REPO_URL = 'https://github.com/opensearch-project/dashboards-desktop/issues/new';
@@ -31,7 +31,7 @@ export function registerFeedbackIPC(): void {
     const screenshotB64 = image.toPNG().toString('base64');
 
     let appVersion = '0.0.0';
-    try { appVersion = require('../../package.json').version; } catch {}
+    try { appVersion = require('../../package.json').version; } catch { /* ignore */ }
     const meta = JSON.stringify({
       os: `${platform()} ${arch()} ${release()}`,
       electron: process.versions.electron,

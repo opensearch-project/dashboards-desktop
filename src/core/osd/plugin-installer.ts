@@ -4,7 +4,7 @@
  */
 
 import { execFileSync } from 'child_process';
-import { join, basename } from 'path';
+import { join } from 'path';
 import { existsSync, readdirSync } from 'fs';
 import { OSD_DIR } from './downloader.js';
 
