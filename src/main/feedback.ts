@@ -55,7 +55,8 @@ export function registerFeedbackIPC(): void {
     });
 
     // Handle submit from form
-    ipcMain.handleOnce('feedback:submit', (_e, data: { type: string; title: string; description: string; includeScreenshot: boolean }) => {
+    ipcMain.removeHandler('feedback:submit');
+    ipcMain.handle('feedback:submit', (_e, data: { type: string; title: string; description: string; includeScreenshot: boolean }) => {
       const labelMap: Record<string, string> = { bug: 'bug', feature: 'enhancement', feedback: 'feedback' };
       const prefix = data.type === 'bug' ? '[Bug]' : data.type === 'feature' ? '[Feature]' : '[Feedback]';
       const title = `${prefix} ${data.title}`;
@@ -84,7 +85,8 @@ export function registerFeedbackIPC(): void {
       formWin.close();
     });
 
-    ipcMain.handleOnce('feedback:cancel', () => { formWin.close(); });
+    ipcMain.removeHandler('feedback:cancel');
+    ipcMain.handle('feedback:cancel', () => { formWin.close(); });
   });
 }
 
