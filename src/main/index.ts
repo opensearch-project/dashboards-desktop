@@ -721,7 +721,26 @@ app.whenReady().then(async () => {
   createWindow();
   const win = BrowserWindow.getAllWindows()[0]!;
 
-  // Sidebar (left panel — always visible)
+  // Load OSD if ready (add first — will be behind sidebar)
+  if (osdReady) {
+    const osdPort = process.env.OSD_PORT ?? '5601';
+    const { BrowserView: BV } = await import('electron');
+    const { getSidebarWidth } = await import('./sidebar.js');
+    const osdView = new BV({
+      webPreferences: { contextIsolation: true, nodeIntegration: false },
+    });
+    win.addBrowserView(osdView);
+    const [width, height] = win.getContentSize();
+    const sidebarW = getSidebarWidth();
+    osdView.setBounds({ x: sidebarW, y: 0, width: width - sidebarW, height });
+    osdView.webContents.loadURL(`http://localhost:${osdPort}`);
+    win.on('resize', () => {
+      const [w, h] = win.getContentSize();
+      osdView.setBounds({ x: getSidebarWidth(), y: 0, width: w - getSidebarWidth(), height: h });
+    });
+  }
+
+  // Sidebar (left panel — added after OSD so it's on top)
   const { setupSidebar, registerSidebarIPC } = await import('./sidebar.js');
   setupSidebar(win);
   if (osdBinPath && osdBinPath !== '__external__') {
@@ -733,26 +752,6 @@ app.whenReady().then(async () => {
   const { setupChatOverlay } = chatOverlay;
   destroyChatOverlay = chatOverlay.destroyChatOverlay;
   setupChatOverlay(win);
-
-  // Load OSD if ready
-  if (osdReady) {
-    const osdPort = process.env.OSD_PORT ?? '5601';
-    // Use a BrowserView for OSD content so it doesn't overlap sidebar
-    const { BrowserView: BV } = await import('electron');
-    const osdView = new BV({
-      webPreferences: { contextIsolation: true, nodeIntegration: false },
-    });
-    win.addBrowserView(osdView);
-    const { getSidebarWidth } = await import('./sidebar.js');
-    const [width, height] = win.getContentSize();
-    const sidebarW = getSidebarWidth();
-    osdView.setBounds({ x: sidebarW, y: 0, width: width - sidebarW, height });
-    osdView.webContents.loadURL(`http://localhost:${osdPort}`);
-    win.on('resize', () => {
-      const [w, h] = win.getContentSize();
-      osdView.setBounds({ x: getSidebarWidth(), y: 0, width: w - getSidebarWidth(), height: h });
-    });
-  }
 
   // 5. Register M4 IPC bridges
   registerAllM4IPC();
