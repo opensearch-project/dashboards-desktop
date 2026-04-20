@@ -119,6 +119,7 @@ const ConfigPanel: React.FC = () => {
 
   const COMMON_PLUGINS = ['alerting', 'anomalyDetection', 'ganttChart', 'indexManagement', 'maps', 'observability', 'queryWorkbench', 'reportsDashboards', 'securityDashboards'];
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     window.osd?.settings?.get('osd_status').then(s => setOsdStatus(s ?? 'unknown')).catch(() => {});
     window.osd?.settings?.get('osd_config_yml').then(c => setConfig(c ?? '')).catch(() => {});
