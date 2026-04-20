@@ -116,6 +116,11 @@
           return;
         }
         if (page === 'chat') {
+          // Chat is a full page — hide OSD, show chat BrowserView
+          document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentPage = 'chat';
+          content.classList.remove('visible');
           ipcRenderer.invoke('chat-overlay:toggle');
           return;
         }
@@ -132,10 +137,12 @@
         if (page === 'home') {
           content.classList.remove('visible');
           ipcRenderer.invoke('shell:show-osd');
+          ipcRenderer.invoke('chat-overlay:close');
         } else {
           content.classList.add('visible');
           content.innerHTML = pages[page] || `<h1>${page}</h1><p class="meta">Coming soon</p>`;
           ipcRenderer.invoke('shell:hide-osd');
+          ipcRenderer.invoke('chat-overlay:close');
           if (page === 'plugins') loadPlugins();
           if (page === 'settings') loadSettings();
           if (page === 'connections') loadConnections();

@@ -1,18 +1,19 @@
 /**
- * Chat overlay manager — creates and manages a BrowserView sidebar
- * that renders the agent chat panel alongside the OSD web UI.
- *
- * Toggle: Cmd+K (macOS) / Ctrl+K (Linux/Windows)
+ * Chat manager — BrowserView that fills the content area when active.
+ * Toggle: Cmd+K or sidebar chat button.
  */
 
 import { BrowserWindow, BrowserView, ipcMain, globalShortcut } from 'electron';
 import * as path from 'path';
 
 let chatView: BrowserView | null = null;
+let mainWin: BrowserWindow | null = null;
 let visible = false;
-const CHAT_WIDTH = 420;
+
+const SIDEBAR_WIDTH = 48;
 
 export function setupChatOverlay(mainWindow: BrowserWindow): void {
+  mainWin = mainWindow;
   chatView = new BrowserView({
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'index.js'),
@@ -26,60 +27,46 @@ export function setupChatOverlay(mainWindow: BrowserWindow): void {
     path.join(__dirname, '..', 'renderer', 'chat-overlay.html')
   );
 
-  // Initially hidden
-  chatView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-  mainWindow.addBrowserView(chatView);
-
-  // Resize chat when window resizes
-  mainWindow.on('resize', () => {
-    if (visible) positionChat(mainWindow);
-  });
-
-  // Register toggle shortcut
   globalShortcut.register('CommandOrControl+K', () => {
-    toggleChat(mainWindow);
+    toggleChat();
   });
 
-  // Handle close from chat panel (remove first to avoid double-register on macOS reactivate)
   ipcMain.removeHandler('chat-overlay:close');
-  ipcMain.handle('chat-overlay:close', () => {
-    hideChat(mainWindow);
-  });
+  ipcMain.handle('chat-overlay:close', () => hideChat());
 
   ipcMain.removeHandler('chat-overlay:toggle');
-  ipcMain.handle('chat-overlay:toggle', () => {
-    toggleChat(mainWindow);
-  });
+  ipcMain.handle('chat-overlay:toggle', () => toggleChat());
 }
 
-function positionChat(win: BrowserWindow): void {
-  if (!chatView) return;
-  const [width, height] = win.getContentSize();
-  chatView.setBounds({
-    x: width - CHAT_WIDTH,
-    y: 0,
-    width: CHAT_WIDTH,
-    height,
-  });
+function toggleChat(): void {
+  if (visible) hideChat();
+  else showChat();
 }
 
-function toggleChat(win: BrowserWindow): void {
-  if (visible) hideChat(win);
-  else showChat(win);
-}
-
-function showChat(win: BrowserWindow): void {
-  if (!chatView) return;
+export function showChat(): void {
+  if (!chatView || !mainWin) return;
+  // Hide OSD
+  ipcMain.emit('shell:hide-osd-internal');
+  // Show chat BrowserView
+  mainWin.addBrowserView(chatView);
+  const [width, height] = mainWin.getContentSize();
+  chatView.setBounds({ x: SIDEBAR_WIDTH, y: 0, width: width - SIDEBAR_WIDTH, height });
   visible = true;
-  positionChat(win);
   chatView.webContents.focus();
+
+  mainWin.removeAllListeners('resize');
+  mainWin.on('resize', () => {
+    if (visible && chatView && mainWin) {
+      const [w, h] = mainWin.getContentSize();
+      chatView.setBounds({ x: SIDEBAR_WIDTH, y: 0, width: w - SIDEBAR_WIDTH, height: h });
+    }
+  });
 }
 
-function hideChat(win: BrowserWindow): void {
-  if (!chatView) return;
+export function hideChat(): void {
+  if (!chatView || !mainWin) return;
+  mainWin.removeBrowserView(chatView);
   visible = false;
-  chatView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-  win.webContents.focus();
 }
 
 export function destroyChatOverlay(): void {
