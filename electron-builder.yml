@@ -48,7 +48,7 @@ win:
       arch: [x64, arm64]
     - target: zip
       arch: [x64, arm64]
-  # certificateSubjectName and certificateSha1 set via env vars in CI
+  forceCodeSigning: false
 
 nsis:
   oneClick: false
