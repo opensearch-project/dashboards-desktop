@@ -12,6 +12,7 @@ export const DEFAULT_OSD_CONFIG = {
   'migrations.skip': true,
   'data_source.enabled': true,
   'data_source.hideLocalCluster': true,
+  'workspace.enabled': true,
   'opensearchDashboards.futureNavigation': true,
   'uiSettings.overrides.home:useNewHomePage': true,
 };
