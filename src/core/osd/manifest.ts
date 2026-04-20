@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 export const RELEASES_API = 'https://api.github.com/repos/opensearch-project/OpenSearch-Dashboards/releases';
+export const OSD_VERSION = '3.6.0'; // fallback when offline
 export const ARTIFACTS_BASE = 'https://artifacts.opensearch.org/releases/core/opensearch-dashboards';
 
 export interface OsdArtifact {

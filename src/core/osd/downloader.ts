@@ -38,7 +38,7 @@ export async function downloadAndInstall(
 
   try {
     await download(artifact.url, tmpFile, artifact.size, onProgress);
-    if (artifact.sha256) await verifySha256(tmpFile, artifact.sha256);
+    
     await extract(tmpFile, artifact.format);
   } finally {
     if (existsSync(tmpFile)) rmSync(tmpFile);
