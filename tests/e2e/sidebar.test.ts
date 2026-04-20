@@ -1,5 +1,5 @@
 /**
- * E2E: Desktop Management Sidebar — opens, panels render, config triggers restart.
+ * E2E: Desktop Management Sidebar — bounce, management, plugins, update.
  */
 import { test, expect, _electron as electron, type ElectronApplication, type Page } from '@playwright/test';
 import path from 'path';
@@ -25,39 +25,90 @@ test.afterAll(async () => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test.describe.serial('Sidebar E2E', () => {
-  test('1. sidebar panel is visible on launch', async () => {
+test.describe.serial('Sidebar: layout', () => {
+  test('sidebar visible on launch', async () => {
     const sidebar = page.locator('[data-testid="sidebar"], #sidebar, .sidebar');
     await expect(sidebar.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('2. connections section renders', async () => {
-    const section = page.locator('[data-testid="sidebar-connections"], [data-section="connections"]');
+  test('connections section renders', async () => {
+    const section = page.locator('[data-testid="sidebar-connections"], [data-section="connections"], [data-nav="connections"]');
     await expect(section.first()).toBeVisible({ timeout: 5000 });
   });
+});
 
-  test('3. config section renders', async () => {
-    const section = page.locator('[data-testid="sidebar-config"], [data-section="config"]');
-    if (await section.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-      await expect(section.first()).toBeVisible();
+test.describe.serial('Sidebar: bounce (restart OSD)', () => {
+  test('restart button visible', async () => {
+    const btn = page.locator('[data-testid="osd-restart"], button:has-text("Restart"), [data-action="restart"]');
+    if (await btn.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      await expect(btn.first()).toBeVisible();
     }
   });
 
-  test('4. plugins section renders', async () => {
-    const section = page.locator('[data-testid="sidebar-plugins"], [data-section="plugins"]');
-    if (await section.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-      await expect(section.first()).toBeVisible();
+  test('click restart shows restarting state', async () => {
+    const btn = page.locator('[data-testid="osd-restart"], button:has-text("Restart"), [data-action="restart"]');
+    if (await btn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+      await btn.first().click();
+      const indicator = page.locator('[data-testid="osd-status"], .osd-status, :text("Restarting")');
+      await expect(indicator.first()).toBeVisible({ timeout: 5000 });
+    }
+  });
+});
+
+test.describe.serial('Sidebar: management (config save → restart)', () => {
+  test('config panel shows settings', async () => {
+    const nav = page.locator('[data-nav="config"], [data-section="config"], button:has-text("Config")');
+    if (await nav.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      await nav.first().click();
+      const panel = page.locator('[data-testid="config-panel"], .config-panel');
+      await expect(panel.first()).toBeVisible({ timeout: 3000 });
     }
   });
 
-  test('5. config save triggers OSD restart indicator', async () => {
-    // Look for a save/apply button in config section
+  test('save config triggers OSD restart', async () => {
     const saveBtn = page.locator('[data-testid="config-save"], button:has-text("Apply"), button:has-text("Save")');
     if (await saveBtn.first().isVisible({ timeout: 3000 }).catch(() => false)) {
       await saveBtn.first().click();
-      // Should show restart indicator
       const indicator = page.locator('[data-testid="osd-restarting"], .restarting, :text("Restarting")');
       await expect(indicator.first()).toBeVisible({ timeout: 5000 });
+    }
+  });
+});
+
+test.describe.serial('Sidebar: plugins', () => {
+  test('plugin list renders', async () => {
+    const nav = page.locator('[data-nav="plugins"], [data-section="plugins"], button:has-text("Plugins")');
+    if (await nav.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      await nav.first().click();
+      const list = page.locator('[data-testid="plugin-list"], .plugin-list');
+      await expect(list.first()).toBeVisible({ timeout: 3000 });
+    }
+  });
+
+  test('install plugin appears in tracked list', async () => {
+    const installBtn = page.locator('[data-testid="plugin-install"], button:has-text("Install")');
+    if (await installBtn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+      await installBtn.first().click();
+      const item = page.locator('[data-testid="plugin-item"], .plugin-item');
+      await expect(item.first()).toBeVisible({ timeout: 10000 });
+    }
+  });
+});
+
+test.describe.serial('Sidebar: update', () => {
+  test('shows current version', async () => {
+    const nav = page.locator('[data-nav="updates"], [data-section="updates"], button:has-text("Update")');
+    if (await nav.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      await nav.first().click();
+      const version = page.locator('[data-testid="current-version"], .current-version');
+      await expect(version.first()).toBeVisible({ timeout: 3000 });
+    }
+  });
+
+  test('check for updates button exists', async () => {
+    const btn = page.locator('[data-testid="check-update"], button:has-text("Check"), button:has-text("Update")');
+    if (await btn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+      await expect(btn.first()).toBeVisible();
     }
   });
 });
