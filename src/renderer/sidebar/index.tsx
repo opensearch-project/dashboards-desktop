@@ -9,9 +9,10 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './sidebar.css';
 
-type Section = 'connections' | 'config' | 'plugins' | 'chat' | 'settings';
+type Section = 'home' | 'connections' | 'config' | 'plugins' | 'chat' | 'settings';
 
 const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
+  { id: 'home', icon: '🏠', label: 'Home' },
   { id: 'connections', icon: '🔌', label: 'Connections' },
   { id: 'config', icon: '⚙️', label: 'OSD Config' },
   { id: 'plugins', icon: '🧩', label: 'Plugins' },
@@ -45,6 +46,8 @@ const Sidebar: React.FC = () => {
             onClick={() => {
               if (item.id === 'chat') {
                 window.osd?.agent?.send('__toggle_chat__').catch(() => {});
+              } else if (item.id === 'home') {
+                window.osd?.agent?.send('__navigate_home__').catch(() => {});
               } else {
                 setActive(item.id);
               }
