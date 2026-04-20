@@ -794,11 +794,13 @@ app.whenReady().then(async () => {
   // 5. Register M4 IPC bridges
   registerAllM4IPC();
 
-  // 6. Backup/Restore + Recovery
+  // 6. Backup/Restore + Recovery + Feedback
   const { registerBackupRestoreIPC } = await import('./backup-restore.js');
   const { registerRecoveryIPC } = await import('./recovery.js');
+  const { registerFeedbackIPC } = await import('./feedback.js');
   registerBackupRestoreIPC();
   registerRecoveryIPC();
+  registerFeedbackIPC();
 
   // 3. Wire devops backends when available (setter injection)
   try {
