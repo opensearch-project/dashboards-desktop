@@ -104,6 +104,30 @@ osd chat             # Quick agent chat (no GUI)
 |-----------|-------------|-------------|
 | Admin UI | Custom React pages (HomePage, ClusterPage, IndicesPage, SecurityPage) | Real OSD web UI at localhost:5601 |
 | BrowserWindow | Loads local HTML/React bundle | Loads `http://localhost:5601` |
+
+#### Window Layout
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ 48px │                                          │    420px       │
+│ ┌──┐ │                                          │ ┌───────────┐ │
+│ │🏠│ │                                          │ │ Chat       │ │
+│ │🌐│ │        OSD BrowserView                   │ │ Overlay    │ │
+│ │──│ │        (localhost:5601)                   │ │            │ │
+│ │💬│ │                                          │ │ Agent      │ │
+│ │  │ │        Real OpenSearch Dashboards UI      │ │ streaming  │ │
+│ │  │ │        — unmodified, full functionality   │ │ responses  │ │
+│ │  │ │                                          │ │            │ │
+│ │⚙️│ │                                          │ └───────────┘ │
+│ └──┘ │                                          │  (⌘K toggle)  │
+└──────────────────────────────────────────────────────────────────┘
+  Sidebar    OSD Content (BrowserView)              Chat (BrowserView)
+  (icons)    x=48, width=remaining                  right-anchored
+```
+
+- **Sidebar** (48px): Slack-style icon strip — Home, Connections, Chat toggle, Settings. Always visible. No OSD modification.
+- **OSD Content**: Real OSD web UI in a BrowserView, offset by sidebar width. Resizes with window.
+- **Chat Overlay** (420px): Agent chat panel, toggled via ⌘K or sidebar chat icon. Right-anchored BrowserView.
 | Admin tools | Reimplemented in TypeScript | Provided by OSD natively |
 | Chat panel | React component in renderer | Overlay/sidebar injected into OSD web UI |
 | Request signing | Direct client calls with auth | Proxy layer intercepts requests, adds SigV4/auth headers |
