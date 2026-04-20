@@ -6,10 +6,10 @@
 export const DEFAULT_OSD_CONFIG = {
   'server.host': 'localhost',
   'server.port': 5601,
-  'opensearch.hosts': '["https://localhost:9200"]',
   'opensearch.ssl.verificationMode': 'none',
   'opensearch.ignoreVersionMismatch': true,
   'migrations.skip': true,
+  'savedObjects.permission.enabled': false,
   'data_source.enabled': true,
   'data_source.hideLocalCluster': true,
   'workspace.enabled': true,
