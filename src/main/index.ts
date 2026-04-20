@@ -17,14 +17,12 @@ function createWindow(): void {
     title: 'OpenSearch Dashboards Desktop',
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
+      contextIsolation: false,
+      nodeIntegration: true,
     },
   });
 
-  // Show loading page — OSD content loads in a separate BrowserView
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  // Shell HTML loaded by setupShell/setupShellNoOsd after window creation
 }
 
 // --- IPC error serialization (MUST be before all handlers) ---
@@ -754,30 +752,14 @@ app.whenReady().then(async () => {
   createWindow();
   const win = BrowserWindow.getAllWindows()[0]!;
 
-  // Load OSD if ready (add first — will be behind sidebar)
+  // 4. Shell layout — sidebar in main window, OSD in BrowserView
+  const { setupShell, setupShellNoOsd, registerSidebarIPC } = await import('./sidebar.js');
   if (osdReady) {
     const osdPort = process.env.OSD_PORT ?? '5601';
-    const { BrowserView: BV } = await import('electron');
-    const { getSidebarWidth } = await import('./sidebar.js');
-    const osdView = new BV({
-      webPreferences: { contextIsolation: true, nodeIntegration: false },
-    });
-    win.addBrowserView(osdView);
-    const [width, height] = win.getContentSize();
-    const sidebarW = getSidebarWidth();
-    osdView.setBounds({ x: sidebarW, y: 0, width: width - sidebarW, height });
-    osdView.webContents.loadURL(`http://localhost:${osdPort}`);
-    const resizeOsd = () => {
-      const [w, h] = win.getContentSize();
-      osdView.setBounds({ x: getSidebarWidth(), y: 0, width: w - getSidebarWidth(), height: h });
-    };
-    win.on('resize', resizeOsd);
-    win.on('sidebar-resized' as any, resizeOsd);
+    setupShell(win, osdPort);
+  } else {
+    setupShellNoOsd(win);
   }
-
-  // Sidebar (left panel — added after OSD so it's on top)
-  const { setupSidebar, registerSidebarIPC } = await import('./sidebar.js');
-  setupSidebar(win);
   if (osdBinPath && osdBinPath !== '__external__') {
     registerSidebarIPC(osdBinPath);
   }

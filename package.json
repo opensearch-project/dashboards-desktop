@@ -10,7 +10,7 @@
     "start": "electron .",
     "dev": "electron . --dev",
     "tui": "node bin/osd.js --tui",
-    "build:ts": "tsc && cp src/renderer/index.html dist/renderer/index.html && cp src/renderer/chat-overlay.html dist/renderer/chat-overlay.html && mkdir -p dist/renderer/styles && cp src/renderer/styles/theme.css dist/renderer/styles/theme.css && npx esbuild dist/renderer/chat-overlay.js --bundle --outfile=dist/renderer/chat-overlay.js --platform=browser --allow-overwrite --external:electron --format=iife && npx esbuild dist/preload/index.js --bundle --outfile=dist/preload/index.js --platform=node --allow-overwrite --external:electron --format=cjs",
+    "build:ts": "tsc && cp src/renderer/index.html dist/renderer/index.html && cp src/renderer/shell.html dist/renderer/shell.html && cp src/renderer/chat-overlay.html dist/renderer/chat-overlay.html && mkdir -p dist/renderer/styles && cp src/renderer/styles/theme.css dist/renderer/styles/theme.css && npx esbuild dist/renderer/chat-overlay.js --bundle --outfile=dist/renderer/chat-overlay.js --platform=browser --allow-overwrite --external:electron --format=iife && npx esbuild dist/preload/index.js --bundle --outfile=dist/preload/index.js --platform=node --allow-overwrite --external:electron --format=cjs",
     "build:electron": "electron-builder",
     "build": "npm run build:ts && npm run build:electron",
     "lint": "eslint 'src/**/*.{ts,tsx}'",

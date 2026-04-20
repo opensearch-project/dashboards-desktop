@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <title>OpenSearch Dashboards Desktop</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; overflow:hidden; font-family:-apple-system,system-ui,sans-serif; background:#0e0e1a; color:#e8e8f0; }
+    #shell { display:flex; height:100vh; }
+
+    /* Sidebar */
+    #sidebar { width:48px; background:#1b1b2f; display:flex; flex-direction:column; align-items:center; padding:12px 0; gap:6px; -webkit-app-region:drag; flex-shrink:0; }
+    .nav-btn { width:36px; height:36px; border-radius:8px; border:none; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.15s; -webkit-app-region:no-drag; }
+    .nav-btn:hover { background:#2d2d4a; }
+    .nav-btn.active { background:#3a3a5c; }
+    .nav-btn svg { width:20px; height:20px; fill:#a0a0c0; }
+    .nav-btn:hover svg, .nav-btn.active svg { fill:#e8e8f0; }
+    .spacer { flex:1; }
+    .divider { width:24px; height:1px; background:#2d2d4a; margin:4px 0; }
+
+    /* Content area — desktop pages render here, OSD BrowserView overlays when active */
+    #content { flex:1; overflow:auto; display:none; padding:32px; }
+    #content.visible { display:block; }
+    #content h1 { font-size:22px; margin-bottom:16px; }
+    #content h2 { font-size:16px; color:#a0a0c0; margin:20px 0 8px; }
+    .card { background:#1e1e35; border-radius:8px; padding:16px; margin-bottom:12px; }
+    .card-title { font-size:14px; font-weight:600; margin-bottom:8px; }
+    .btn-action { padding:8px 16px; border-radius:6px; border:none; cursor:pointer; font-size:13px; background:#4da6ff; color:#fff; margin-right:8px; margin-top:8px; }
+    .btn-action:hover { background:#3d96ef; }
+    .btn-danger { background:#e04040; }
+    .btn-danger:hover { background:#c03030; }
+    .btn-secondary { background:#333; color:#a0a0c0; }
+    .meta { font-size:12px; color:#666; margin-top:4px; }
+  </style>
+</head>
+<body>
+  <div id="shell">
+    <nav id="sidebar">
+      <button class="nav-btn active" data-page="home" title="Home">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      </button>
+      <button class="nav-btn" data-page="connections" title="Connections">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </button>
+      <div class="divider"></div>
+      <button class="nav-btn" data-page="plugins" title="Plugins">
+        <svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
+      </button>
+      <button class="nav-btn" data-page="chat" title="Chat (⌘K)">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+      </button>
+      <div class="spacer"></div>
+      <button class="nav-btn" data-page="bounce" title="Bounce OSD">
+        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      </button>
+      <button class="nav-btn" data-page="feedback" title="Feedback">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z"/></svg>
+      </button>
+      <button class="nav-btn" data-page="settings" title="Settings">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      </button>
+    </nav>
+    <div id="content"></div>
+  </div>
+  <script>
+    const { ipcRenderer } = require('electron');
+    const content = document.getElementById('content');
+    let currentPage = 'home';
+
+    // Page templates
+    const pages = {
+      plugins: `
+        <h1>🧩 Plugins</h1>
+        <div class="card">
+          <div class="card-title">Installed Plugins</div>
+          <div id="plugin-list"><span class="meta">Loading...</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Install Plugin</div>
+          <input id="plugin-url" placeholder="Plugin URL or name..." style="width:100%;padding:8px;border-radius:6px;border:1px solid #333;background:#252540;color:#e8e8f0;font-size:13px;" />
+          <button class="btn-action" onclick="installPlugin()">Install</button>
+        </div>
+      `,
+      settings: `
+        <h1>⚙️ Settings</h1>
+        <div class="card">
+          <div class="card-title">OSD Configuration</div>
+          <div id="settings-list"><span class="meta">Loading...</span></div>
+        </div>
+        <h2>Data Management</h2>
+        <div class="card">
+          <button class="btn-action" onclick="ipcRenderer.invoke('osd:backup')">Export Backup</button>
+          <button class="btn-action btn-secondary" onclick="ipcRenderer.invoke('osd:restore')">Import Backup</button>
+          <button class="btn-action btn-danger" onclick="ipcRenderer.invoke('osd:factory-reset')">Factory Reset</button>
+        </div>
+      `,
+      connections: `
+        <h1>🌐 Connections</h1>
+        <div class="card">
+          <div class="card-title">Data Source Connections</div>
+          <div id="conn-list"><span class="meta">Loading...</span></div>
+        </div>
+      `,
+    };
+
+    // Navigation
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const page = btn.dataset.page;
+
+        // Actions (no page switch)
+        if (page === 'bounce') {
+          btn.classList.add('active');
+          ipcRenderer.invoke('osd:bounce').then(() => btn.classList.remove('active'));
+          return;
+        }
+        if (page === 'chat') {
+          ipcRenderer.invoke('chat-overlay:toggle');
+          return;
+        }
+        if (page === 'feedback') {
+          ipcRenderer.invoke('sidebar:feedback');
+          return;
+        }
+
+        // Page switch
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPage = page;
+
+        if (page === 'home') {
+          content.classList.remove('visible');
+          ipcRenderer.invoke('shell:show-osd');
+        } else {
+          content.classList.add('visible');
+          content.innerHTML = pages[page] || `<h1>${page}</h1><p class="meta">Coming soon</p>`;
+          ipcRenderer.invoke('shell:hide-osd');
+          if (page === 'plugins') loadPlugins();
+          if (page === 'settings') loadSettings();
+          if (page === 'connections') loadConnections();
+        }
+      });
+    });
+
+    async function loadPlugins() {
+      try {
+        const list = await ipcRenderer.invoke('sidebar:plugin-list');
+        document.getElementById('plugin-list').innerHTML = list.length
+          ? list.map(p => `<div style="padding:4px 0">${p} <button class="btn-action btn-danger" style="padding:2px 8px;font-size:11px" onclick="removePlugin('${p}')">Remove</button></div>`).join('')
+          : '<span class="meta">No plugins installed</span>';
+      } catch { document.getElementById('plugin-list').innerHTML = '<span class="meta">Could not load plugins</span>'; }
+    }
+
+    async function installPlugin() {
+      const url = document.getElementById('plugin-url').value.trim();
+      if (!url) return;
+      try { await ipcRenderer.invoke('sidebar:plugin-install', url); loadPlugins(); }
+      catch (e) { alert('Install failed: ' + e.message); }
+    }
+
+    async function removePlugin(name) {
+      if (!confirm('Remove plugin ' + name + '?')) return;
+      try { await ipcRenderer.invoke('sidebar:plugin-remove', name); loadPlugins(); }
+      catch (e) { alert('Remove failed: ' + e.message); }
+    }
+
+    async function loadSettings() {
+      try {
+        const all = await ipcRenderer.invoke('SETTINGS_GET_ALL');
+        const el = document.getElementById('settings-list');
+        if (!all || !all.length) { el.innerHTML = '<span class="meta">No settings</span>'; return; }
+        el.innerHTML = all.map(s => `<div style="padding:4px 0"><strong>${s.key}</strong>: <span class="meta">${s.value}</span></div>`).join('');
+      } catch { document.getElementById('settings-list').innerHTML = '<span class="meta">Could not load settings</span>'; }
+    }
+
+    async function loadConnections() {
+      try {
+        const list = await ipcRenderer.invoke('CONNECTION_LIST');
+        const el = document.getElementById('conn-list');
+        if (!list || !list.length) { el.innerHTML = '<span class="meta">No connections configured</span>'; return; }
+        el.innerHTML = list.map(c => `<div style="padding:4px 0"><strong>${c.name}</strong> — ${c.url} <span class="meta">(${c.auth_type})</span></div>`).join('');
+      } catch { document.getElementById('conn-list').innerHTML = '<span class="meta">Could not load connections</span>'; }
+    }
+  </script>
+</body>
+</html>
