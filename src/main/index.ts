@@ -737,7 +737,21 @@ app.whenReady().then(async () => {
   // Load OSD if ready
   if (osdReady) {
     const osdPort = process.env.OSD_PORT ?? '5601';
-    win.loadURL(`http://localhost:${osdPort}`);
+    // Use a BrowserView for OSD content so it doesn't overlap sidebar
+    const { BrowserView: BV } = await import('electron');
+    const osdView = new BV({
+      webPreferences: { contextIsolation: true, nodeIntegration: false },
+    });
+    win.addBrowserView(osdView);
+    const { getSidebarWidth } = await import('./sidebar.js');
+    const [width, height] = win.getContentSize();
+    const sidebarW = getSidebarWidth();
+    osdView.setBounds({ x: sidebarW, y: 0, width: width - sidebarW, height });
+    osdView.webContents.loadURL(`http://localhost:${osdPort}`);
+    win.on('resize', () => {
+      const [w, h] = win.getContentSize();
+      osdView.setBounds({ x: getSidebarWidth(), y: 0, width: w - getSidebarWidth(), height: h });
+    });
   }
 
   // 5. Register M4 IPC bridges

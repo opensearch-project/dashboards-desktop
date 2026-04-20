@@ -24,7 +24,7 @@ export function setupSidebar(mainWindow: BrowserWindow): void {
 
   sidebarView.webContents.loadFile(
     path.join(__dirname, '..', 'renderer', 'sidebar', 'sidebar.html')
-  );
+  ).catch((err: Error) => console.error('[Sidebar] Failed to load:', err.message));
 
   mainWindow.addBrowserView(sidebarView);
   positionSidebar(mainWindow);
