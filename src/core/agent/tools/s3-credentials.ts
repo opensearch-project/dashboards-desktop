@@ -8,6 +8,7 @@ import type { AgentTool, ToolResult, ToolContext } from '../types';
 export const s3CredentialsTool: AgentTool = {
   definition: {
     name: 's3-credentials',
+    source: 'builtin',
     description: 'Configure AWS S3 credentials for OpenSearch snapshot repositories. Actions: set (store creds), get (check if configured), clear.',
     inputSchema: {
       type: 'object',

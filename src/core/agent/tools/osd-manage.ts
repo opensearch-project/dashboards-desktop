@@ -8,6 +8,7 @@ import type { AgentTool, ToolResult, ToolContext } from '../types';
 export const osdManageTool: AgentTool = {
   definition: {
     name: 'osd-manage',
+    source: 'builtin',
     description: 'Manage the local OpenSearch Dashboards instance. Actions: status, restart, install-plugin, remove-plugin.',
     inputSchema: {
       type: 'object',
