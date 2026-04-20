@@ -639,8 +639,14 @@ app.whenReady().then(async () => {
 
     if (action === 'download') {
       // In-app download with progress
-      const progressWin = new BW({ width: 450, height: 140, frame: false, resizable: false, alwaysOnTop: true, show: true });
-      progressWin.loadURL(`data:text/html,<body style="font-family:system-ui;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#1a1a2e;color:#e8e8f0"><h3 style="margin:0 0 8px">Downloading OSD ${version}</h3><div id="m" style="color:#a0a0c0">Starting...</div><div style="width:80%;height:6px;background:#333;border-radius:3px;margin-top:12px"><div id="bar" style="height:100%;background:#4da6ff;border-radius:3px;width:0%;transition:width 0.3s"></div></div></body>`);
+      const progressWin = new BW({ width: 450, height: 140, frame: false, resizable: false, alwaysOnTop: true, show: true, backgroundColor: '#1a1a2e' });
+      progressWin.loadURL('about:blank');
+      progressWin.webContents.on('did-finish-load', () => {
+        progressWin.webContents.executeJavaScript(`
+          document.body.style.cssText='font-family:system-ui;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#1a1a2e;color:#e8e8f0';
+          document.body.innerHTML='<h3 style="margin:0 0 8px">Downloading OSD ${version}</h3><div id="m" style="color:#a0a0c0">Starting...</div><div style="width:80%;height:6px;background:#333;border-radius:3px;margin-top:12px"><div id="bar" style="height:100%;background:#4da6ff;border-radius:3px;width:0%;transition:width 0.3s"></div></div>';
+        `).catch(() => {});
+      });
 
       try {
         await downloadAndInstall((p) => {
