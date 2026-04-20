@@ -12,9 +12,8 @@ let sidebarView: BrowserView | null = null;
 export function setupSidebar(mainWindow: BrowserWindow): void {
   sidebarView = new BrowserView({
     webPreferences: {
-      preload: path.join(__dirname, '..', 'preload', 'index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
+      contextIsolation: false,
+      nodeIntegration: true,
     },
   });
 
