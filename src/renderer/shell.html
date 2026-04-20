@@ -167,7 +167,7 @@
 
     async function loadSettings() {
       try {
-        const all = await ipcRenderer.invoke('SETTINGS_GET_ALL');
+        const all = await ipcRenderer.invoke('settings:getAll');
         const el = document.getElementById('settings-list');
         if (!all || !all.length) { el.innerHTML = '<span class="meta">No settings</span>'; return; }
         el.innerHTML = all.map(s => `<div style="padding:4px 0"><strong>${s.key}</strong>: <span class="meta">${s.value}</span></div>`).join('');
@@ -176,7 +176,7 @@
 
     async function loadConnections() {
       try {
-        const list = await ipcRenderer.invoke('CONNECTION_LIST');
+        const list = await ipcRenderer.invoke('connection:list');
         const el = document.getElementById('conn-list');
         if (!list || !list.length) { el.innerHTML = '<span class="meta">No connections configured</span>'; return; }
         el.innerHTML = list.map(c => `<div style="padding:4px 0"><strong>${c.name}</strong> — ${c.url} <span class="meta">(${c.auth_type})</span></div>`).join('');

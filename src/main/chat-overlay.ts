@@ -45,6 +45,11 @@ export function setupChatOverlay(mainWindow: BrowserWindow): void {
   ipcMain.handle('chat-overlay:close', () => {
     hideChat(mainWindow);
   });
+
+  ipcMain.removeHandler('chat-overlay:toggle');
+  ipcMain.handle('chat-overlay:toggle', () => {
+    toggleChat(mainWindow);
+  });
 }
 
 function positionChat(win: BrowserWindow): void {
