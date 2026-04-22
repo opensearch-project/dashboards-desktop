@@ -38,7 +38,9 @@ export const ChatPanel: React.FC<Props> = ({
   const [width, setWidth] = useState(480);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeConv, setActiveConv] = useState<string | null>(null);
-  const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+    const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -242,7 +244,30 @@ export const ChatPanel: React.FC<Props> = ({
     [width],
   );
 
-  return (
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = reader.result as string;
+        window.osd.agent.send(\`Analyze this file (\${file.name}):\n\n\${text.slice(0, 10000)}\`, activeConv ?? undefined);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleSearchKey = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+      e.preventDefault();
+      const q = prompt('Search messages:');
+      if (q) setSearchQuery(q);
+    }
+    if (e.key === 'Escape') setSearchQuery('');
+  };
+
+    return (
     <aside
       className={`chat-panel ${fullScreen ? 'chat-panel-fullscreen' : ''}`}
       style={fullScreen ? undefined : { width }}

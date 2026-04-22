@@ -18,6 +18,8 @@ interface Props {
   pinned?: boolean;
   onPin?: (id: string) => void;
   onUnpin?: (id: string) => void;
+  onRetry?: (id: string) => void;
+  onEdit?: (id: string, content: string) => void;
 }
 
 /** Parse markdown to HTML — minimal inline parser for streaming content */
@@ -81,6 +83,8 @@ export const ChatMessage: React.FC<Props> = ({
   pinned,
   onPin,
   onUnpin,
+  onRetry,
+  onEdit,
 }) => {
   const [displayContent, setDisplayContent] = useState(content);
   const bufferRef = useRef(content);
@@ -149,9 +153,12 @@ export const ChatMessage: React.FC<Props> = ({
         <span className="token-count" title="Estimated tokens">{tokenCount} tokens</span>
       )}
 
-      {/* Pin/bookmark action */}
+      {/* Message actions — visible on hover */}
       {!streaming && messageId && (
         <div className="msg-actions">
+          <button className="btn-icon-sm" onClick={() => navigator.clipboard.writeText(content)} aria-label="Copy message" title="Copy">📋</button>
+          {role === 'user' && onRetry && <button className="btn-icon-sm" onClick={() => onRetry(messageId)} aria-label="Retry" title="Retry">🔄</button>}
+          {role === 'user' && onEdit && <button className="btn-icon-sm" onClick={() => onEdit(messageId, content)} aria-label="Edit" title="Edit">✏️</button>}
           <button
             className={`btn-icon-sm msg-pin ${pinned ? 'pinned' : ''}`}
             onClick={() => (pinned ? onUnpin?.(messageId) : onPin?.(messageId))}

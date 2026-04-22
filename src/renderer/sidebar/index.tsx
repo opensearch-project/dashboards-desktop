@@ -2,7 +2,7 @@
  * Desktop Management Sidebar — Slack-style left panel.
  * Renders in its own BrowserView, managed by Electron.
  *
- * Sections: Connections, Config, Plugins, Chat, Settings
+ * Sections: Connections, Config, Plugins, Update, Feedback, Chat, Settings
  */
 
 import React, { useState } from 'react';
@@ -25,9 +25,10 @@ const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
 const Sidebar: React.FC = () => {
   const [active, setActive] = useState<Section>('connections');
   const [collapsed, setCollapsed] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   return (
-    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`} data-theme={theme}>
       <header className="sidebar-header">
         <button
           className="sidebar-collapse-btn"
@@ -313,6 +314,7 @@ const UpdatePanel: React.FC = () => {
         {!available && <button className="btn-sm" onClick={checkUpdate} disabled={checking}>{checking ? 'Checking…' : 'Check for Updates'}</button>}
         {available && !upgrading && <button className="btn-sm btn-warning" onClick={doUpgrade}>Upgrade to {latest}</button>}
       </div>
+      </>}
     </section>
   );
 };
@@ -325,16 +327,17 @@ const FeedbackPanel: React.FC = () => {
   const [metaOpen, setMetaOpen] = React.useState(false);
   const [removeScreenshot, setRemoveScreenshot] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    window.osd?.agent?.send('feedback:collect-meta').then(setMeta).catch(() => {});
+    window.osd?.feedback?.collectMeta().then(setMeta).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
     setSubmitting(true);
     try {
-      await window.osd?.agent?.send('feedback:submit', JSON.stringify({
+      await window.osd?.feedback?.submit(JSON.stringify({
         type, title, description,
         includeScreenshot: !removeScreenshot,
       }));
@@ -351,7 +354,7 @@ const FeedbackPanel: React.FC = () => {
   return (
     <section aria-label="Send Feedback">
       <div className="panel-header"><h2>Feedback</h2></div>
-
+      {loading ? <div className="panel-loading" role="status">Loading…</div> : <>
       <div className="settings-group">
         <label htmlFor="fb-type">Type</label>
         <select id="fb-type" className="settings-input" value={type} onChange={e => setType(e.target.value)}>
@@ -397,6 +400,7 @@ const FeedbackPanel: React.FC = () => {
           {submitting ? 'Submitting…' : 'Submit'}
         </button>
       </div>
+      </>}
     </section>
   );
 };
