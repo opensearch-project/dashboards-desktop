@@ -258,13 +258,14 @@ export const ChatPanel: React.FC<Props> = ({
     }
   };
 
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const handleSearchKey = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
       e.preventDefault();
-      const q = prompt('Search messages:');
-      if (q) setSearchQuery(q);
+      setSearchOpen(true);
     }
-    if (e.key === 'Escape') setSearchQuery('');
+    if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false); }
   };
 
     return (
@@ -273,6 +274,7 @@ export const ChatPanel: React.FC<Props> = ({
       style={fullScreen ? undefined : { width }}
       role="complementary"
       aria-label="Chat panel"
+      onKeyDown={handleSearchKey}
     >
       {!fullScreen && (
         <div
@@ -322,7 +324,28 @@ export const ChatPanel: React.FC<Props> = ({
         </div>
       </header>
 
-      <div className="chat-body">
+      {searchOpen && (
+        <div className="chat-search-bar">
+          <input
+            className="chat-search-input"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search messages…"
+            aria-label="Search messages"
+            autoFocus
+          />
+          <span className="chat-search-count">{searchQuery ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase())).length : 0} matches</span>
+          <button className="btn-icon" onClick={() => { setSearchQuery(''); setSearchOpen(false); }} aria-label="Close search">✕</button>
+        </div>
+      )}
+
+      <div
+        className="chat-body"
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+      >
+        {dragOver && <div className="drag-overlay" role="status">Drop files to analyze</div>}
         {sidebarOpen && (
           <ConversationSidebar
             workspaceId={workspaceId}
@@ -349,6 +372,7 @@ export const ChatPanel: React.FC<Props> = ({
                 content={msg.content}
                 streaming={msg.streaming}
                 toolStatuses={msg.toolStatuses}
+                highlighted={!!searchQuery && msg.content.toLowerCase().includes(searchQuery.toLowerCase())}
               />
             ))
           )}

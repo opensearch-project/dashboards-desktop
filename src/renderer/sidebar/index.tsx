@@ -27,6 +27,13 @@ const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
+  React.useEffect(() => {
+    const onResize = () => setCollapsed(window.innerWidth < 900);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   return (
     <div className={`sidebar ${collapsed ? 'collapsed' : ''}`} data-theme={theme}>
       <header className="sidebar-header">

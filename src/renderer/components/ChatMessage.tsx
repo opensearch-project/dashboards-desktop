@@ -20,6 +20,7 @@ interface Props {
   onUnpin?: (id: string) => void;
   onRetry?: (id: string) => void;
   onEdit?: (id: string, content: string) => void;
+  highlighted?: boolean;
 }
 
 /** Lightweight syntax highlighting for JSON and SQL (operates on escaped HTML) */
@@ -103,6 +104,7 @@ export const ChatMessage: React.FC<Props> = ({
   onUnpin,
   onRetry,
   onEdit,
+  highlighted,
 }) => {
   const [displayContent, setDisplayContent] = useState(content);
   const bufferRef = useRef(content);
@@ -138,7 +140,7 @@ export const ChatMessage: React.FC<Props> = ({
 
   return (
     <div
-      className={`chat-msg chat-msg-${role}`}
+      className={`chat-msg chat-msg-${role}${highlighted ? ' chat-msg-highlighted' : ''}`}
       role="article"
       aria-label={`${role} message`}
       onClick={handleClick}

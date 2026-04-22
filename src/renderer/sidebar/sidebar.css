@@ -84,6 +84,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .sidebar-content {
   flex: 1; overflow-y: auto; padding: 12px;
 }
+.sidebar-content > section {
+  animation: panel-in 0.15s ease-out;
+}
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* Panels */
 .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -155,6 +162,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 @media (prefers-reduced-motion: reduce) {
   .sidebar { transition: none; }
   .update-progress-bar { transition: none; }
+  .sidebar-content > section { animation: none; }
 }
 
 /* Update panel */
