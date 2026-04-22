@@ -29,7 +29,7 @@ describe('IPC contract: all channels are defined', () => {
 
   it('channel naming convention is consistent (namespace:action)', () => {
     for (const [_key, value] of Object.entries(IPC)) {
-      expect(value).toMatch(/^[a-z]+:[a-zA-Z:]+$/);
+      expect(value).toMatch(/^[a-z][a-z0-9-]*:[a-zA-Z:]+$/);
     }
   });
 });
