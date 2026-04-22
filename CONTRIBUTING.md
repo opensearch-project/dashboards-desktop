@@ -36,22 +36,28 @@ npx electron-rebuild -f -w better-sqlite3
 ```
 src/
   main/              # Electron main process
-    index.ts         # App entry — BrowserWindow, lifecycle
+    index.ts         # App entry — BrowserWindow loads localhost:5601 (OSD), manages lifecycle
     menu.ts          # Application menu with keyboard shortcuts
     ipc/             # IPC handler modules (connections, MCP, plugins, skills, updates, settings)
   preload/           # Preload scripts (context bridge)
-    index.ts         # Exposes safe IPC API to renderer
-  renderer/          # React UI (TypeScript + React)
-    index.tsx        # React entry point
-    App.tsx          # Root component, layout shell, routing
-    pages/           # Page components (Home, Cluster, Indices, Security, Settings, Plugins, Skills, MCP)
-    components/      # Reusable UI (ChatPanel, ConnectionDialog, Onboarding, ModelSwitcher, etc.)
+    index.ts         # Exposes safe IPC API to renderer and OSD overlay
+  renderer/          # Chat overlay + sidebar (injected into OSD web UI)
+    components/      # Chat UI (ChatPanel, ChatMessage, ModelSwitcher, Onboarding, etc.)
+    sidebar/         # Management sidebar (Slack-style left panel, React in BrowserView)
     styles/          # CSS and theme files
   core/              # Shared business logic (used by main + renderer + CLI)
     types.ts         # Shared TypeScript interfaces
     storage.ts       # SQLite worker thread, WAL mode, migrations, CRUD
     connections.ts   # Connection manager
     connections/     # Client factory and connection pool
+    osd/             # OSD lifecycle and integration
+      lifecycle.ts   # Spawn/stop/restart local OSD instance
+      signing-proxy.ts # Auth proxy — intercepts requests, adds SigV4/auth headers
+      config-generator.ts # Generate opensearch_dashboards.yml from SQLite settings
+      chat-overlay.ts # Chat panel injection into OSD web UI
+      plugin-installer.ts # Install/remove OSD plugins
+      upgrader.ts    # OSD version upgrade with settings re-apply
+      settings-persistence.ts # Settings survive OSD upgrades (SQLite → yml)
     agent/           # Agent runtime, model router, tool registry, conversation, branching
       providers/     # Model providers (Ollama, OpenAI, Anthropic, Bedrock, OpenAI-compatible)
       tools/         # Built-in agent tools (query, health, index, admin)
@@ -65,7 +71,7 @@ src/
     plugins/         # Plugin manager, registry, sandbox
     skills/          # Skill loader, agent personas
     updates/         # Update checker, downloader, installer, rollback
-  cli/               # CLI commands (chat, doctor, mcp, plugins, skills, agents, update)
+  cli/               # CLI commands (chat, connect, settings, doctor, mcp, plugins, skills, agents, update)
   tui/               # Ink TUI (placeholder)
 bin/
   osd.js             # CLI entry point
@@ -79,10 +85,13 @@ tests/               # Test files (mirrors src/ structure)
 
 ### Key Conventions
 
-- **Main process** handles all Node.js work: SQLite, cluster connections, MCP servers, filesystem
-- **Renderer** is a pure React app — no Node.js APIs, no direct cluster access
-- **Preload** bridges main ↔ renderer via `contextBridge.exposeInMainWorld`
-- **Core** contains shared types and logic imported by both main and renderer
+- **Main process** spawns and manages a local OSD instance (localhost:5601), handles IPC, SQLite, cluster connections, MCP servers, signing proxy
+- **BrowserWindow** loads the real OSD web UI at localhost:5601 — we do NOT reimplement admin UI
+- **Chat overlay** is injected into the OSD web UI as a sidebar/panel
+- **Management sidebar** (Slack-style left panel) is a separate BrowserView owned by Electron
+- **Preload** bridges main ↔ OSD web UI and sidebar via `contextBridge.exposeInMainWorld`
+- **Core** contains shared logic imported by main, renderer, and CLI
+- **Settings persist in SQLite** — when OSD is upgraded, Electron re-generates config and re-installs plugins automatically
 
 ---
 

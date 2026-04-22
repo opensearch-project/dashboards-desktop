@@ -556,6 +556,9 @@ ipcMain.handle(IPC.MULTI_AGENT_ROUTE, async (_e, message: string, strategy?: Rou
 });
 
 // --- IPC: OAuth ---
+// TODO(auth): Register OAuth app and set github_client_id / google_client_id in Settings
+// GitHub: https://github.com/settings/developers → New OAuth App → callback: osd://auth/github/callback
+// Google: https://console.cloud.google.com/apis/credentials → OAuth 2.0 → callback: osd://auth/google/callback
 import { loginGithub } from '../core/auth/github';
 import { loginGoogle } from '../core/auth/google';
 
@@ -710,8 +713,25 @@ app.whenReady().then(async () => {
     }
 
     const osd = new OsdLifecycle({ binPath: osdBinPath, port: Number(process.env.OSD_PORT ?? 5601) });
-    osd.on('status', (s: string) => console.log(`[OSD] ${s}`));
-    osd.on('log', (msg: string) => process.stdout.write(`[OSD] ${msg}`));
+    // Log buffer for log viewer
+    const logBuffer: string[] = [];
+    const MAX_LOG_LINES = 100;
+
+    osd.on('status', (s: string) => {
+      console.log(`[OSD] ${s}`);
+      // Notify shell of status changes
+      const win = BrowserWindow.getAllWindows()[0];
+      if (win) win.webContents.send('osd:status-changed', s);
+    });
+    osd.on('log', (msg: string) => {
+      process.stdout.write(`[OSD] ${msg}`);
+      for (const line of msg.split('\n').filter(Boolean)) {
+        logBuffer.push(line);
+        if (logBuffer.length > MAX_LOG_LINES) logBuffer.shift();
+      }
+    });
+
+    ipcMain.handle('osd:logs', () => logBuffer.slice());
     try {
       await osd.start();
       osdReady = true;

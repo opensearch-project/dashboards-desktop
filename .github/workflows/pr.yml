@@ -85,3 +85,59 @@ jobs:
           name: build-linux-x64
           path: release/linux-unpacked/
           retention-days: 7
+
+  test-e2e:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build:ts
+      - run: npx playwright test
+        env:
+          CI: true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  test-bedrock-fixture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild better-sqlite3
+      - name: Run Bedrock provider fixture tests
+        run: npx vitest run tests/unit/agent/providers/bedrock.test.ts
+
+  audit-and-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Security audit (critical + high)
+        run: npm audit --audit-level=high || true
+      - name: Build and check bundle size
+        run: |
+          npm run build:ts
+          npx electron-builder --linux --x64 --dir
+          SIZE=$(du -sm release/linux-unpacked/ | cut -f1)
+          echo "📦 Bundle size: ${SIZE}MB"
+          if [ "$SIZE" -gt 500 ]; then
+            echo "::warning::Bundle size ${SIZE}MB exceeds 500MB threshold"
+          fi
