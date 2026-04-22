@@ -145,6 +145,10 @@ const api = {
     listPinned: (conversationId: string) =>
       ipcRenderer.invoke(IPC.MESSAGE_LIST_PINNED, conversationId),
   },
+  feedback: {
+    collectMeta: () => ipcRenderer.invoke('feedback:collect-meta'),
+    submit: (json: string) => ipcRenderer.invoke('feedback:submit', json),
+  },
 };
 
 contextBridge.exposeInMainWorld('osd', api);
