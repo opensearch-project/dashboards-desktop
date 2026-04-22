@@ -31,10 +31,15 @@ An agent-first, local-first desktop application for AI chat and OpenSearch/Elast
 - Streaming responses with markdown and syntax highlighting
 
 **🔌 Unified Cluster Admin**
+- Wraps real OpenSearch Dashboards UI — full admin experience, not reimplemented
 - Connect to OpenSearch and Elasticsearch clusters from one app
-- Cluster health, index management, security configuration
 - Natural language cluster operations via chat
-- Multi-cluster context switching
+- Multi-cluster context switching via signing proxy
+
+**🗂️ Management Sidebar**
+- Slack-style left panel for connections, settings, plugins
+- Settings persist in SQLite — survive OSD upgrades
+- OSD lifecycle management: bounce, update, backup/restore, factory reset
 
 **🏠 Workspaces**
 - Group connections, conversations, and settings by environment
