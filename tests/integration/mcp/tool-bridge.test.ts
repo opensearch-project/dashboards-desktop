@@ -6,7 +6,7 @@ import { ToolRegistry } from '../../../src/core/agent/tool-registry';
 import type { ToolContext } from '../../../src/core/agent/types';
 import * as path from 'path';
 
-const ECHO_SERVER = path.resolve(__dirname, '../../fixtures/mcp/echo-server.ts');
+const ECHO_SERVER = path.resolve(__dirname, '../../fixtures/mcp/echo-server.cjs');
 
 describe('MCP tool bridge integration: real echo server', () => {
   const supervisor = new McpSupervisor();
@@ -20,7 +20,7 @@ describe('MCP tool bridge integration: real echo server', () => {
   });
 
   it('spawns echo server, syncs tools into registry', async () => {
-    await supervisor.start('echo', { command: 'npx', args: ['tsx', ECHO_SERVER] });
+    await supervisor.start('echo', { command: 'node', args: [ECHO_SERVER] });
     await new Promise((r) => setTimeout(r, 1500));
     await bridge.sync();
 

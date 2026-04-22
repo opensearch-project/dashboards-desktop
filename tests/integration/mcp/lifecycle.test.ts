@@ -3,7 +3,7 @@ import { McpSupervisor } from '../../../src/core/mcp/supervisor';
 import { McpDiscovery } from '../../../src/core/mcp/discovery';
 import * as path from 'path';
 
-const ECHO_SERVER = path.resolve(__dirname, '../../fixtures/mcp/echo-server.ts');
+const ECHO_SERVER = path.resolve(__dirname, '../../fixtures/mcp/echo-server.cjs');
 
 describe('MCP integration: supervisor + discovery + echo server', () => {
   const supervisor = new McpSupervisor();
@@ -15,8 +15,8 @@ describe('MCP integration: supervisor + discovery + echo server', () => {
 
   it('spawns echo server and discovers tools', async () => {
     await supervisor.start('echo', {
-      command: 'npx',
-      args: ['tsx', ECHO_SERVER],
+      command: 'node',
+      args: [ECHO_SERVER],
     });
 
     const state = supervisor.get('echo');
