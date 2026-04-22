@@ -2,7 +2,7 @@
  * Performance + stress tests: chat latency, conversation scale, memory.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { SettingsPersistence } from '../../../src/core/osd/settings-persistence';
+import { SettingsPersistence } from '../../src/core/osd/settings-persistence';
 
 function fakeDb() {
   const store: Record<string, any[]> = { osd_config: [], osd_plugins: [], osd_versions: [] };
@@ -89,7 +89,7 @@ describe('Performance: export/import', () => {
 
 describe('Stress: token estimator', () => {
   it('handles 1000 messages without overflow', async () => {
-    const { estimateTokens, estimateMessageTokens } = await import('../../../src/core/agent/token-estimator');
+    const { estimateTokens, estimateMessageTokens } = await import('../../src/core/agent/token-estimator');
     const messages = Array.from({ length: 1000 }, (_, i) => ({
       role: 'user' as const,
       content: `Message ${i}: ${'x'.repeat(200)}`,
@@ -107,7 +107,7 @@ describe('Stress: token estimator', () => {
 
 describe('Stress: context window trimming', () => {
   it('trims 1000 messages to fit context window', async () => {
-    const { trimToContextWindow } = await import('../../../src/core/agent/token-estimator');
+    const { trimToContextWindow } = await import('../../src/core/agent/token-estimator');
     const messages = [
       { role: 'system' as const, content: 'You are a helpful assistant.' },
       ...Array.from({ length: 1000 }, (_, i) => ({
@@ -128,7 +128,7 @@ describe('Stress: context window trimming', () => {
 
 describe('Stress: tool registry at scale', () => {
   it('registers and looks up 100 tools', async () => {
-    const { ToolRegistry } = await import('../../../src/core/agent/tool-registry');
+    const { ToolRegistry } = await import('../../src/core/agent/tool-registry');
     const reg = new ToolRegistry();
 
     const start = performance.now();
