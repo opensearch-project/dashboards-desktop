@@ -339,6 +339,11 @@ import { multiClusterDashboardTool } from '../core/agent/tools/multi-cluster-das
 import { indexDiffTool } from '../core/agent/tools/index-diff';
 import { exportResultsTool } from '../core/agent/tools/export-results';
 import { bulkIndexOpsTool } from '../core/agent/tools/bulk-index-ops';
+import { snapshotTool } from '../core/agent/tools/snapshot';
+import { ismPolicyTool } from '../core/agent/tools/ism-policy';
+import { clusterSettingsTool } from '../core/agent/tools/cluster-settings';
+import { catApiTool } from '../core/agent/tools/cat-api';
+import { aliasTool } from '../core/agent/tools/alias';
 import type { StreamEvent } from '../core/agent/types';
 import { initDatabase } from '../core/storage';
 import { McpSupervisor } from '../core/mcp/supervisor';
@@ -395,6 +400,16 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(indexDiffTool);
   tools.register(exportResultsTool);
   tools.register(bulkIndexOpsTool);
+  tools.register(snapshotTool);
+  tools.register(ismPolicyTool);
+  tools.register(clusterSettingsTool);
+  tools.register(catApiTool);
+  tools.register(aliasTool);
+
+  // Trust: destructive tools require approval
+  tools.setTrust('bulk-index-ops', 'ask');
+  tools.setTrust('snapshot', 'ask');
+  tools.setTrust('cluster-settings', 'ask');
 
   // Trust levels: admin tools require approval for all actions
   tools.setTrust('admin-opensearch', 'ask');
