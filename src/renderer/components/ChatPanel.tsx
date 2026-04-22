@@ -40,6 +40,9 @@ export const ChatPanel: React.FC<Props> = ({
   const [activeConv, setActiveConv] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [tabs, setTabs] = useState<Array<{ id: string; title: string }>>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; msgId: string; content: string } | null>(null);
     const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -265,7 +268,32 @@ export const ChatPanel: React.FC<Props> = ({
       e.preventDefault();
       setSearchOpen(true);
     }
-    if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false); }
+    if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false); setCtxMenu(null); }
+  };
+
+  const openTab = (convId: string, title: string) => {
+    if (!tabs.find(t => t.id === convId)) setTabs(prev => [...prev, { id: convId, title }]);
+    setActiveTab(convId);
+    setActiveConv(convId);
+  };
+
+  const closeTab = (id: string) => {
+    setTabs(prev => prev.filter(t => t.id !== id));
+    if (activeTab === id) { setActiveTab(tabs[0]?.id ?? null); setActiveConv(tabs[0]?.id ?? null); }
+  };
+
+  const exportChat = (format: 'markdown' | 'text') => {
+    const text = messages.map(m => `**${m.role}:** ${m.content}`).join('\n\n---\n\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `chat-export.${format === 'markdown' ? 'md' : 'txt'}`;
+    a.click();
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, msgId: string, content: string) => {
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY, msgId, content });
   };
 
     return (
@@ -311,6 +339,7 @@ export const ChatPanel: React.FC<Props> = ({
         <h2 className="chat-title">Chat</h2>
         <ModelSwitcher />
         <div className="chat-header-actions">
+          <button className="btn-icon" onClick={() => exportChat('markdown')} aria-label="Export chat" title="Export">📥</button>
           <button
             className="btn-icon"
             onClick={onToggleFullScreen}
@@ -339,6 +368,17 @@ export const ChatPanel: React.FC<Props> = ({
         </div>
       )}
 
+      {tabs.length > 0 && (
+        <div className="chat-tab-bar" role="tablist">
+          {tabs.map(t => (
+            <div key={t.id} className={`chat-tab ${activeTab === t.id ? 'active' : ''}`} role="tab" aria-selected={activeTab === t.id} onClick={() => { setActiveTab(t.id); setActiveConv(t.id); }}>
+              <span className="chat-tab-title">{t.title || 'Chat'}</span>
+              <button className="chat-tab-close" onClick={e => { e.stopPropagation(); closeTab(t.id); }} aria-label="Close tab">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div
         className="chat-body"
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -350,7 +390,7 @@ export const ChatPanel: React.FC<Props> = ({
           <ConversationSidebar
             workspaceId={workspaceId}
             activeId={activeConv}
-            onSelect={setActiveConv}
+            onSelect={(id) => openTab(id, 'Chat')}
             onNew={() => {
               setActiveConv(null);
               setMessages([]);
@@ -367,6 +407,7 @@ export const ChatPanel: React.FC<Props> = ({
             </div>
           ) : (
             messages.map((msg) => (
+              <div key={msg.id} onContextMenu={e => handleContextMenu(e, msg.id, msg.content)}>
               <ChatMessage
                 key={msg.id}
                 role={msg.role}
@@ -375,6 +416,7 @@ export const ChatPanel: React.FC<Props> = ({
                 toolStatuses={msg.toolStatuses}
                 highlighted={!!searchQuery && msg.content.toLowerCase().includes(searchQuery.toLowerCase())}
               />
+              </div>
             ))
           )}
           <div ref={messagesEndRef} />
@@ -428,6 +470,22 @@ export const ChatPanel: React.FC<Props> = ({
           )}
         </div>
       </footer>
+
+      {ctxMenu && (
+        <div className="ctx-menu" style={{ top: ctxMenu.y, left: ctxMenu.x }} onClick={() => setCtxMenu(null)}>
+          <button className="ctx-item" onClick={() => { navigator.clipboard.writeText(ctxMenu.content); setCtxMenu(null); }}>Copy</button>
+          <button className="ctx-item" onClick={() => { setInput(ctxMenu.content); setCtxMenu(null); }}>Edit & Resend</button>
+          <button className="ctx-item" onClick={() => { exportChat('markdown'); setCtxMenu(null); }}>Export Chat</button>
+        </div>
+      )}
+
+      {messages.length > 10 && (
+        <div className="chat-minimap" aria-hidden="true">
+          {messages.map((m, i) => (
+            <div key={i} className={`minimap-block minimap-${m.role}`} style={{ height: Math.max(2, Math.min(8, m.content.length / 50)) }} />
+          ))}
+        </div>
+      )}
     </aside>
   );
 };

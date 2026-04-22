@@ -1917,3 +1917,60 @@ button {
   outline-offset: -2px;
   border-radius: var(--radius-sm);
 }
+
+/* Error cards */
+.error-card {
+  background: rgba(229, 85, 85, 0.08);
+  border: 1px solid rgba(229, 85, 85, 0.3);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.error-card-header { font-weight: 600; font-size: 13px; color: var(--danger); margin-bottom: 6px; }
+.error-card-icon { margin-right: 4px; }
+.error-card-message { font-size: 13px; color: var(--text); margin-bottom: 8px; white-space: pre-wrap; }
+.error-card-actions { display: flex; gap: 6px; }
+
+/* Chat tab bar */
+.chat-tab-bar {
+  display: flex; border-bottom: 1px solid var(--border); background: var(--bg-secondary);
+  overflow-x: auto; flex-shrink: 0;
+}
+.chat-tab {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+  font-size: 12px; cursor: pointer; border-bottom: 2px solid transparent;
+  white-space: nowrap; color: var(--text-muted);
+}
+.chat-tab.active { border-bottom-color: var(--accent); color: var(--text); }
+.chat-tab:hover { background: var(--bg-tertiary); }
+.chat-tab-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 10px; padding: 0 2px; }
+
+/* Context menu */
+.ctx-menu {
+  position: fixed; z-index: 100; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); box-shadow: 0 4px 12px rgba(0,0,0,0.3); min-width: 140px;
+}
+.ctx-item {
+  display: block; width: 100%; padding: 8px 12px; border: none; background: none;
+  color: var(--text); font-size: 13px; text-align: left; cursor: pointer;
+}
+.ctx-item:hover { background: var(--bg-secondary); }
+
+/* Minimap */
+.chat-minimap {
+  position: absolute; top: 60px; right: 4px; width: 12px; bottom: 60px;
+  display: flex; flex-direction: column; gap: 1px; opacity: 0.4;
+}
+.minimap-block { border-radius: 1px; }
+.minimap-user { background: var(--accent); }
+.minimap-assistant { background: var(--text-muted); }
+
+/* Print view */
+@media print {
+  .chat-header, .chat-input-area, .chat-resize-handle, .chat-tab-bar,
+  .chat-search-bar, .msg-actions, .ctx-menu, .chat-minimap,
+  .sidebar, .sidebar-status-bar { display: none !important; }
+  .chat-panel { width: 100% !important; position: static !important; box-shadow: none !important; }
+  .chat-msg { break-inside: avoid; page-break-inside: avoid; }
+  .code-block { border: 1px solid #ccc; }
+  .code-copy { display: none; }
+}

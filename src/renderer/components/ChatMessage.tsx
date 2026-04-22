@@ -166,7 +166,15 @@ export const ChatMessage: React.FC<Props> = ({
       ))}
 
       {/* Message content */}
-      <div className="chat-msg-content" dangerouslySetInnerHTML={{ __html: html }} />
+      {content.startsWith('Error:') ? (
+        <div className="error-card" role="alert">
+          <div className="error-card-header"><span className="error-card-icon">⚠️</span> Error</div>
+          <p className="error-card-message">{content.replace(/^Error:\s*/, '')}</p>
+          {messageId && onRetry && <div className="error-card-actions"><button className="btn-sm" onClick={() => onRetry(messageId)}>Retry</button></div>}
+        </div>
+      ) : (
+        <div className="chat-msg-content" dangerouslySetInnerHTML={{ __html: html }} />
+      )}
 
       {streaming && <span className="streaming-cursor" aria-hidden="true" />}
       {tokenCount != null && tokenCount > 0 && (

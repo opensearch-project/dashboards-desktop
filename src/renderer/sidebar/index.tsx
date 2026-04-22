@@ -67,6 +67,22 @@ const Sidebar: React.FC = () => {
     ]);
   }, []);
 
+  const [navFilter, setNavFilter] = React.useState('');
+  const [notifications, setNotifications] = React.useState<Array<{ id: number; text: string; time: number }>>([]);
+  const [showNotifs, setShowNotifs] = React.useState(false);
+  const [connHealth, setConnHealth] = React.useState<Array<{ name: string; status: string }>>([]);
+
+  // Poll connection health
+  React.useEffect(() => {
+    const poll = () => window.osd?.connections?.list().then(setConnHealth).catch(() => {});
+    poll();
+    const id = setInterval(poll, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const filteredNav = navFilter ? NAV_ITEMS.filter(i => i.label.toLowerCase().includes(navFilter.toLowerCase())) : NAV_ITEMS;
+  const activeLabel = NAV_ITEMS.find(i => i.id === active)?.label ?? '';
+
   return (
     <div className={`sidebar ${collapsed ? 'collapsed' : ''}`} data-theme={theme}>
       <header className="sidebar-header">
@@ -79,10 +95,32 @@ const Sidebar: React.FC = () => {
           {collapsed ? '▶' : '◀'}
         </button>
         {!collapsed && <span className="sidebar-title">Desktop</span>}
+        {!collapsed && (
+          <button className="sidebar-notif-btn" onClick={() => setShowNotifs(s => !s)} aria-label={`Notifications (${notifications.length})`} title="Notifications">
+            🔔{notifications.length > 0 && <span className="notif-dot" />}
+          </button>
+        )}
       </header>
 
+      {showNotifs && !collapsed && (
+        <div className="notif-panel" role="region" aria-label="Notifications">
+          <div className="panel-header"><h3>Notifications</h3></div>
+          {notifications.length === 0 ? <p className="panel-empty">No notifications</p> : (
+            <ul className="notif-list">{notifications.map(n => (
+              <li key={n.id} className="notif-item">{n.text}</li>
+            ))}</ul>
+          )}
+        </div>
+      )}
+
+      {!collapsed && (
+        <div className="sidebar-search">
+          <input className="sidebar-search-input" value={navFilter} onChange={e => setNavFilter(e.target.value)} placeholder="Filter…" aria-label="Filter navigation" />
+        </div>
+      )}
+
       <nav className="sidebar-nav" aria-label="Sidebar navigation">
-        {NAV_ITEMS.map(item => (
+        {filteredNav.map(item => (
           <button
             key={item.id}
             className={`sidebar-nav-item ${active === item.id ? 'active' : ''}`}
@@ -107,6 +145,12 @@ const Sidebar: React.FC = () => {
         ))}
       </nav>
 
+      {!collapsed && activeLabel && (
+        <div className="sidebar-breadcrumb" aria-label="Breadcrumb">
+          <span className="breadcrumb-root">Desktop</span> <span className="breadcrumb-sep">›</span> <span className="breadcrumb-current">{activeLabel}</span>
+        </div>
+      )}
+
       <main className="sidebar-content" id="sidebar-content" aria-live="polite">
         {active === 'connections' && <ConnectionsPanel />}
         {active === 'config' && <ConfigPanel />}
@@ -117,6 +161,13 @@ const Sidebar: React.FC = () => {
       </main>
       {showTour && <OnboardingTour onDone={dismissTour} />}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      {!collapsed && (
+        <footer className="sidebar-status-bar" aria-label="Connection status">
+          {connHealth.length === 0 ? <span className="status-text">No connections</span> : connHealth.map(c => (
+            <span key={c.name} className="status-item"><span className={`conn-status ${c.status ?? 'unknown'}`} />{c.name}</span>
+          ))}
+        </footer>
+      )}
     </div>
   );
 };
@@ -582,6 +633,21 @@ const SettingsPanel: React.FC = () => {
         const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'osd-settings.json'; a.click();
       }).catch(() => {})}>Export Settings</button>
+    </div>
+    <h3 className="subsection-title">Chat</h3>
+    <div className="settings-group">
+      <label className="toggle-label"><input type="checkbox" defaultChecked /> <span>Show token count</span></label>
+    </div>
+    <div className="settings-group">
+      <label className="toggle-label"><input type="checkbox" defaultChecked /> <span>Stream responses</span></label>
+    </div>
+    <h3 className="subsection-title">Notifications</h3>
+    <div className="settings-group">
+      <label className="toggle-label"><input type="checkbox" defaultChecked /> <span>Show toast notifications</span></label>
+    </div>
+    <h3 className="subsection-title">Data</h3>
+    <div className="settings-group">
+      <button className="btn-sm btn-danger" onClick={() => { if (confirm('Reset all settings?')) window.osd?.settings?.set('factory_reset', 'true').catch(() => {}); }}>Factory Reset</button>
     </div>
   </section>
   );
