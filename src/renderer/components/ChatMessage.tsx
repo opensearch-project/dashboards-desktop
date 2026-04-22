@@ -13,6 +13,7 @@ interface Props {
   content: string;
   streaming?: boolean;
   toolStatuses?: ToolStatus[];
+  tokenCount?: number;
   messageId?: string;
   pinned?: boolean;
   onPin?: (id: string) => void;
@@ -75,6 +76,7 @@ export const ChatMessage: React.FC<Props> = ({
   content,
   streaming,
   toolStatuses,
+  tokenCount,
   messageId,
   pinned,
   onPin,
@@ -143,6 +145,9 @@ export const ChatMessage: React.FC<Props> = ({
       <div className="chat-msg-content" dangerouslySetInnerHTML={{ __html: html }} />
 
       {streaming && <span className="streaming-cursor" aria-hidden="true" />}
+      {tokenCount != null && tokenCount > 0 && (
+        <span className="token-count" title="Estimated tokens">{tokenCount} tokens</span>
+      )}
 
       {/* Pin/bookmark action */}
       {!streaming && messageId && (

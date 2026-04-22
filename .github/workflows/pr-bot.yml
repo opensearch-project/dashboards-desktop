@@ -1,0 +1,71 @@
+name: PR Status Bot
+
+on:
+  workflow_run:
+    workflows: ["PR Pipeline"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  checks: read
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
+              state: 'open',
+            });
+            if (!prs.length) return;
+            const pr = prs[0];
+
+            const run = context.payload.workflow_run;
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+            });
+
+            const icon = (c) => c === 'success' ? '✅' : c === 'failure' ? '❌' : '⏭️';
+            const rows = jobs.jobs.map(j =>
+              `| ${icon(j.conclusion)} | ${j.name} | ${j.conclusion || 'skipped'} | ${Math.round((new Date(j.completed_at) - new Date(j.started_at)) / 1000)}s |`
+            ).join('\n');
+
+            const status = run.conclusion === 'success' ? '✅ All checks passed' : '❌ Some checks failed';
+            const body = [
+              `## CI Status: ${status}`,
+              '',
+              '| | Job | Result | Duration |',
+              '|---|-----|--------|----------|',
+              rows,
+              '',
+              `[View run](${run.html_url})`,
+            ].join('\n');
+
+            // Update or create comment
+            const tag = '<!-- pr-status-bot -->';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+            const existing = comments.find(c => c.body.includes(tag));
+
+            const fullBody = `${tag}\n${body}`;
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body: fullBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: pr.number, body: fullBody,
+              });
+            }

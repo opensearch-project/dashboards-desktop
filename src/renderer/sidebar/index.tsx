@@ -120,11 +120,14 @@ const ConfigPanel: React.FC = () => {
   const [config, setConfig] = React.useState('');
   const [saved, setSaved] = React.useState(false);
   const [enabledPlugins, setEnabledPlugins] = React.useState<string[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    window.osd?.settings?.get('osd_status').then(s => setOsdStatus(s ?? 'unknown')).catch(() => {});
-    window.osd?.settings?.get('osd_config_yml').then(c => setConfig(c ?? '')).catch(() => {});
-    window.osd?.settings?.get('enabled_plugins').then(p => setEnabledPlugins(p ? JSON.parse(p) : COMMON_PLUGINS)).catch(() => {});
+    Promise.all([
+      window.osd?.settings?.get('osd_status').then(s => setOsdStatus(s ?? 'unknown')).catch(() => {}),
+      window.osd?.settings?.get('osd_config_yml').then(c => setConfig(c ?? '')).catch(() => {}),
+      window.osd?.settings?.get('enabled_plugins').then(p => setEnabledPlugins(p ? JSON.parse(p) : COMMON_PLUGINS)).catch(() => {}),
+    ]).finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {
@@ -144,6 +147,7 @@ const ConfigPanel: React.FC = () => {
         <h2>OSD Config</h2>
         <span className={`osd-status-badge ${osdStatus}`}>{osdStatus}</span>
       </div>
+      {loading ? <div className="panel-loading" role="status">Loading…</div> : <>
       <textarea
         className="config-editor"
         value={config}
@@ -167,6 +171,7 @@ const ConfigPanel: React.FC = () => {
         <button className="btn-sm" onClick={handleSave}>{saved ? '✓ Saved' : 'Save'}</button>
         <button className="btn-sm btn-warning" onClick={() => window.osd?.agent?.send('__restart_osd__').catch(() => {})}>Restart OSD</button>
       </div>
+      </>}
     </section>
   );
 };
@@ -177,9 +182,10 @@ const PluginsPanel: React.FC = () => {
   const [installInput, setInstallInput] = React.useState('');
   const [showInstall, setShowInstall] = React.useState(false);
   const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(true);
 
   const load = React.useCallback(() => {
-    window.osd?.plugins?.list().then(setPlugins).catch(() => {});
+    window.osd?.plugins?.list().then(setPlugins).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   React.useEffect(() => { load(); }, [load]);
@@ -215,6 +221,7 @@ const PluginsPanel: React.FC = () => {
         <button className="btn-sm" onClick={() => setShowInstall(s => !s)} aria-label="Install plugin">+ Install</button>
       </div>
       {error && <p className="panel-error" role="alert">{error}</p>}
+      {loading ? <div className="panel-loading" role="status">Loading…</div> : <>
       {showInstall && (
         <div className="install-form">
           <input
@@ -243,6 +250,7 @@ const PluginsPanel: React.FC = () => {
           ))}
         </ul>
       )}
+      </>}
     </section>
   );
 };
@@ -255,9 +263,10 @@ const UpdatePanel: React.FC = () => {
   const [upgrading, setUpgrading] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    window.osd?.osdUpgrade?.getVersion().then(v => setCurrent(v ?? 'unknown')).catch(() => {});
+    window.osd?.osdUpgrade?.getVersion().then(v => setCurrent(v ?? 'unknown')).catch(() => {}).finally(() => setLoading(false));
     const unsub = window.osd?.osdUpgrade?.onProgress((p: { percent: number }) => setProgress(p.percent));
     return () => { if (unsub) unsub(); };
   }, []);
@@ -282,6 +291,7 @@ const UpdatePanel: React.FC = () => {
   return (
     <section aria-label="Update OSD">
       <div className="panel-header"><h2>Update OSD</h2></div>
+      {loading ? <div className="panel-loading" role="status">Loading…</div> : <>
       <div className="update-version">
         <span className="update-label">Current:</span>
         <span className="update-value">{current || '—'}</span>

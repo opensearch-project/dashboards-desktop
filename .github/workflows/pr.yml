@@ -22,6 +22,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: .cache/electron
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-${{ runner.os }}-
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
@@ -77,9 +83,23 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: .cache/electron
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-${{ runner.os }}-
       - run: npm ci
-      - run: npm run build:ts
-      - run: npx electron-builder --linux --x64 --dir
+      - name: Build TypeScript
+        run: |
+          START=$(date +%s)
+          npm run build:ts
+          echo "⏱️ build:ts: $(($(date +%s) - START))s"
+      - name: Build Electron app
+        run: |
+          START=$(date +%s)
+          npx electron-builder --linux --x64 --dir
+          echo "⏱️ electron-builder: $(($(date +%s) - START))s"
       - uses: actions/upload-artifact@v4
         with:
           name: build-linux-x64
