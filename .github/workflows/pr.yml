@@ -138,6 +138,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -145,12 +147,34 @@ jobs:
       - run: npm ci
       - name: Security audit (critical + high)
         run: npm audit --audit-level=high || true
-      - name: Build and check bundle size
+      - name: Build and track bundle size
         run: |
           npm run build:ts
           npx electron-builder --linux --x64 --dir
           SIZE=$(du -sm release/linux-unpacked/ | cut -f1)
           echo "📦 Bundle size: ${SIZE}MB"
-          if [ "$SIZE" -gt 500 ]; then
-            echo "::warning::Bundle size ${SIZE}MB exceeds 500MB threshold"
+          echo "BUNDLE_SIZE=${SIZE}" >> $GITHUB_ENV
+
+          # Compare with previous size if available
+          PREV_SIZE_FILE=".bundle-size"
+          if [ -f "$PREV_SIZE_FILE" ]; then
+            PREV=$(cat "$PREV_SIZE_FILE")
+            DIFF=$((SIZE - PREV))
+            PCT=$(( (DIFF * 100) / (PREV > 0 ? PREV : 1) ))
+            echo "📊 Previous: ${PREV}MB | Current: ${SIZE}MB | Delta: ${DIFF}MB (${PCT}%)"
+            if [ "$PCT" -gt 10 ]; then
+              echo "::error::Bundle size increased by ${PCT}% (>${PREV}MB → ${SIZE}MB). Threshold: 10%"
+              exit 1
+            fi
           fi
+          echo "$SIZE" > "$PREV_SIZE_FILE"
+      - name: Comment bundle size on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `📦 Bundle size: **${process.env.BUNDLE_SIZE}MB** (Linux x64)`
+            })

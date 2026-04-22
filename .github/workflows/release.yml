@@ -123,6 +123,16 @@ jobs:
           pattern: release-*
           merge-multiple: true
 
+      - name: Generate SHA256SUMS.txt
+        run: |
+          cd artifacts
+          sha256sum * > SHA256SUMS.txt
+          echo "📋 Checksums:"
+          cat SHA256SUMS.txt
+
+      - name: Generate changelog
+        run: node scripts/generate-changelog.js || true
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

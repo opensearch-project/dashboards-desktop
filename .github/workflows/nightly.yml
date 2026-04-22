@@ -1,0 +1,103 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: "0 4 * * *" # 4am UTC daily
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            arch: x64
+            build_args: --mac --x64
+          - os: macos-latest
+            arch: arm64
+            build_args: --mac --arm64
+          - os: ubuntu-latest
+            arch: x64
+            build_args: --linux --x64
+          - os: ubuntu-22.04-arm
+            arch: arm64
+            build_args: --linux --arm64
+          - os: windows-latest
+            arch: x64
+            build_args: --win --x64
+          - os: windows-latest
+            arch: arm64
+            build_args: --win --arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:ts
+      - run: npx electron-builder ${{ matrix.build_args }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-${{ runner.os }}-${{ matrix.arch }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          pattern: nightly-*
+          merge-multiple: true
+
+      - name: Generate nightly tag
+        run: echo "NIGHTLY_TAG=nightly-$(date +%Y%m%d)" >> $GITHUB_ENV
+
+      - name: Delete previous nightly release
+        run: gh release delete nightly --yes 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "Nightly Build (${{ env.NIGHTLY_TAG }})"
+          body: |
+            Automated nightly build from `main` branch.
+            **Not for production use.** May contain untested features.
+            Built: ${{ env.NIGHTLY_TAG }}
+          files: artifacts/*
+          prerelease: true
+          make_latest: false

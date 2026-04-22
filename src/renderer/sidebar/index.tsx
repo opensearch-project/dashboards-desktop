@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './sidebar.css';
 
-type Section = 'home' | 'connections' | 'config' | 'plugins' | 'update' | 'chat' | 'settings';
+type Section = 'home' | 'connections' | 'config' | 'plugins' | 'update' | 'chat' | 'feedback' | 'settings';
 
 const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
   { id: 'home', icon: '🏠', label: 'Home' },
@@ -18,6 +18,7 @@ const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
   { id: 'plugins', icon: '🧩', label: 'Plugins' },
   { id: 'update', icon: '🔄', label: 'Update OSD' },
   { id: 'chat', icon: '💬', label: 'Chat' },
+  { id: 'feedback', icon: '📣', label: 'Feedback' },
   { id: 'settings', icon: '🔧', label: 'Settings' },
 ];
 
@@ -67,6 +68,7 @@ const Sidebar: React.FC = () => {
         {active === 'config' && <ConfigPanel />}
         {active === 'plugins' && <PluginsPanel />}
         {active === 'update' && <UpdatePanel />}
+        {active === 'feedback' && <FeedbackPanel />}
         {active === 'settings' && <SettingsPanel />}
       </main>
     </div>
@@ -301,6 +303,90 @@ const UpdatePanel: React.FC = () => {
       <div className="panel-actions">
         {!available && <button className="btn-sm" onClick={checkUpdate} disabled={checking}>{checking ? 'Checking…' : 'Check for Updates'}</button>}
         {available && !upgrading && <button className="btn-sm btn-warning" onClick={doUpgrade}>Upgrade to {latest}</button>}
+      </div>
+    </section>
+  );
+};
+
+const FeedbackPanel: React.FC = () => {
+  const [type, setType] = React.useState('bug');
+  const [title, setTitle] = React.useState('');
+  const [description, setDescription] = React.useState('');
+  const [meta, setMeta] = React.useState<{ screenshot?: string; errors?: string[]; os?: string; osdVersion?: string; appVersion?: string; plugins?: string[] } | null>(null);
+  const [metaOpen, setMetaOpen] = React.useState(false);
+  const [removeScreenshot, setRemoveScreenshot] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    window.osd?.agent?.send('feedback:collect-meta').then(setMeta).catch(() => {});
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!title.trim()) return;
+    setSubmitting(true);
+    try {
+      await window.osd?.agent?.send('feedback:submit', JSON.stringify({
+        type, title, description,
+        includeScreenshot: !removeScreenshot,
+      }));
+    } catch { /* sde handles errors */ }
+    setSubmitting(false);
+  };
+
+  const TYPES = [
+    { value: 'bug', label: 'Bug Report' },
+    { value: 'feature', label: 'Feature Request' },
+    { value: 'general', label: 'General Feedback' },
+  ];
+
+  return (
+    <section aria-label="Send Feedback">
+      <div className="panel-header"><h2>Feedback</h2></div>
+
+      <div className="settings-group">
+        <label htmlFor="fb-type">Type</label>
+        <select id="fb-type" className="settings-input" value={type} onChange={e => setType(e.target.value)}>
+          {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+      </div>
+
+      <div className="settings-group">
+        <label htmlFor="fb-title">Title</label>
+        <input id="fb-title" className="settings-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief summary" />
+      </div>
+
+      <div className="settings-group">
+        <label htmlFor="fb-desc">Description</label>
+        <textarea id="fb-desc" className="feedback-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="Details (optional)" />
+      </div>
+
+      {meta && (
+        <details className="feedback-meta" open={metaOpen} onToggle={e => setMetaOpen((e.target as HTMLDetailsElement).open)}>
+          <summary className="subsection-title" style={{ cursor: 'pointer' }}>Auto-collected info</summary>
+          <div className="feedback-meta-content">
+            {meta.screenshot && !removeScreenshot && (
+              <div className="feedback-screenshot">
+                <img src={meta.screenshot} alt="App screenshot" className="feedback-thumb" />
+                <button className="btn-xs btn-danger" onClick={() => setRemoveScreenshot(true)}>Remove</button>
+              </div>
+            )}
+            {meta.errors && meta.errors.length > 0 && (
+              <div className="feedback-meta-row"><span className="update-label">Console errors:</span> <span>{meta.errors.length}</span></div>
+            )}
+            {meta.os && <div className="feedback-meta-row"><span className="update-label">OS:</span> <span>{meta.os}</span></div>}
+            {meta.osdVersion && <div className="feedback-meta-row"><span className="update-label">OSD:</span> <span>{meta.osdVersion}</span></div>}
+            {meta.appVersion && <div className="feedback-meta-row"><span className="update-label">Desktop:</span> <span>{meta.appVersion}</span></div>}
+            {meta.plugins && meta.plugins.length > 0 && (
+              <div className="feedback-meta-row"><span className="update-label">Plugins:</span> <span>{meta.plugins.join(', ')}</span></div>
+            )}
+          </div>
+        </details>
+      )}
+
+      <div className="panel-actions">
+        <button className="btn-sm" onClick={handleSubmit} disabled={submitting || !title.trim()}>
+          {submitting ? 'Submitting…' : 'Submit'}
+        </button>
       </div>
     </section>
   );

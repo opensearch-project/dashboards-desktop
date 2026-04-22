@@ -1,0 +1,31 @@
+FROM node:22-bookworm
+
+# Electron runtime deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils \
+    libatspi2.0-0 libsecret-1-0 libgbm1 libasound2 \
+    xvfb dbus-x11 \
+    && rm -rf /var/lib/apt/lists/*
+
+# tsx for integration tests
+RUN npm install -g tsx
+
+# Playwright browsers
+RUN npx playwright install --with-deps chromium
+
+ENV DISPLAY=:99
+ENV CI=true
+
+WORKDIR /app
+
+# Pre-install deps for cache layer
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+# Usage:
+#   docker build -f Dockerfile.ci -t osd-ci .
+#   docker run osd-ci npm test
+#   docker run osd-ci npm run test:integration
+#   docker run osd-ci xvfb-run npx playwright test
