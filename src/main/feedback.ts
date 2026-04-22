@@ -2,7 +2,7 @@
  * Feedback — form dialog → screenshot + metadata → GitHub issue.
  */
 
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, clipboard, nativeImage, shell } from 'electron';
 import { platform, arch, release } from 'os';
 
 const REPO_URL = 'https://github.com/opensearch-project/dashboards-desktop/issues/new';
@@ -20,6 +20,42 @@ export function captureOsdErrors(webContents: Electron.WebContents): void {
 
 export function registerFeedbackIPC(): void {
   let formWin: BrowserWindow | null = null;
+  let lastScreenshot: Buffer | null = null;
+
+  // Fee's panel calls this when feedback panel opens
+  ipcMain.handle('feedback:collect-meta', async () => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (!win) return {};
+    const image = await win.webContents.capturePage();
+    lastScreenshot = image.toPNG();
+    let appVersion = '0.0.0';
+    try { appVersion = require('../../package.json').version; } catch { /* ignore */ }
+    return {
+      screenshot: `data:image/png;base64,${lastScreenshot.toString('base64')}`,
+      errors: errorBuffer.slice(),
+      os: `${platform()} ${arch()} ${release()}`,
+      osdVersion: 'unknown',
+      appVersion,
+      plugins: [],
+    };
+  });
+
+  // Fee's panel calls this on Submit
+  ipcMain.handle('feedback:submit', (_e, json: string) => {
+    const data = JSON.parse(json) as { type: string; title: string; description: string; includeScreenshot: boolean };
+    const labelMap: Record<string, string> = { bug: 'bug', feature: 'enhancement', general: 'feedback' };
+    const prefix = data.type === 'bug' ? '[Bug]' : data.type === 'feature' ? '[Feature]' : '[Feedback]';
+    const title = `${prefix} ${data.title}`;
+    let appVersion = '0.0.0';
+    try { appVersion = require('../../package.json').version; } catch { /* ignore */ }
+    const metaBlock = `**Environment:**\n\`\`\`\nOS: ${platform()} ${arch()} ${release()}\nElectron: ${process.versions.electron}\nApp: ${appVersion}\n\`\`\``;
+    const errBlock = errorBuffer.length ? `\n**Console Errors (${errorBuffer.length}):**\n\`\`\`\n${errorBuffer.join('\n')}\n\`\`\`` : '';
+    const body = `${data.description}\n\n${metaBlock}${errBlock}\n\n**Screenshot:**\n_Paste with Cmd+V / Ctrl+V (copied to clipboard)_\n`;
+    if (data.includeScreenshot && lastScreenshot) {
+      clipboard.writeImage(nativeImage.createFromBuffer(lastScreenshot));
+    }
+    shell.openExternal(`${REPO_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}&labels=${labelMap[data.type] || 'feedback'}`);
+  });
 
   ipcMain.handle('sidebar:feedback', async () => {
     if (formWin && !formWin.isDestroyed()) { formWin.focus(); return; }
