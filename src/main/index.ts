@@ -859,6 +859,12 @@ app.whenReady().then(async () => {
   registerScheduledQueriesIPC(osdDbPath);
   registerConnectionGroupsIPC(osdDbPath);
 
+  // 8. Cluster templates + audit log
+  const { registerClusterTemplatesIPC } = await import('./cluster-templates.js');
+  registerClusterTemplatesIPC(osdDbPath);
+  const { initAuditLog } = await import('../core/audit-log.js');
+  initAuditLog(osdDbPath);
+
   // 3. Wire devops backends when available (setter injection)
   try {
     const pluginMgr = await import('../core/plugins/manager.js');
