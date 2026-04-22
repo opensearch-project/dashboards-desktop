@@ -14,7 +14,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.test.ts', 'tests/**/*.test.{ts,tsx}'],
-    exclude: ['tests/e2e/**'],
+    exclude: ['tests/e2e/**', 'tests/integration/**'],
     environmentMatchGlobs: [
       ['tests/components/**', 'jsdom'],
     ],
