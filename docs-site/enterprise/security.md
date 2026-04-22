@@ -1,3 +1,11 @@
+---
+title: "Security Guide"
+head:
+  - - meta
+    - property: og:title
+      content: "Security Guide — OSD Desktop"
+---
+
 # Security Guide
 
 ## Credential Storage

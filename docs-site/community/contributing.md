@@ -1,3 +1,11 @@
+---
+title: "Contributing to OSD Desktop"
+head:
+  - - meta
+    - property: og:title
+      content: "Contributing to OSD Desktop — OSD Desktop"
+---
+
 # Contributing to OSD Desktop
 
 Thank you for your interest in contributing. This guide covers development setup, project structure, testing, and the PR process.

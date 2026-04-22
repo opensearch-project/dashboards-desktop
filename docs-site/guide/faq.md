@@ -1,3 +1,11 @@
+---
+title: "Frequently Asked Questions"
+head:
+  - - meta
+    - property: og:title
+      content: "Frequently Asked Questions — OSD Desktop"
+---
+
 # Frequently Asked Questions
 
 ---

@@ -26,6 +26,7 @@ export default defineConfig({
             { text: 'Troubleshooting', link: '/guide/troubleshooting' },
             { text: 'FAQ', link: '/guide/faq' },
             { text: 'Cloud Testing', link: '/guide/cloud-testing' },
+            { text: 'Screenshots', link: '/guide/screenshots' },
           ],
         },
       ],
@@ -34,7 +35,9 @@ export default defineConfig({
           text: 'Reference',
           items: [
             { text: 'API (IPC Channels)', link: '/reference/api' },
+            { text: 'API Versioning', link: '/reference/api-versioning' },
             { text: 'Agent Tools', link: '/reference/tools' },
+            { text: 'Tools by Category', link: '/reference/tools-by-category' },
             { text: 'CLI', link: '/reference/cli' },
             { text: 'Keyboard Shortcuts', link: '/reference/keyboard-shortcuts' },
             { text: 'Architecture', link: '/reference/architecture' },

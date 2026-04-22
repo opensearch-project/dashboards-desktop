@@ -1,3 +1,11 @@
+---
+title: "Plugin Development Guide"
+head:
+  - - meta
+    - property: og:title
+      content: "Plugin Development Guide — OSD Desktop"
+---
+
 # Plugin Development Guide
 
 Build plugins, skills, and MCP servers for OSD Desktop.

@@ -1,3 +1,11 @@
+---
+title: "Agent Tool Reference"
+head:
+  - - meta
+    - property: og:title
+      content: "Agent Tool Reference — OSD Desktop"
+---
+
 # Agent Tool Reference
 
 All 28 built-in tools available to the AI agent.

@@ -1,3 +1,11 @@
+---
+title: "Enterprise Deployment Guide"
+head:
+  - - meta
+    - property: og:title
+      content: "Enterprise Deployment Guide — OSD Desktop"
+---
+
 # Enterprise Deployment Guide
 
 Deploy OSD Desktop across your organization.

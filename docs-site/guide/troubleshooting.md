@@ -1,3 +1,11 @@
+---
+title: "Troubleshooting Guide"
+head:
+  - - meta
+    - property: og:title
+      content: "Troubleshooting Guide — OSD Desktop"
+---
+
 # Troubleshooting Guide
 
 Diagnose and fix common issues with OSD Desktop.

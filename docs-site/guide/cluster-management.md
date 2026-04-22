@@ -1,3 +1,11 @@
+---
+title: "Managing Clusters via Chat"
+head:
+  - - meta
+    - property: og:title
+      content: "Managing Clusters via Chat — OSD Desktop"
+---
+
 # Managing Clusters via Chat
 
 Use natural language to monitor, manage, and troubleshoot OpenSearch and Elasticsearch clusters.

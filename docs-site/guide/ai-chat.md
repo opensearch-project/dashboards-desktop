@@ -1,3 +1,11 @@
+---
+title: "Getting Started with AI Chat"
+head:
+  - - meta
+    - property: og:title
+      content: "Getting Started with AI Chat — OSD Desktop"
+---
+
 # Getting Started with AI Chat
 
 A practical guide to using the AI agent in OSD Desktop.

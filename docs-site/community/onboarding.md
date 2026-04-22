@@ -1,3 +1,11 @@
+---
+title: "Your First PR in 30 Minutes"
+head:
+  - - meta
+    - property: og:title
+      content: "Your First PR in 30 Minutes — OSD Desktop"
+---
+
 # Your First PR in 30 Minutes
 
 A fast-track guide for new contributors.

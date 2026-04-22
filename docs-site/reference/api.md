@@ -1,3 +1,11 @@
+---
+title: "API Reference — IPC Channels"
+head:
+  - - meta
+    - property: og:title
+      content: "API Reference — IPC Channels — OSD Desktop"
+---
+
 # API Reference — IPC Channels
 
 All IPC channels between renderer/sidebar/overlay and the main process.

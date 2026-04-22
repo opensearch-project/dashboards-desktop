@@ -1,3 +1,11 @@
+---
+title: "CLI Reference"
+head:
+  - - meta
+    - property: og:title
+      content: "CLI Reference — OSD Desktop"
+---
+
 # CLI Reference
 
 ## osd

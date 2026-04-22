@@ -1,3 +1,11 @@
+---
+title: "Getting Started with OSD Desktop"
+head:
+  - - meta
+    - property: og:title
+      content: "Getting Started with OSD Desktop — OSD Desktop"
+---
+
 # Getting Started with OSD Desktop
 
 Get up and running in under 10 minutes.
