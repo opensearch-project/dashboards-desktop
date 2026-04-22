@@ -351,6 +351,14 @@ import { clusterRerouteTool } from '../core/agent/tools/cluster-reroute';
 import { indexRolloverTool } from '../core/agent/tools/index-rollover';
 import { dataStreamTool } from '../core/agent/tools/data-stream';
 import { painlessValidatorTool } from '../core/agent/tools/painless-validator';
+import { sqlQueryTool } from '../core/agent/tools/sql-query';
+import { anomalyCorrelationTool } from '../core/agent/tools/anomaly-correlation';
+import { capacityPlannerTool } from '../core/agent/tools/capacity-planner';
+import { migrationAssistantTool } from '../core/agent/tools/migration-assistant';
+import { performanceAdvisorTool } from '../core/agent/tools/performance-advisor';
+import { ccrTool } from '../core/agent/tools/ccr';
+import { notificationChannelsTool } from '../core/agent/tools/notification-channels';
+import { tenantManagementTool } from '../core/agent/tools/tenant-management';
 import type { StreamEvent } from '../core/agent/types';
 import { initDatabase } from '../core/storage';
 import { McpSupervisor } from '../core/mcp/supervisor';
@@ -419,6 +427,14 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(indexRolloverTool);
   tools.register(dataStreamTool);
   tools.register(painlessValidatorTool);
+  tools.register(sqlQueryTool);
+  tools.register(anomalyCorrelationTool);
+  tools.register(capacityPlannerTool);
+  tools.register(migrationAssistantTool);
+  tools.register(performanceAdvisorTool);
+  tools.register(ccrTool);
+  tools.register(notificationChannelsTool);
+  tools.register(tenantManagementTool);
 
   // Trust: destructive tools require approval
   tools.setTrust('bulk-index-ops', 'ask');
@@ -426,6 +442,9 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.setTrust('cluster-settings', 'ask');
   tools.setTrust('cluster-reroute', 'ask');
   tools.setTrust('task-management', 'ask');
+  tools.setTrust('migration-assistant', 'ask');
+  tools.setTrust('ccr', 'ask');
+  tools.setTrust('tenant-management', 'ask');
 
   // Trust levels: admin tools require approval for all actions
   tools.setTrust('admin-opensearch', 'ask');
