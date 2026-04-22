@@ -41,6 +41,14 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Skip navigation */
+.skip-nav {
+  position: absolute; top: -40px; left: 0; padding: 8px 16px;
+  background: var(--accent); color: #fff; z-index: 999; font-size: 13px;
+  text-decoration: none; border-radius: 0 0 4px 0;
+}
+.skip-nav:focus { top: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--sidebar-bg); color: var(--sidebar-text); overflow: hidden; }
 
 .sidebar {

@@ -107,7 +107,7 @@ const Sidebar: React.FC = () => {
         ))}
       </nav>
 
-      <main className="sidebar-content" aria-live="polite">
+      <main className="sidebar-content" id="sidebar-content" aria-live="polite">
         {active === 'connections' && <ConnectionsPanel />}
         {active === 'config' && <ConfigPanel />}
         {active === 'plugins' && <PluginsPanel />}
@@ -596,10 +596,13 @@ const TOUR_STEPS = [
 
 const OnboardingTour: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const [step, setStep] = React.useState(0);
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => { ref.current?.focus(); }, [step]);
   const current = TOUR_STEPS[step];
+  const onKey = (e: React.KeyboardEvent) => { if (e.key === 'Escape') onDone(); if (e.key === 'Tab') { const focusable = ref.current?.querySelectorAll('button'); if (focusable && e.shiftKey && document.activeElement === focusable[0]) { e.preventDefault(); focusable[focusable.length - 1].focus(); } else if (focusable && !e.shiftKey && document.activeElement === focusable[focusable.length - 1]) { e.preventDefault(); focusable[0].focus(); } } };
   return (
-    <div className="tour-overlay" onClick={onDone}>
-      <div className="tour-tooltip" onClick={e => e.stopPropagation()}>
+    <div className="tour-overlay" onClick={onDone} role="dialog" aria-modal="true" aria-label="Onboarding tour">
+      <div className="tour-tooltip" ref={ref} tabIndex={-1} onClick={e => e.stopPropagation()} onKeyDown={onKey}>
         <div className="tour-step">{step + 1}/{TOUR_STEPS.length}</div>
         <h3 className="tour-title">{current.title}</h3>
         <p className="tour-text">{current.text}</p>
