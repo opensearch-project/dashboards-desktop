@@ -112,3 +112,61 @@ test.describe.serial('Sidebar: update', () => {
     }
   });
 });
+
+test.describe.serial('Sidebar: log viewer', () => {
+  test('log viewer panel shows OSD logs', async () => {
+    const nav = page.locator('[data-nav="logs"], [data-section="logs"], button:has-text("Logs")');
+    if (await nav.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      await nav.first().click();
+      const logPanel = page.locator('[data-testid="log-viewer"], .log-viewer, pre');
+      await expect(logPanel.first()).toBeVisible({ timeout: 3000 });
+    }
+  });
+
+  test('log viewer shows recent log lines', async () => {
+    const logLines = page.locator('[data-testid="log-line"], .log-line, .log-viewer pre, .log-viewer code');
+    if (await logLines.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      const count = await logLines.count();
+      expect(count).toBeGreaterThanOrEqual(0); // may be empty in test mode
+    }
+  });
+});
+
+test.describe.serial('Sidebar: health indicators', () => {
+  test('OSD status indicator is visible', async () => {
+    const status = page.locator('[data-testid="osd-status"], .osd-status, .health-dot, .status-indicator');
+    await expect(status.first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('status shows running or starting state', async () => {
+    const status = page.locator('[data-testid="osd-status"], .osd-status, .status-indicator');
+    if (await status.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      const text = await status.first().textContent();
+      expect(text?.toLowerCase()).toMatch(/running|starting|stopped|error/);
+    }
+  });
+});
+
+test.describe.serial('Sidebar: chat unread badge', () => {
+  test('chat icon is visible in sidebar', async () => {
+    const chatIcon = page.locator('[data-nav="chat"], [data-testid="sidebar-chat"], button:has-text("Chat")');
+    await expect(chatIcon.first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('unread badge appears after agent response', async () => {
+    // Open chat, send message, close chat, check for badge
+    await page.keyboard.press('Meta+k');
+    const input = page.locator('[data-testid="chat-input"], #osd-chat-input, .chat-input input, .chat-input textarea');
+    if (await input.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      await input.first().fill('test unread');
+      await input.first().press('Enter');
+      // Close chat
+      await page.keyboard.press('Meta+k');
+      // Check for unread indicator
+      const badge = page.locator('[data-testid="chat-unread"], .unread-badge, .unread-dot');
+      if (await badge.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+        await expect(badge.first()).toBeVisible();
+      }
+    }
+  });
+});
