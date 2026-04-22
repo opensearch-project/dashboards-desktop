@@ -344,6 +344,13 @@ import { ismPolicyTool } from '../core/agent/tools/ism-policy';
 import { clusterSettingsTool } from '../core/agent/tools/cluster-settings';
 import { catApiTool } from '../core/agent/tools/cat-api';
 import { aliasTool } from '../core/agent/tools/alias';
+import { queryProfilerTool } from '../core/agent/tools/query-profiler';
+import { hotThreadsTool } from '../core/agent/tools/hot-threads';
+import { taskManagementTool } from '../core/agent/tools/task-management';
+import { clusterRerouteTool } from '../core/agent/tools/cluster-reroute';
+import { indexRolloverTool } from '../core/agent/tools/index-rollover';
+import { dataStreamTool } from '../core/agent/tools/data-stream';
+import { painlessValidatorTool } from '../core/agent/tools/painless-validator';
 import type { StreamEvent } from '../core/agent/types';
 import { initDatabase } from '../core/storage';
 import { McpSupervisor } from '../core/mcp/supervisor';
@@ -405,11 +412,20 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(clusterSettingsTool);
   tools.register(catApiTool);
   tools.register(aliasTool);
+  tools.register(queryProfilerTool);
+  tools.register(hotThreadsTool);
+  tools.register(taskManagementTool);
+  tools.register(clusterRerouteTool);
+  tools.register(indexRolloverTool);
+  tools.register(dataStreamTool);
+  tools.register(painlessValidatorTool);
 
   // Trust: destructive tools require approval
   tools.setTrust('bulk-index-ops', 'ask');
   tools.setTrust('snapshot', 'ask');
   tools.setTrust('cluster-settings', 'ask');
+  tools.setTrust('cluster-reroute', 'ask');
+  tools.setTrust('task-management', 'ask');
 
   // Trust levels: admin tools require approval for all actions
   tools.setTrust('admin-opensearch', 'ask');
