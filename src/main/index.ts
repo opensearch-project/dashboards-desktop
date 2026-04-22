@@ -335,6 +335,10 @@ import { nlQueryTool } from '../core/agent/tools/nl-query';
 import { clusterCompareTool } from '../core/agent/tools/cluster-compare';
 import { indexTemplateTool } from '../core/agent/tools/index-template';
 import { anomalyDetectionTool } from '../core/agent/tools/anomaly-detection';
+import { multiClusterDashboardTool } from '../core/agent/tools/multi-cluster-dashboard';
+import { indexDiffTool } from '../core/agent/tools/index-diff';
+import { exportResultsTool } from '../core/agent/tools/export-results';
+import { bulkIndexOpsTool } from '../core/agent/tools/bulk-index-ops';
 import type { StreamEvent } from '../core/agent/types';
 import { initDatabase } from '../core/storage';
 import { McpSupervisor } from '../core/mcp/supervisor';
@@ -387,6 +391,10 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(clusterCompareTool);
   tools.register(indexTemplateTool);
   tools.register(anomalyDetectionTool);
+  tools.register(multiClusterDashboardTool);
+  tools.register(indexDiffTool);
+  tools.register(exportResultsTool);
+  tools.register(bulkIndexOpsTool);
 
   // Trust levels: admin tools require approval for all actions
   tools.setTrust('admin-opensearch', 'ask');
@@ -810,6 +818,15 @@ app.whenReady().then(async () => {
   registerBackupRestoreIPC();
   registerRecoveryIPC();
   registerFeedbackIPC();
+
+  // 7. Query history, scheduled queries, connection groups
+  const osdDbPath = path.join(require('os').homedir(), '.osd', 'osd.db');
+  const { registerQueryHistoryIPC } = await import('./query-history.js');
+  const { registerScheduledQueriesIPC } = await import('./scheduled-queries.js');
+  const { registerConnectionGroupsIPC } = await import('./connection-groups.js');
+  registerQueryHistoryIPC(osdDbPath);
+  registerScheduledQueriesIPC(osdDbPath);
+  registerConnectionGroupsIPC(osdDbPath);
 
   // 3. Wire devops backends when available (setter injection)
   try {
