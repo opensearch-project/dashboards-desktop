@@ -1,10 +1,11 @@
 cask "opensearch-dashboards-desktop" do
-  version :latest
-  sha256 :no_check
+  version "0.5.0"
+  sha256 :no_check # Updated per release
 
-  url "https://github.com/opensearch-project/dashboards-desktop/releases/latest/download/OpenSearch-Dashboards-Desktop-#{arch}.dmg"
+  url "https://github.com/opensearch-project/dashboards-desktop/releases/download/v#{version}/OpenSearch-Dashboards-Desktop-#{version}-arm64.dmg",
+      verified: "github.com/opensearch-project/dashboards-desktop/"
   name "OpenSearch Dashboards Desktop"
-  desc "Agent-first desktop app for OpenSearch and Elasticsearch"
+  desc "Desktop app for OpenSearch Dashboards with AI agent chat"
   homepage "https://github.com/opensearch-project/dashboards-desktop"
 
   livecheck do
@@ -12,12 +13,14 @@ cask "opensearch-dashboards-desktop" do
     strategy :github_latest
   end
 
+  auto_updates true
+
   app "OpenSearch Dashboards Desktop.app"
 
   zap trash: [
-    "~/.osd",
-    "~/Library/Application Support/dashboards-desktop",
-    "~/Library/Preferences/org.opensearch.dashboards-desktop.plist",
-    "~/Library/Logs/dashboards-desktop",
+    "~/.osd-desktop",
+    "~/Library/Application Support/OpenSearch Dashboards Desktop",
+    "~/Library/Preferences/com.opensearch.dashboards-desktop.plist",
+    "~/Library/Caches/com.opensearch.dashboards-desktop",
   ]
 end

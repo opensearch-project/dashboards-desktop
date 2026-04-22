@@ -4,8 +4,10 @@
  */
 
 import type { ToolDefinition, AgentTool, ToolResult, ToolContext, TrustLevel } from './types';
+import { getCached, setCached } from './tool-cache';
 
 const MAX_OUTPUT_BYTES = 100 * 1024;
+const CACHEABLE_TOOLS = new Set(['cluster-health', 'cluster-compare', 'opensearch-query']);
 
 export class ToolRegistry {
   private tools = new Map<string, AgentTool>();
@@ -60,8 +62,17 @@ export class ToolRegistry {
     const tool = this.tools.get(name);
     if (!tool) return { content: `Tool not found: ${name}`, isError: true };
 
+    // Check cache for read-only tools
+    if (CACHEABLE_TOOLS.has(name)) {
+      const cached = getCached(name, input);
+      if (cached) return { content: cached, isError: false };
+    }
+
     try {
       const result = await withTimeout(tool.execute(input, context), timeoutMs);
+      if (CACHEABLE_TOOLS.has(name) && !result.isError) {
+        setCached(name, input, result.content);
+      }
       return {
         content: truncate(result.content, MAX_OUTPUT_BYTES),
         isError: result.isError,

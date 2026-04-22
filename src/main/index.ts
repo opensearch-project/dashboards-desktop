@@ -331,6 +331,10 @@ import { clusterHealthTool } from '../core/agent/tools/cluster-health';
 import { indexManageTool } from '../core/agent/tools/index-manage';
 import { adminOpenSearchTool } from '../core/agent/tools/admin-opensearch';
 import { adminElasticsearchTool } from '../core/agent/tools/admin-elasticsearch';
+import { nlQueryTool } from '../core/agent/tools/nl-query';
+import { clusterCompareTool } from '../core/agent/tools/cluster-compare';
+import { indexTemplateTool } from '../core/agent/tools/index-template';
+import { anomalyDetectionTool } from '../core/agent/tools/anomaly-detection';
 import type { StreamEvent } from '../core/agent/types';
 import { initDatabase } from '../core/storage';
 import { McpSupervisor } from '../core/mcp/supervisor';
@@ -379,6 +383,10 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(indexManageTool);
   tools.register(adminOpenSearchTool);
   tools.register(adminElasticsearchTool);
+  tools.register(nlQueryTool);
+  tools.register(clusterCompareTool);
+  tools.register(indexTemplateTool);
+  tools.register(anomalyDetectionTool);
 
   // Trust levels: admin tools require approval for all actions
   tools.setTrust('admin-opensearch', 'ask');
