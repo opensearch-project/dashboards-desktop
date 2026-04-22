@@ -1,0 +1,115 @@
+name: Canary Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to canary (e.g., 0.6.0)"
+        required: true
+      rollout_pct:
+        description: "Rollout percentage (1-100)"
+        required: true
+        default: "5"
+      action:
+        description: "Action: deploy, promote, rollback"
+        required: true
+        default: "deploy"
+        type: choice
+        options: [deploy, promote, rollback]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  S3_BUCKET: osd-desktop-releases
+  CANARY_CHANNEL: beta
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    if: inputs.action == 'deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release artifacts
+        run: |
+          gh release download "v${{ inputs.version }}" -D artifacts/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate canary update manifest
+        run: |
+          cat > artifacts/canary.yml <<EOF
+          version: ${{ inputs.version }}
+          channel: canary
+          rolloutPercentage: ${{ inputs.rollout_pct }}
+          releaseDate: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          files:
+            linux-x64:
+              url: https://${S3_BUCKET}.s3.amazonaws.com/canary/v${{ inputs.version }}/linux-x64.AppImage
+              sha512: $(sha512sum artifacts/*linux*x64*.AppImage 2>/dev/null | cut -d' ' -f1 || echo "pending")
+            mac-x64:
+              url: https://${S3_BUCKET}.s3.amazonaws.com/canary/v${{ inputs.version }}/mac-x64.dmg
+              sha512: $(sha512sum artifacts/*mac*.dmg 2>/dev/null | cut -d' ' -f1 || echo "pending")
+            win-x64:
+              url: https://${S3_BUCKET}.s3.amazonaws.com/canary/v${{ inputs.version }}/win-x64.exe
+              sha512: $(sha512sum artifacts/*win*x64*.exe 2>/dev/null | cut -d' ' -f1 || echo "pending")
+          EOF
+          cat artifacts/canary.yml
+
+      - name: Upload to S3 canary channel
+        if: env.AWS_ACCESS_KEY_ID != ''
+        run: |
+          aws s3 sync artifacts/ "s3://${S3_BUCKET}/canary/v${{ inputs.version }}/"
+          aws s3 cp artifacts/canary.yml "s3://${S3_BUCKET}/canary/latest.yml"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+
+      - name: Create canary GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ inputs.version }}-canary"
+          name: "v${{ inputs.version }} Canary (${{ inputs.rollout_pct }}%)"
+          body: |
+            Canary release — ${{ inputs.rollout_pct }}% rollout.
+            Monitor crash rate before promoting to stable.
+          prerelease: true
+          files: artifacts/canary.yml
+
+  promote:
+    if: inputs.action == 'promote'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Promote canary to stable
+        run: |
+          echo "Promoting v${{ inputs.version }} canary → stable (100%)"
+        # Copy canary artifacts to stable channel
+      - name: Update stable manifest
+        if: env.AWS_ACCESS_KEY_ID != ''
+        run: |
+          aws s3 cp "s3://${S3_BUCKET}/canary/v${{ inputs.version }}/" "s3://${S3_BUCKET}/stable/v${{ inputs.version }}/" --recursive
+          aws s3 cp "s3://${S3_BUCKET}/canary/latest.yml" "s3://${S3_BUCKET}/stable/latest.yml"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+
+  rollback:
+    if: inputs.action == 'rollback'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollback canary
+        run: |
+          echo "Rolling back v${{ inputs.version }} canary"
+      - name: Remove canary manifest
+        if: env.AWS_ACCESS_KEY_ID != ''
+        run: |
+          aws s3 rm "s3://${S3_BUCKET}/canary/latest.yml"
+          aws s3 rm "s3://${S3_BUCKET}/canary/v${{ inputs.version }}/" --recursive
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
