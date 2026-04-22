@@ -3,7 +3,7 @@
  */
 
 import type { ModelRouter } from './model-router';
-import type { StreamChunk } from './types';
+
 
 export interface ParallelResult {
   model: string;
