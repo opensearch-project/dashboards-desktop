@@ -9,6 +9,7 @@ export const exportResultsTool: AgentTool = {
     name: 'export-results',
     description: 'Export query results to a CSV or JSON string. Use with opensearch-query results.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

@@ -26,7 +26,7 @@ export const nlQueryTool: AgentTool = {
     if (!context.activeConnection) return { content: 'No active connection', isError: true };
     try {
       const client = new Client({ node: context.activeConnection.url });
-      const res = await (client.search as Function)({ index: input.index as string, body: input.dsl as Record<string, any> });
+      const res = await client.search({ index: input.index as string, body: input.dsl as Record<string, unknown> });
       return { content: JSON.stringify({ question: input.question, query: input.dsl, results: res.body }, null, 2), isError: false };
     } catch (err) {
       return { content: `Query failed: ${(err as Error).message}`, isError: true };

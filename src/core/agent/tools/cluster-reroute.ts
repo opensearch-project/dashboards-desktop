@@ -9,6 +9,7 @@ export const clusterRerouteTool: AgentTool = {
     name: 'cluster-reroute',
     description: 'Reroute shards: move a shard to another node, cancel a relocation, or allocate an unassigned shard.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

@@ -10,6 +10,7 @@ export const snapshotTool: AgentTool = {
     name: 'snapshot',
     description: 'Manage snapshots: list repos, list/create/restore/delete snapshots.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

@@ -10,6 +10,7 @@ export const catApiTool: AgentTool = {
     name: 'cat-api',
     description: 'Query OpenSearch _cat APIs for human-readable cluster info: nodes, indices, shards, health, allocation, recovery.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -28,9 +29,9 @@ export const catApiTool: AgentTool = {
     if (input.index) params.index = input.index;
     if (input.sort) params.s = input.sort;
     try {
-      const cat = client.cat as Record<string, Function>;
+      const cat = client.cat as Record<string, (...args: unknown[]) => unknown>;
       if (!cat[ep]) return { content: `Unknown cat endpoint: ${ep}`, isError: true };
-      const res = await cat[ep](params);
+      const res = await cat[ep](params) as { body: string };
       return { content: res.body as string, isError: false };
     } catch (err) { return { content: `Cat ${ep} failed: ${(err as Error).message}`, isError: true }; }
   },

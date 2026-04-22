@@ -9,6 +9,7 @@ export const taskManagementTool: AgentTool = {
     name: 'task-management',
     description: 'List or cancel long-running cluster tasks.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

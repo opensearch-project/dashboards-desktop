@@ -9,6 +9,7 @@ export const indexRolloverTool: AgentTool = {
     name: 'index-rollover',
     description: 'Rollover an index alias to a new index when conditions are met (max_size, max_age, max_docs).',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

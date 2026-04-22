@@ -9,6 +9,7 @@ export const queryProfilerTool: AgentTool = {
     name: 'query-profiler',
     description: 'Run a query with profiling enabled. Returns shard-level timing breakdown.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

@@ -10,6 +10,7 @@ export const aliasTool: AgentTool = {
     name: 'alias',
     description: 'Manage index aliases: list all, create, delete, or swap an alias between indices.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

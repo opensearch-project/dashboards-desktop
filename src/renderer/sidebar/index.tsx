@@ -25,7 +25,7 @@ const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
 const Sidebar: React.FC = () => {
   const [active, setActive] = useState<Section>('connections');
   const [collapsed, setCollapsed] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, _setTheme] = useState<'dark' | 'light'>('dark');
   const [showTour, setShowTour] = React.useState(false);
   const [toasts, setToasts] = React.useState<Toast[]>([]);
   const [badges, setBadges] = React.useState<Record<string, number>>({});
@@ -50,7 +50,7 @@ const Sidebar: React.FC = () => {
   };
 
   // Toast helper
-  const addToast = React.useCallback((type: ToastType, message: string) => {
+  const _addToast = React.useCallback((type: ToastType, message: string) => {
     const id = ++toastId;
     setToasts(prev => [...prev, { id, type, message }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
@@ -534,10 +534,10 @@ const FeedbackPanel: React.FC = () => {
 };
 
 const SettingsPanel: React.FC = () => {
-  const [theme, setTheme] = React.useState(() => document.documentElement.getAttribute('data-theme') || 'system');
+  const [theme, _setTheme] = React.useState(() => document.documentElement.getAttribute('data-theme') || 'system');
 
   const applyTheme = (value: string) => {
-    setTheme(value);
+    _setTheme(value);
     if (value === 'system') {
       document.documentElement.removeAttribute('data-theme');
     } else {
@@ -550,7 +550,7 @@ const SettingsPanel: React.FC = () => {
     window.osd?.settings?.get('sidebar_theme').then(saved => {
       if (saved && saved !== 'system') {
         document.documentElement.setAttribute('data-theme', saved);
-        setTheme(saved);
+        _setTheme(saved);
       }
     }).catch(() => {});
   }, []);

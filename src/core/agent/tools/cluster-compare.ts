@@ -29,6 +29,7 @@ export const clusterCompareTool: AgentTool = {
     name: 'cluster-compare',
     description: 'Compare two OpenSearch clusters: health, version, node count, index count, doc count, storage size.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

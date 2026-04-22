@@ -12,9 +12,9 @@ export function registerConnectionGroupsIPC(dbPath: string): void {
     name TEXT NOT NULL UNIQUE,
     color TEXT DEFAULT '#4da6ff'
   )`);
-  db.exec(`ALTER TABLE connections ADD COLUMN group_id INTEGER REFERENCES connection_groups(id)`).catch?.(() => { /* column may exist */ });
+  
   // SQLite ALTER TABLE doesn't throw in better-sqlite3, it just fails silently if column exists
-  try { db.exec(`ALTER TABLE connections ADD COLUMN group_id INTEGER REFERENCES connection_groups(id)`); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE connections ADD COLUMN group_id INTEGER REFERENCES connection_groups(id)'); } catch { /* already exists */ }
 
   // Seed defaults
   const count = (db.prepare('SELECT COUNT(*) as c FROM connection_groups').get() as { c: number }).c;

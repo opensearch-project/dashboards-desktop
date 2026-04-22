@@ -10,6 +10,7 @@ export const clusterSettingsTool: AgentTool = {
     name: 'cluster-settings',
     description: 'Get or update cluster settings (transient and persistent).',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

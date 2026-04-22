@@ -10,6 +10,7 @@ export const bulkIndexOpsTool: AgentTool = {
     name: 'bulk-index-ops',
     description: 'Perform bulk operations on multiple indices: reindex, close, open, delete, or freeze.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

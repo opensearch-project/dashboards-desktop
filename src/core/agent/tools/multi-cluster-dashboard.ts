@@ -3,13 +3,14 @@
  */
 
 import { Client } from '@opensearch-project/opensearch';
-import type { AgentTool, ToolResult, ToolContext } from '../types.js';
+import type { AgentTool, ToolResult } from '../types.js';
 
 export const multiClusterDashboardTool: AgentTool = {
   definition: {
     name: 'multi-cluster-dashboard',
     description: 'Get aggregated health status across all saved connections. Returns health, node count, index count, and doc count per cluster.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: { type: 'object', properties: {}, required: [] },
   },
   async execute(_input, context): Promise<ToolResult> {

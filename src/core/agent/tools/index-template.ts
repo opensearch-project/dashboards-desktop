@@ -10,6 +10,7 @@ export const indexTemplateTool: AgentTool = {
     name: 'index-template',
     description: 'Manage index templates: list all, get one, create/update, or delete.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

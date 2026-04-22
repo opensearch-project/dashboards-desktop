@@ -9,6 +9,7 @@ export const painlessValidatorTool: AgentTool = {
     name: 'painless-validator',
     description: 'Validate a Painless script without executing it. Returns compilation errors if any.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {

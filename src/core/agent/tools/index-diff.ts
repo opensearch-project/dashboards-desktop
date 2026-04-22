@@ -10,6 +10,7 @@ export const indexDiffTool: AgentTool = {
     name: 'index-diff',
     description: 'Compare mappings and settings between two indices. Can be on the same or different clusters.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {
