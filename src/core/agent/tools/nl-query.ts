@@ -26,6 +26,8 @@ export const nlQueryTool: AgentTool = {
     if (!context.activeConnection) return { content: 'No active connection', isError: true };
     try {
       const client = new Client({ node: context.activeConnection.url });
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore OpenSearch client overload
       const res = await client.search({ index: input.index as string, body: input.dsl as Record<string, unknown> });
       return { content: JSON.stringify({ question: input.question, query: input.dsl, results: res.body }, null, 2), isError: false };
     } catch (err) {

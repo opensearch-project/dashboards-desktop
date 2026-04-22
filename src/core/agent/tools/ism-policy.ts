@@ -31,11 +31,23 @@ export const ismPolicyTool: AgentTool = {
     const idx = input.index as string;
     try {
       switch (input.action) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'list': return ok(await client.transport.request({ method: 'GET', path: `${ISM}/policies` }));
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'get': return ok(await client.transport.request({ method: 'GET', path: `${ISM}/policies/${encodeURIComponent(id)}` }));
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'create': return ok(await client.transport.request({ method: 'PUT', path: `${ISM}/policies/${encodeURIComponent(id)}`, body: input.body as Record<string, unknown> }));
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'delete': return ok(await client.transport.request({ method: 'DELETE', path: `${ISM}/policies/${encodeURIComponent(id)}` }));
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'attach': return ok(await client.transport.request({ method: 'POST', path: `${ISM}/add/${encodeURIComponent(idx)}`, body: { policy_id: id } }));
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'explain': return ok(await client.transport.request({ method: 'POST', path: `${ISM}/explain/${encodeURIComponent(idx)}` }));
         default: return { content: `Unknown action: ${input.action}`, isError: true };
       }

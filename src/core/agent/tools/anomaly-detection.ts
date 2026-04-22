@@ -30,22 +30,32 @@ export const anomalyDetectionTool: AgentTool = {
     try {
       switch (input.action) {
         case 'list': {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore OpenSearch client overload
           const res = await client.transport.request({ method: 'POST', path: `${AD_BASE}/_search`, body: { query: { match_all: {} } } });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }
         case 'create': {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore OpenSearch client overload
           const res = await client.transport.request({ method: 'POST', path: AD_BASE, body: input.body as Record<string, unknown> });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }
         case 'start': {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore OpenSearch client overload
           const res = await client.transport.request({ method: 'POST', path: `${AD_BASE}/${encodeURIComponent(id)}/_start` });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }
         case 'stop': {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore OpenSearch client overload
           const res = await client.transport.request({ method: 'POST', path: `${AD_BASE}/${encodeURIComponent(id)}/_stop` });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }
         case 'delete': {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore OpenSearch client overload
           const res = await client.transport.request({ method: 'DELETE', path: `${AD_BASE}/${encodeURIComponent(id)}` });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }

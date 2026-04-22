@@ -26,10 +26,20 @@ export const dataStreamTool: AgentTool = {
     const name = input.name as string;
     try {
       switch (input.action) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'list': return ok(await client.transport.request({ method: 'GET', path: '/_data_stream' }));
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'create': return ok(await client.transport.request({ method: 'PUT', path: `/_data_stream/${encodeURIComponent(name)}`, body: input.body as Record<string, unknown> }));
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'delete': return ok(await client.transport.request({ method: 'DELETE', path: `/_data_stream/${encodeURIComponent(name)}` }));
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'rollover': return ok(await client.transport.request({ method: 'POST', path: `/${encodeURIComponent(name)}/_rollover` }));
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore OpenSearch client overload
         case 'stats': return ok(await client.transport.request({ method: 'GET', path: `/_data_stream/${encodeURIComponent(name)}/_stats` }));
         default: return { content: `Unknown action: ${input.action}`, isError: true };
       }
