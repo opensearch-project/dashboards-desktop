@@ -619,7 +619,6 @@ const OnboardingTour: React.FC<{ onDone: () => void }> = ({ onDone }) => {
 type ToastType = 'success' | 'error' | 'info';
 interface Toast { id: number; type: ToastType; message: string }
 let toastId = 0;
-const ToastContext = React.createContext<(type: ToastType, message: string) => void>(() => {});
 
 const ToastContainer: React.FC<{ toasts: Toast[]; onDismiss: (id: number) => void }> = ({ toasts, onDismiss }) => (
   <div className="toast-container" aria-live="polite">
