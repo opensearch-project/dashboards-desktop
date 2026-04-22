@@ -212,3 +212,52 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   --sidebar-hover: #2a2a4a;
   --sidebar-active: #4da6ff;
 }
+
+/* Onboarding tour */
+.tour-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+}
+.tour-tooltip {
+  background: var(--sidebar-bg); border: 1px solid var(--accent); border-radius: 8px;
+  padding: 20px; max-width: 300px; animation: panel-in 0.2s ease-out;
+}
+.tour-step { font-size: 11px; color: var(--sidebar-text-muted); margin-bottom: 4px; }
+.tour-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.tour-text { font-size: 13px; color: var(--sidebar-text-muted); margin-bottom: 12px; }
+
+/* Toast notifications */
+.toast-container {
+  position: fixed; bottom: 12px; right: 12px; z-index: 200;
+  display: flex; flex-direction: column; gap: 6px; max-width: 280px;
+}
+.toast {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 12px; border-radius: 6px; font-size: 12px;
+  animation: toast-in 0.2s ease-out;
+}
+.toast-success { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); }
+.toast-error { background: rgba(229,85,85,0.15); color: var(--danger); border: 1px solid rgba(229,85,85,0.3); }
+.toast-info { background: rgba(77,166,255,0.15); color: var(--accent); border: 1px solid rgba(77,166,255,0.3); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Sidebar badges */
+.sidebar-badge {
+  font-size: 10px; min-width: 16px; height: 16px; line-height: 16px;
+  text-align: center; border-radius: 8px; background: var(--accent);
+  color: #fff; margin-left: auto; flex-shrink: 0;
+}
+.collapsed .sidebar-badge { position: absolute; top: 2px; right: 2px; min-width: 14px; height: 14px; line-height: 14px; font-size: 9px; }
+.collapsed .sidebar-nav-item { position: relative; }
+
+/* Connection wizard */
+.wizard-steps { display: flex; gap: 4px; margin-bottom: 12px; }
+.wizard-step { font-size: 11px; color: var(--sidebar-text-muted); padding: 2px 6px; border-radius: 4px; }
+.wizard-step.active { background: var(--sidebar-active); color: var(--accent); }
+.wizard-step.done { color: var(--accent); }
+
+/* Empty states */
+.empty-state { text-align: center; padding: 24px 12px; }
+.empty-icon { font-size: 36px; display: block; margin-bottom: 8px; }
+.empty-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.empty-subtitle { font-size: 12px; color: var(--sidebar-text-muted); margin-bottom: 12px; }

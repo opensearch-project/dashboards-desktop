@@ -361,6 +361,7 @@ export const ChatPanel: React.FC<Props> = ({
         <div className="chat-messages" role="log" aria-label="Chat messages" aria-live="polite">
           {messages.length === 0 ? (
             <div className="chat-empty" role="status">
+              <span className="empty-icon" aria-hidden="true">💬</span>
               <p>Start a conversation</p>
               <p className="empty-subtitle">Ask about your clusters, data, or anything else.</p>
             </div>

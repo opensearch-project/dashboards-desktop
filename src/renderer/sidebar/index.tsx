@@ -26,12 +26,45 @@ const Sidebar: React.FC = () => {
   const [active, setActive] = useState<Section>('connections');
   const [collapsed, setCollapsed] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [showTour, setShowTour] = React.useState(false);
+  const [toasts, setToasts] = React.useState<Toast[]>([]);
+  const [badges, setBadges] = React.useState<Record<string, number>>({});
 
   React.useEffect(() => {
     const onResize = () => setCollapsed(window.innerWidth < 900);
     onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Show tour on first launch
+  React.useEffect(() => {
+    window.osd?.settings?.get('onboarding_done').then(v => {
+      if (!v) setShowTour(true);
+    }).catch(() => {});
+  }, []);
+
+  const dismissTour = () => {
+    setShowTour(false);
+    window.osd?.settings?.set('onboarding_done', 'true').catch(() => {});
+  };
+
+  // Toast helper
+  const addToast = React.useCallback((type: ToastType, message: string) => {
+    const id = ++toastId;
+    setToasts(prev => [...prev, { id, type, message }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }, []);
+
+  const dismissToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
+
+  // Fetch badge counts
+  React.useEffect(() => {
+    Promise.all([
+      window.osd?.indices?.list().then(list => setBadges(b => ({ ...b, config: list?.length ?? 0 }))).catch(() => {}),
+      window.osd?.plugins?.list().then(list => setBadges(b => ({ ...b, plugins: list?.length ?? 0 }))).catch(() => {}),
+      window.osd?.connections?.list().then(list => setBadges(b => ({ ...b, connections: list?.length ?? 0 }))).catch(() => {}),
+    ]);
   }, []);
 
   return (
@@ -67,6 +100,9 @@ const Sidebar: React.FC = () => {
           >
             <span className="sidebar-nav-icon" aria-hidden="true">{item.icon}</span>
             {!collapsed && <span className="sidebar-nav-label">{item.label}</span>}
+            {badges[item.id] != null && badges[item.id] > 0 && (
+              <span className="sidebar-badge" aria-label={`${badges[item.id]} items`}>{badges[item.id]}</span>
+            )}
           </button>
         ))}
       </nav>
@@ -79,6 +115,8 @@ const Sidebar: React.FC = () => {
         {active === 'feedback' && <FeedbackPanel />}
         {active === 'settings' && <SettingsPanel />}
       </main>
+      {showTour && <OnboardingTour onDone={dismissTour} />}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 };
@@ -88,24 +126,103 @@ const Sidebar: React.FC = () => {
 const ConnectionsPanel: React.FC = () => {
   const [connections, setConnections] = React.useState<Array<{ id: string; name: string; url: string; status?: string }>>([]);
   const [loading, setLoading] = React.useState(true);
+  const [wizard, setWizard] = React.useState<null | { step: number; type: string; url: string; auth: string; name: string; testing: boolean; result: string }>(null);
 
-  React.useEffect(() => {
+  const load = React.useCallback(() => {
     window.osd?.connections?.list().then(conns => {
       setConnections(conns);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
+  React.useEffect(() => { load(); }, [load]);
+
+  const startWizard = () => setWizard({ step: 0, type: 'opensearch', url: 'https://localhost:9200', auth: '', name: '', testing: false, result: '' });
+
+  const testConnection = async () => {
+    if (!wizard) return;
+    setWizard({ ...wizard, testing: true, result: '' });
+    try {
+      await window.osd?.connections?.test({ name: wizard.name, url: wizard.url, auth: wizard.auth } as never);
+      setWizard(w => w ? { ...w, testing: false, result: 'success', step: 3 } : null);
+    } catch {
+      setWizard(w => w ? { ...w, testing: false, result: 'failed' } : null);
+    }
+  };
+
+  const saveConnection = async () => {
+    if (!wizard) return;
+    await window.osd?.connections?.add({ name: wizard.name || wizard.url, url: wizard.url, auth: wizard.auth } as never).catch(() => {});
+    setWizard(null);
+    load();
+  };
+
   if (loading) return <div className="panel-loading" role="status">Loading…</div>;
+
+  if (wizard) {
+    const steps = ['Type', 'Details', 'Test', 'Save'];
+    return (
+      <section aria-label="Add Connection">
+        <div className="panel-header"><h2>New Connection</h2></div>
+        <div className="wizard-steps">{steps.map((s, i) => (
+          <span key={s} className={`wizard-step ${i === wizard.step ? 'active' : ''} ${i < wizard.step ? 'done' : ''}`}>{i < wizard.step ? '✓' : i + 1}. {s}</span>
+        ))}</div>
+        {wizard.step === 0 && (
+          <div className="settings-group">
+            <label>Cluster Type</label>
+            <select className="settings-input" value={wizard.type} onChange={e => setWizard({ ...wizard, type: e.target.value })}>
+              <option value="opensearch">OpenSearch</option>
+              <option value="elasticsearch">Elasticsearch</option>
+            </select>
+            <div className="panel-actions"><button className="btn-sm" onClick={() => setWizard({ ...wizard, step: 1 })}>Next</button></div>
+          </div>
+        )}
+        {wizard.step === 1 && (
+          <div className="settings-group">
+            <label>URL</label>
+            <input className="settings-input" value={wizard.url} onChange={e => setWizard({ ...wizard, url: e.target.value })} placeholder="https://localhost:9200" />
+            <label>Name (optional)</label>
+            <input className="settings-input" value={wizard.name} onChange={e => setWizard({ ...wizard, name: e.target.value })} placeholder="My Cluster" />
+            <label>Auth (user:pass or token)</label>
+            <input className="settings-input" type="password" value={wizard.auth} onChange={e => setWizard({ ...wizard, auth: e.target.value })} placeholder="Optional" />
+            <div className="panel-actions">
+              <button className="btn-sm" onClick={() => setWizard({ ...wizard, step: 0 })}>Back</button>
+              <button className="btn-sm" onClick={testConnection} disabled={!wizard.url}>{wizard.testing ? 'Testing…' : 'Test Connection'}</button>
+            </div>
+            {wizard.result === 'failed' && <p className="panel-error" role="alert">Connection failed. Check URL and auth.</p>}
+          </div>
+        )}
+        {wizard.step === 2 && (
+          <div className="settings-group">
+            <div className="panel-loading">Testing connection…</div>
+          </div>
+        )}
+        {wizard.step === 3 && (
+          <div className="settings-group">
+            <p style={{ color: 'var(--accent)', fontWeight: 500 }}>✓ Connection successful!</p>
+            <div className="panel-actions">
+              <button className="btn-sm" onClick={saveConnection}>Save</button>
+              <button className="btn-sm" onClick={() => setWizard(null)}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section aria-label="Connections">
       <div className="panel-header">
         <h2>Connections</h2>
-        <button className="btn-sm" aria-label="Add connection">+ Add</button>
+        <button className="btn-sm" onClick={startWizard} aria-label="Add connection">+ Add</button>
       </div>
       {connections.length === 0 ? (
-        <p className="panel-empty" role="status">No connections configured</p>
+        <div className="empty-state" role="status">
+          <span className="empty-icon" aria-hidden="true">🔌</span>
+          <p className="empty-title">No connections</p>
+          <p className="empty-subtitle">Connect to an OpenSearch or Elasticsearch cluster to get started.</p>
+          <button className="btn-sm" onClick={startWizard}>Add Connection</button>
+        </div>
       ) : (
         <ul className="conn-list" role="list">
           {connections.map(c => (
@@ -245,7 +362,11 @@ const PluginsPanel: React.FC = () => {
         </div>
       )}
       {plugins.length === 0 ? (
-        <p className="panel-empty" role="status">No plugins tracked</p>
+        <div className="empty-state" role="status">
+          <span className="empty-icon" aria-hidden="true">🧩</span>
+          <p className="empty-title">No plugins</p>
+          <p className="empty-subtitle">Install plugins to extend OpenSearch Dashboards.</p>
+        </div>
       ) : (
         <ul className="plugin-list" role="list">
           {plugins.map(p => (
@@ -465,6 +586,51 @@ const SettingsPanel: React.FC = () => {
   </section>
   );
 };
+
+// --- Onboarding Tour ---
+const TOUR_STEPS = [
+  { target: '.sidebar-nav', title: 'Navigation', text: 'Switch between connections, config, plugins, and more.' },
+  { target: '.sidebar-nav-item[title="Chat"]', title: 'AI Chat', text: 'Ask questions about your clusters, data, or anything else.' },
+  { target: '.sidebar-nav-item[title="Settings"]', title: 'Settings', text: 'Configure paths, themes, and export your settings.' },
+];
+
+const OnboardingTour: React.FC<{ onDone: () => void }> = ({ onDone }) => {
+  const [step, setStep] = React.useState(0);
+  const current = TOUR_STEPS[step];
+  return (
+    <div className="tour-overlay" onClick={onDone}>
+      <div className="tour-tooltip" onClick={e => e.stopPropagation()}>
+        <div className="tour-step">{step + 1}/{TOUR_STEPS.length}</div>
+        <h3 className="tour-title">{current.title}</h3>
+        <p className="tour-text">{current.text}</p>
+        <div className="panel-actions">
+          {step > 0 && <button className="btn-sm" onClick={() => setStep(s => s - 1)}>Back</button>}
+          {step < TOUR_STEPS.length - 1
+            ? <button className="btn-sm" onClick={() => setStep(s => s + 1)}>Next</button>
+            : <button className="btn-sm" onClick={onDone}>Done</button>}
+          <button className="btn-sm" onClick={onDone} style={{ marginLeft: 'auto' }}>Skip</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Toast Notifications ---
+type ToastType = 'success' | 'error' | 'info';
+interface Toast { id: number; type: ToastType; message: string }
+let toastId = 0;
+const ToastContext = React.createContext<(type: ToastType, message: string) => void>(() => {});
+
+const ToastContainer: React.FC<{ toasts: Toast[]; onDismiss: (id: number) => void }> = ({ toasts, onDismiss }) => (
+  <div className="toast-container" aria-live="polite">
+    {toasts.map(t => (
+      <div key={t.id} className={`toast toast-${t.type}`} role="alert">
+        <span>{t.type === 'success' ? '✓' : t.type === 'error' ? '✕' : 'ℹ'} {t.message}</span>
+        <button className="btn-xs" onClick={() => onDismiss(t.id)} aria-label="Dismiss">✕</button>
+      </div>
+    ))}
+  </div>
+);
 
 // --- Mount ---
 const root = createRoot(document.getElementById('root')!);
