@@ -448,6 +448,8 @@ ipcMain.handle(IPC.AGENT_SEND, async (_e, message: string, conversationId?: stri
     await runtime.chat(convId, message, emit);
   } finally {
     broadcast('chat-overlay:stream-end');
+    // Notify shell of unread chat message
+    mainWindow?.webContents.send('chat:unread');
   }
 });
 

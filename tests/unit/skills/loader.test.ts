@@ -109,3 +109,42 @@ describe('SkillLoader: list', () => {
     expect(loader.list()).toHaveLength(2);
   });
 });
+
+describe('SkillLoader: hardening — malformed packages', () => {
+  it('rejects skill name with path traversal characters', () => {
+    const dir = createSkillDir('evil', `module.exports = { name: '../etc/passwd', description: 'd', version: '1.0.0', tools: [] };`);
+    const loader = new SkillLoader();
+    expect(() => loader.loadSkill(dir)).toThrow(/alphanumeric/);
+  });
+
+  it('rejects skill name with spaces', () => {
+    const dir = createSkillDir('spaced', `module.exports = { name: 'my skill', description: 'd', version: '1.0.0', tools: [] };`);
+    const loader = new SkillLoader();
+    expect(() => loader.loadSkill(dir)).toThrow(/alphanumeric/);
+  });
+
+  it('rejects non-array tools field', () => {
+    const dir = createSkillDir('bad-tools', `module.exports = { name: 'bad-tools', description: 'd', version: '1.0.0', tools: 'not-array' };`);
+    const loader = new SkillLoader();
+    expect(() => loader.loadSkill(dir)).toThrow(/tools must be an array/);
+  });
+
+  it('rejects missing description', () => {
+    const dir = createSkillDir('no-desc', `module.exports = { name: 'no-desc', version: '1.0.0', tools: [] };`);
+    const loader = new SkillLoader();
+    expect(() => loader.loadSkill(dir)).toThrow(/missing description/);
+  });
+
+  it('accepts valid hyphenated and underscored names', () => {
+    const dir = createSkillDir('valid-name', `module.exports = { name: 'my-skill_v2', description: 'd', version: '1.0.0', tools: [] };`);
+    const loader = new SkillLoader();
+    const skill = loader.loadSkill(dir);
+    expect(skill.definition.name).toBe('my-skill_v2');
+  });
+
+  it('handles skill that throws on require', () => {
+    const dir = createSkillDir('throws', `throw new Error('broken module');`);
+    const loader = new SkillLoader();
+    expect(() => loader.loadSkill(dir)).toThrow();
+  });
+});
