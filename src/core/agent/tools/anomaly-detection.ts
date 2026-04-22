@@ -12,6 +12,7 @@ export const anomalyDetectionTool: AgentTool = {
     name: 'anomaly-detection',
     description: 'Manage anomaly detection: list detectors, create, start, stop, or delete a detector.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -29,23 +30,23 @@ export const anomalyDetectionTool: AgentTool = {
     try {
       switch (input.action) {
         case 'list': {
-          const res = await client.transport.request({ method: 'POST', path: `${AD_BASE}/_search`, body: { query: { match_all: {} } } });
+          const res = await (client.transport.request as Function)({ method: 'POST', path: `${AD_BASE}/_search`, body: { query: { match_all: {} } } });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }
         case 'create': {
-          const res = await client.transport.request({ method: 'POST', path: AD_BASE, body: input.body });
+          const res = await (client.transport.request as Function)({ method: 'POST', path: AD_BASE, body: input.body as Record<string, any> });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }
         case 'start': {
-          const res = await client.transport.request({ method: 'POST', path: `${AD_BASE}/${encodeURIComponent(id)}/_start` });
+          const res = await (client.transport.request as Function)({ method: 'POST', path: `${AD_BASE}/${encodeURIComponent(id)}/_start` });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }
         case 'stop': {
-          const res = await client.transport.request({ method: 'POST', path: `${AD_BASE}/${encodeURIComponent(id)}/_stop` });
+          const res = await (client.transport.request as Function)({ method: 'POST', path: `${AD_BASE}/${encodeURIComponent(id)}/_stop` });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }
         case 'delete': {
-          const res = await client.transport.request({ method: 'DELETE', path: `${AD_BASE}/${encodeURIComponent(id)}` });
+          const res = await (client.transport.request as Function)({ method: 'DELETE', path: `${AD_BASE}/${encodeURIComponent(id)}` });
           return { content: JSON.stringify(res.body, null, 2), isError: false };
         }
         default:

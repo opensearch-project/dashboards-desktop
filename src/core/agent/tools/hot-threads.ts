@@ -9,6 +9,7 @@ export const hotThreadsTool: AgentTool = {
     name: 'hot-threads',
     description: 'Capture hot threads from cluster nodes. Useful for diagnosing CPU-heavy operations.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -21,8 +22,8 @@ export const hotThreadsTool: AgentTool = {
     if (!context.activeConnection) return { content: 'No active connection', isError: true };
     try {
       const client = new Client({ node: context.activeConnection.url });
-      const res = await client.nodes.hotThreads({ threads: (input.threads as number) || 3, type: (input.type as string) || 'cpu' });
-      return { content: res.body as string, isError: false };
+      const res = await client.nodes.hotThreads({ threads: (input.threads as number) || 3, type: (input.type as string) || 'cpu' } as Record<string, unknown>);
+      return { content: String(res.body), isError: false };
     } catch (err) { return { content: `Hot threads failed: ${(err as Error).message}`, isError: true }; }
   },
 };

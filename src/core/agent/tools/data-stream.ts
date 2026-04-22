@@ -9,6 +9,7 @@ export const dataStreamTool: AgentTool = {
     name: 'data-stream',
     description: 'Manage data streams: list, create, delete, rollover, or get stats.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -25,11 +26,11 @@ export const dataStreamTool: AgentTool = {
     const name = input.name as string;
     try {
       switch (input.action) {
-        case 'list': return ok(await client.transport.request({ method: 'GET', path: '/_data_stream' }));
-        case 'create': return ok(await client.transport.request({ method: 'PUT', path: `/_data_stream/${encodeURIComponent(name)}`, body: input.body }));
-        case 'delete': return ok(await client.transport.request({ method: 'DELETE', path: `/_data_stream/${encodeURIComponent(name)}` }));
-        case 'rollover': return ok(await client.transport.request({ method: 'POST', path: `/${encodeURIComponent(name)}/_rollover` }));
-        case 'stats': return ok(await client.transport.request({ method: 'GET', path: `/_data_stream/${encodeURIComponent(name)}/_stats` }));
+        case 'list': return ok(await (client.transport.request as Function)({ method: 'GET', path: '/_data_stream' }));
+        case 'create': return ok(await (client.transport.request as Function)({ method: 'PUT', path: `/_data_stream/${encodeURIComponent(name)}`, body: input.body as Record<string, any> }));
+        case 'delete': return ok(await (client.transport.request as Function)({ method: 'DELETE', path: `/_data_stream/${encodeURIComponent(name)}` }));
+        case 'rollover': return ok(await (client.transport.request as Function)({ method: 'POST', path: `/${encodeURIComponent(name)}/_rollover` }));
+        case 'stats': return ok(await (client.transport.request as Function)({ method: 'GET', path: `/_data_stream/${encodeURIComponent(name)}/_stats` }));
         default: return { content: `Unknown action: ${input.action}`, isError: true };
       }
     } catch (err) { return { content: `Data stream ${input.action} failed: ${(err as Error).message}`, isError: true }; }

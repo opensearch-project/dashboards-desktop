@@ -12,6 +12,7 @@ export const ismPolicyTool: AgentTool = {
     name: 'ism-policy',
     description: 'Manage Index State Management policies: list, get, create, delete, attach to index, or explain current state.',
     source: 'builtin',
+    requiresApproval: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -30,12 +31,12 @@ export const ismPolicyTool: AgentTool = {
     const idx = input.index as string;
     try {
       switch (input.action) {
-        case 'list': return ok(await client.transport.request({ method: 'GET', path: `${ISM}/policies` }));
-        case 'get': return ok(await client.transport.request({ method: 'GET', path: `${ISM}/policies/${encodeURIComponent(id)}` }));
-        case 'create': return ok(await client.transport.request({ method: 'PUT', path: `${ISM}/policies/${encodeURIComponent(id)}`, body: input.body }));
-        case 'delete': return ok(await client.transport.request({ method: 'DELETE', path: `${ISM}/policies/${encodeURIComponent(id)}` }));
-        case 'attach': return ok(await client.transport.request({ method: 'POST', path: `${ISM}/add/${encodeURIComponent(idx)}`, body: { policy_id: id } }));
-        case 'explain': return ok(await client.transport.request({ method: 'POST', path: `${ISM}/explain/${encodeURIComponent(idx)}` }));
+        case 'list': return ok(await (client.transport.request as Function)({ method: 'GET', path: `${ISM}/policies` }));
+        case 'get': return ok(await (client.transport.request as Function)({ method: 'GET', path: `${ISM}/policies/${encodeURIComponent(id)}` }));
+        case 'create': return ok(await (client.transport.request as Function)({ method: 'PUT', path: `${ISM}/policies/${encodeURIComponent(id)}`, body: input.body as Record<string, any> }));
+        case 'delete': return ok(await (client.transport.request as Function)({ method: 'DELETE', path: `${ISM}/policies/${encodeURIComponent(id)}` }));
+        case 'attach': return ok(await (client.transport.request as Function)({ method: 'POST', path: `${ISM}/add/${encodeURIComponent(idx)}`, body: { policy_id: id } }));
+        case 'explain': return ok(await (client.transport.request as Function)({ method: 'POST', path: `${ISM}/explain/${encodeURIComponent(idx)}` }));
         default: return { content: `Unknown action: ${input.action}`, isError: true };
       }
     } catch (err) { return { content: `ISM ${input.action} failed: ${(err as Error).message}`, isError: true }; }

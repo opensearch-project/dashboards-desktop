@@ -6,7 +6,7 @@ import { ipcMain, Notification } from 'electron';
 import { Client } from '@opensearch-project/opensearch';
 import Database from 'better-sqlite3';
 
-interface ScheduledQuery { id: number; connectionUrl: string; index: string; query: string; cronMs: number; threshold: number; field: string; enabled: number; }
+interface ScheduledQuery { id: number; connectionUrl: string; index: string; query: string; cron_ms: number; threshold: number; field: string; enabled: number; }
 
 const timers = new Map<number, ReturnType<typeof setInterval>>();
 
@@ -42,9 +42,9 @@ export function registerScheduledQueriesIPC(dbPath: string): void {
   const enabled = db.prepare('SELECT * FROM scheduled_queries WHERE enabled = 1').all() as ScheduledQuery[];
   for (const sq of enabled) startQuery(sq);
 
-  ipcMain.handle('scheduled-query:add', (_e, sq: { connectionUrl: string; index: string; query: string; cronMs: number; threshold: number; field: string }) => {
+  ipcMain.handle('scheduled-query:add', (_e, sq: { connectionUrl: string; index: string; query: string; cron_ms: number; threshold: number; field: string }) => {
     const info = db.prepare('INSERT INTO scheduled_queries (connection_url, index_name, query, cron_ms, threshold, field) VALUES (?, ?, ?, ?, ?, ?)').run(
-      sq.connectionUrl, sq.index, sq.query, sq.cronMs, sq.threshold, sq.field
+      sq.connectionUrl, sq.index, sq.query, sq.cron_ms, sq.threshold, sq.field
     );
     const row = db.prepare('SELECT * FROM scheduled_queries WHERE id = ?').get(info.lastInsertRowid) as ScheduledQuery;
     startQuery(row);
