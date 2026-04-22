@@ -359,6 +359,7 @@ import { performanceAdvisorTool } from '../core/agent/tools/performance-advisor'
 import { ccrTool } from '../core/agent/tools/ccr';
 import { notificationChannelsTool } from '../core/agent/tools/notification-channels';
 import { tenantManagementTool } from '../core/agent/tools/tenant-management';
+import { connectionDiagnosticsTool } from '../core/connection-diagnostics';
 import type { StreamEvent } from '../core/agent/types';
 import { initDatabase } from '../core/storage';
 import { McpSupervisor } from '../core/mcp/supervisor';
@@ -435,6 +436,7 @@ function getOrCreateRuntime(): AgentRuntime {
   tools.register(ccrTool);
   tools.register(notificationChannelsTool);
   tools.register(tenantManagementTool);
+  tools.register(connectionDiagnosticsTool);
 
   // Trust: destructive tools require approval
   tools.setTrust('bulk-index-ops', 'ask');
@@ -810,6 +812,14 @@ app.whenReady().then(async () => {
     // Graceful shutdown
     app.on('before-quit', () => osd.stop());
 
+    // Auto-recovery on crash
+    const { setupAutoRecovery } = await import('../core/auto-recovery.js');
+    setupAutoRecovery(osd);
+
+    // Plugin compatibility checker
+    const { registerPluginCompatIPC } = await import('./plugin-compat.js');
+    registerPluginCompatIPC(osdBinPath);
+
     // Bounce IPC — kill and restart OSD
     ipcMain.handle('osd:bounce', async () => {
       osd.stop();
@@ -883,6 +893,12 @@ app.whenReady().then(async () => {
   registerClusterTemplatesIPC(osdDbPath);
   const { initAuditLog } = await import('../core/audit-log.js');
   initAuditLog(osdDbPath);
+
+  // 9. Config validation, session restore, plugin compat
+  const { registerConfigValidationIPC } = await import('../core/config-validation.js');
+  registerConfigValidationIPC();
+  const { registerSessionRestoreIPC } = await import('./session-restore.js');
+  registerSessionRestoreIPC(osdDbPath);
 
   // 3. Wire devops backends when available (setter injection)
   try {
