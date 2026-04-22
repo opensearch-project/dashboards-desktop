@@ -30,6 +30,15 @@
     #content.visible { display:block; }
     #content h1 { font-size:22px; margin-bottom:16px; }
     #content h2 { font-size:16px; color:#a0a0c0; margin:20px 0 8px; }
+
+    /* Keyboard shortcuts modal */
+    #shortcuts-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center; }
+    #shortcuts-modal.visible { display:flex; }
+    .shortcuts-box { background:#1e1e35; border-radius:12px; padding:24px; max-width:420px; width:90%; }
+    .shortcuts-box h2 { font-size:18px; margin-bottom:16px; color:#e8e8f0; }
+    .shortcut-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #2d2d4a; }
+    .shortcut-row:last-child { border:none; }
+    .shortcut-key { background:#252540; padding:2px 8px; border-radius:4px; font-family:monospace; font-size:13px; color:#4da6ff; }
     .card { background:#1e1e35; border-radius:8px; padding:16px; margin-bottom:12px; }
     .card-title { font-size:14px; font-weight:600; margin-bottom:8px; }
     .btn-action { padding:8px 16px; border-radius:6px; border:none; cursor:pointer; font-size:13px; background:#4da6ff; color:#fff; margin-right:8px; margin-top:8px; }
@@ -259,6 +268,29 @@
         el.innerHTML = list.map(c => `<div style="padding:4px 0"><strong>${c.name}</strong> — ${c.url} <span class="meta">(${c.auth_type})</span></div>`).join('');
       } catch { document.getElementById('conn-list').innerHTML = '<span class="meta">Could not load connections</span>'; }
     }
+  </script>
+  <div id="shortcuts-modal" onclick="if(event.target===this)this.classList.remove('visible')">
+    <div class="shortcuts-box">
+      <h2>⌨️ Keyboard Shortcuts</h2>
+      <div class="shortcut-row"><span>Toggle chat</span><span class="shortcut-key">⌘K</span></div>
+      <div class="shortcut-row"><span>Show shortcuts</span><span class="shortcut-key">?</span></div>
+      <div class="shortcut-row"><span>Close modal</span><span class="shortcut-key">Esc</span></div>
+      <div class="shortcut-row"><span>Home (OSD)</span><span class="shortcut-key">🏠</span></div>
+      <div class="shortcut-row"><span>Connections</span><span class="shortcut-key">🌐</span></div>
+      <div class="shortcut-row"><span>Plugins</span><span class="shortcut-key">🧩</span></div>
+      <div class="shortcut-row"><span>OSD Logs</span><span class="shortcut-key">📄</span></div>
+      <div class="shortcut-row"><span>Bounce OSD</span><span class="shortcut-key">🔁</span></div>
+      <div class="shortcut-row"><span>Feedback</span><span class="shortcut-key">📣</span></div>
+      <div class="shortcut-row"><span>Settings</span><span class="shortcut-key">⚙️</span></div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        document.getElementById('shortcuts-modal').classList.toggle('visible');
+      }
+      if (e.key === 'Escape') document.getElementById('shortcuts-modal')?.classList.remove('visible');
+    });
   </script>
 </body>
 </html>
