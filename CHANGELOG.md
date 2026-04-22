@@ -8,6 +8,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-04-22
+
+### Added
+- Enterprise SSO, encryption at rest, PII detection, rate limiting, model fallback
+- Query profiler, task manager, audit logging
+- Conversation search, prompt versioning, collaboration features
+- Chat tabs, notification system, context menus
+- Canary release pipeline with crash reporting
+- Accessibility: skip navigation, focus traps, ARIA improvements
+- Load/upgrade/rollback/chaos testing, benchmarks (17 new tests)
+- IPC contract tests, security tests
+- VitePress documentation site (24 pages) with GitHub Pages deployment
+- 9 new docs: API reference, tool reference, enterprise deployment, benchmarks, community plan
+
+### Changed
+- Production UI polish (loading states, error boundaries, responsive layout)
+
+## [0.5.0] — 2026-04-22
+
+### Added
+- 26 agent tools (query, health, index, admin, anomaly detection, cluster comparison)
+- Chat UX: syntax highlighting, copy button, message actions, collapsible results
+- Keyboard shortcuts help panel, theme toggle
+- Model auto-routing, conversation summarization, prompt templates
+- Pre-push hook (typecheck + lint), E2E tests, CI hardening
+- 394 tests across 26+ suites
+
+## [0.3.0] — 2026-04-19
+
+### Added
+- Management sidebar (Slack-style left panel)
+- Settings persistence in SQLite across OSD upgrades
+- OSD config auto-generation, plugin install/remove, bounce, backup/restore, factory reset
+
+## [0.2.0] — 2026-04-19
+
+### Changed
+- Architecture pivot: BrowserWindow loads real OSD at localhost:5601
+- Auth signing proxy, OSD lifecycle management, chat overlay on OSD web UI
+
 ## [0.1.0-beta] — 2026-04-19
 
 Complete rewrite of dashboards-desktop as an agent-first, local-first desktop application.
