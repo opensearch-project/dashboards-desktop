@@ -252,7 +252,7 @@ export const ChatPanel: React.FC<Props> = ({
       const reader = new FileReader();
       reader.onload = () => {
         const text = reader.result as string;
-        window.osd.agent.send(\`Analyze this file (\${file.name}):\n\n\${text.slice(0, 10000)}\`, activeConv ?? undefined);
+        window.osd.agent.send(`Analyze this file (${file.name}):\n\n${text.slice(0, 10000)}`, activeConv ?? undefined);
       };
       reader.readAsText(file);
     }
