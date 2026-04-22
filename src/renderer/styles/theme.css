@@ -861,6 +861,12 @@ button {
   color: var(--text);
 }
 
+/* Syntax highlighting tokens */
+.hl-key { color: #9cdcfe; }
+.hl-str { color: #ce9178; }
+.hl-num { color: #b5cea8; }
+.hl-kw { color: #569cd6; font-weight: 500; }
+
 /* Tool execution feedback */
 .tool-status {
   display: flex;

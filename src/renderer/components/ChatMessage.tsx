@@ -22,6 +22,24 @@ interface Props {
   onEdit?: (id: string, content: string) => void;
 }
 
+/** Lightweight syntax highlighting for JSON and SQL (operates on escaped HTML) */
+function highlightCode(code: string, lang: string): string {
+  if (lang === 'json' || lang === 'JSON') {
+    return code
+      .replace(/(&quot;[^&]*?&quot;)\s*:/g, '<span class="hl-key">$1</span>:')
+      .replace(/:\s*(&quot;[^&]*?&quot;)/g, ': <span class="hl-str">$1</span>')
+      .replace(/:\s*(true|false|null)\b/g, ': <span class="hl-kw">$1</span>')
+      .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="hl-num">$1</span>');
+  }
+  if (lang === 'sql' || lang === 'SQL') {
+    return code.replace(
+      /\b(SELECT|FROM|WHERE|AND|OR|NOT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|JOIN|LEFT|RIGHT|INNER|OUTER|ON|AS|IN|IS|NULL|ORDER|BY|GROUP|HAVING|LIMIT|OFFSET|SET|INTO|VALUES|TABLE|INDEX|LIKE|BETWEEN|UNION|ALL|DISTINCT|COUNT|SUM|AVG|MIN|MAX|CASE|WHEN|THEN|ELSE|END|EXISTS|DESC|ASC)\b/gi,
+      '<span class="hl-kw">$1</span>',
+    );
+  }
+  return code;
+}
+
 /** Parse markdown to HTML — minimal inline parser for streaming content */
 function renderMarkdown(src: string): string {
   let html = escapeHtml(src);
@@ -29,7 +47,7 @@ function renderMarkdown(src: string): string {
   html = html.replace(
     /```(\w*)\n([\s\S]*?)```/g,
     (_m, lang, code) =>
-      `<div class="code-block" data-lang="${lang}"><pre><code class="language-${lang}">${code}</code></pre><button class="code-copy" aria-label="Copy code">Copy</button></div>`,
+      `<div class="code-block" data-lang="${lang}"><pre><code class="language-${lang}">${highlightCode(code, lang)}</code></pre><button class="code-copy" aria-label="Copy code">Copy</button></div>`,
   );
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');

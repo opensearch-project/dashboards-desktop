@@ -405,9 +405,39 @@ const FeedbackPanel: React.FC = () => {
   );
 };
 
-const SettingsPanel: React.FC = () => (
+const SettingsPanel: React.FC = () => {
+  const [theme, setTheme] = React.useState(() => document.documentElement.getAttribute('data-theme') || 'system');
+
+  const applyTheme = (value: string) => {
+    setTheme(value);
+    if (value === 'system') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', value);
+    }
+    window.osd?.settings?.set('sidebar_theme', value).catch(() => {});
+  };
+
+  React.useEffect(() => {
+    window.osd?.settings?.get('sidebar_theme').then(saved => {
+      if (saved && saved !== 'system') {
+        document.documentElement.setAttribute('data-theme', saved);
+        setTheme(saved);
+      }
+    }).catch(() => {});
+  }, []);
+
+  return (
   <section aria-label="Settings">
     <div className="panel-header"><h2>Settings</h2></div>
+    <div className="settings-group">
+      <label htmlFor="theme-select">Theme</label>
+      <select id="theme-select" className="settings-input" value={theme} onChange={e => applyTheme(e.target.value)}>
+        <option value="system">System</option>
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+      </select>
+    </div>
     <div className="settings-group">
       <label>OSD Binary Path</label>
       <input type="text" className="settings-input" placeholder="/usr/share/opensearch-dashboards" aria-label="OSD binary path" />
@@ -426,7 +456,8 @@ const SettingsPanel: React.FC = () => (
       }).catch(() => {})}>Export Settings</button>
     </div>
   </section>
-);
+  );
+};
 
 // --- Mount ---
 const root = createRoot(document.getElementById('root')!);
