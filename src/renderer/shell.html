@@ -18,6 +18,12 @@
     .nav-btn:hover svg, .nav-btn.active svg { fill:#e8e8f0; }
     .spacer { flex:1; }
     .divider { width:24px; height:1px; background:#2d2d4a; margin:4px 0; }
+    .nav-btn { position:relative; }
+    .dot { position:absolute; top:4px; right:4px; width:8px; height:8px; border-radius:50%; border:1.5px solid #1b1b2f; }
+    .dot-green { background:#4caf50; }
+    .dot-yellow { background:#ff9800; }
+    .dot-red { background:#f44336; }
+    .dot-blue { background:#4da6ff; }
 
     /* Content area — desktop pages render here, OSD BrowserView overlays when active */
     #content { flex:1; overflow:auto; display:none; padding:32px; }
@@ -49,6 +55,9 @@
       </button>
       <button class="nav-btn" data-page="chat" title="Chat (⌘K)">
         <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+      </button>
+      <button class="nav-btn" data-page="logs" title="OSD Logs">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
       </button>
       <div class="spacer"></div>
       <button class="nav-btn" data-page="bounce" title="Bounce OSD">
@@ -105,6 +114,13 @@
       chat: `
         <iframe id="chat-frame" src="./chat-overlay.html" style="width:100%;height:100vh;border:none;"></iframe>
       `,
+      logs: `
+        <h1>📄 OSD Logs</h1>
+        <div class="card" style="position:relative">
+          <div class="card-title">Last 100 lines <button class="btn-action" style="padding:2px 10px;font-size:11px;float:right" onclick="loadLogs()">Refresh</button></div>
+          <pre id="log-output" style="background:#0e0e1a;color:#a0ffa0;padding:12px;border-radius:4px;font-size:12px;max-height:60vh;overflow:auto;white-space:pre-wrap;font-family:monospace;">Loading...</pre>
+        </div>
+      `,
     };
 
     // Navigation
@@ -152,8 +168,56 @@
           if (page === 'plugins') loadPlugins();
           if (page === 'settings') loadSettings();
           if (page === 'connections') loadConnections();
+          if (page === 'logs') loadLogs();
         }
       });
+    });
+
+    // --- Log viewer ---
+    let logInterval = null;
+    async function loadLogs() {
+      try {
+        const lines = await ipcRenderer.invoke('osd:logs');
+        const el = document.getElementById('log-output');
+        if (el) { el.textContent = lines.length ? lines.join('\n') : 'No logs yet'; el.scrollTop = el.scrollHeight; }
+      } catch { /* ignore */ }
+    }
+
+    // --- Connection health indicator ---
+    async function updateHealthDot() {
+      try {
+        const status = await ipcRenderer.invoke('osd:status');
+        const btn = document.querySelector('[data-page="connections"]');
+        let dot = btn.querySelector('.dot');
+        if (!dot) { dot = document.createElement('span'); dot.className = 'dot'; btn.appendChild(dot); }
+        dot.className = 'dot ' + (status === 'running' ? 'dot-green' : status === 'starting' ? 'dot-yellow' : 'dot-red');
+      } catch { /* ignore */ }
+    }
+    setInterval(updateHealthDot, 5000);
+    updateHealthDot();
+
+    // Listen for status changes from main process
+    ipcRenderer.on('osd:status-changed', (_e, status) => {
+      const btn = document.querySelector('[data-page="connections"]');
+      let dot = btn.querySelector('.dot');
+      if (!dot) { dot = document.createElement('span'); dot.className = 'dot'; btn.appendChild(dot); }
+      dot.className = 'dot ' + (status === 'running' ? 'dot-green' : status === 'starting' ? 'dot-yellow' : 'dot-red');
+    });
+
+    // --- Chat unread indicator ---
+    ipcRenderer.on('chat:unread', () => {
+      if (currentPage === 'chat') return;
+      const btn = document.querySelector('[data-page="chat"]');
+      let dot = btn.querySelector('.dot');
+      if (!dot) { dot = document.createElement('span'); dot.className = 'dot dot-blue'; btn.appendChild(dot); }
+      else dot.className = 'dot dot-blue';
+    });
+
+    // Clear unread when switching to chat
+    const origChatClick = document.querySelector('[data-page="chat"]');
+    if (origChatClick) origChatClick.addEventListener('click', () => {
+      const dot = origChatClick.querySelector('.dot');
+      if (dot) dot.remove();
     });
 
     async function loadPlugins() {
