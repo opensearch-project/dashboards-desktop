@@ -14,7 +14,6 @@ Interested in becoming a maintainer? Start by [contributing](CONTRIBUTING.md).
 | Zhongnan Su | [zhongnansu](https://github.com/zhongnansu) | Amazon | Core platform |
 | Kristen Tian | [kristenTian](https://github.com/kristenTian) | Amazon | Frontend, UX |
 | Tao Liu | [Flyingliuhub](https://github.com/Flyingliuhub) | Amazon | Backend, integrations |
-| Lu Yu | [BionIT](https://github.com/BionIT) | Amazon | Data sources, connectors |
 | Yan Zeng | [zengyan-amazon](https://github.com/zengyan-amazon) | Amazon | Infrastructure, CI/CD |
 
 ## Emeritus
@@ -22,6 +21,7 @@ Interested in becoming a maintainer? Start by [contributing](CONTRIBUTING.md).
 | Maintainer | GitHub ID | Affiliation |
 |------------|-----------|-------------|
 | Johnny On | [johnnyon-amzn](https://github.com/johnnyon-amzn) | Amazon |
+| Lu Yu | [BionIT](https://github.com/BionIT) | Amazon |
 
 ## Contact
 
