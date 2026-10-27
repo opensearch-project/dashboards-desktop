@@ -12,7 +12,6 @@ Interested in becoming a maintainer? Start by [contributing](CONTRIBUTING.md).
 |------------|-----------|-------------|------------|
 | Huan Jiang | [seraphjiang](https://github.com/seraphjiang) | Amazon | Project lead, architecture |
 | Zhongnan Su | [zhongnansu](https://github.com/zhongnansu) | Amazon | Core platform |
-| Kristen Tian | [kristenTian](https://github.com/kristenTian) | Amazon | Frontend, UX |
 | Tao Liu | [Flyingliuhub](https://github.com/Flyingliuhub) | Amazon | Backend, integrations |
 | Yan Zeng | [zengyan-amazon](https://github.com/zengyan-amazon) | Amazon | Infrastructure, CI/CD |
 
@@ -22,6 +21,7 @@ Interested in becoming a maintainer? Start by [contributing](CONTRIBUTING.md).
 |------------|-----------|-------------|
 | Johnny On | [johnnyon-amzn](https://github.com/johnnyon-amzn) | Amazon |
 | Lu Yu | [BionIT](https://github.com/BionIT) | Amazon |
+| Kristen Tian | [kristenTian](https://github.com/kristenTian) | Amazon |
 
 ## Contact
 
